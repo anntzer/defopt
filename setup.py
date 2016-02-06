@@ -20,6 +20,7 @@ setup(
     license='GNU General Public License v3',
     py_modules=['defopt'],
     test_suite='test_defopt',
+    install_requires=['docutils'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',

@@ -31,6 +31,10 @@ class TestDefopt(unittest.TestCase):
 
     def test_keyword_only(self):
         def main(*, foo='bar'):
+            """Test function
+
+            :type foo: str
+            """
             self.assertEqual(foo, 'baz')
             self.calls += 1
         defopt.main(main)
@@ -44,6 +48,10 @@ class TestDefopt(unittest.TestCase):
 
     def test_var_keywords(self):
         def bad(**kwargs):
+            """Test function
+
+            :param kwargs: str
+            """
             pass
 
         defopt.main(bad)
@@ -52,6 +60,11 @@ class TestDefopt(unittest.TestCase):
 
     def _def_main(self):
         def main(foo):
+            """Test function
+
+            :type foo: str
+            :return: None
+            """
             self.assertEqual(foo, 'foo')
             self.calls += 1
         defopt.main(main)
@@ -59,14 +72,39 @@ class TestDefopt(unittest.TestCase):
 
     def _def_sub1(self):
         def sub1(*bar):
-            self.assertEqual(bar, ('bar',))
+            """Test function
+
+            :type bar: int
+            """
+            self.assertEqual(bar, (1,))
             self.calls += 1
         defopt.subcommand(sub1)
-        return ['sub1', 'bar']
+        return ['sub1', '1']
 
     def _def_sub2(self):
         def sub2(baz=None):
-            self.assertEqual(baz, 'baz')
+            """Test function
+
+            :type baz: float
+            """
+            self.assertEqual(baz, 1.1)
             self.calls += 1
         defopt.subcommand(sub2)
-        return ['sub2', '--baz', 'baz']
+        return ['sub2', '--baz', '1.1']
+
+
+class TestEvaluate(unittest.TestCase):
+    def test_builtin(self):
+        self.assertEqual(defopt._evaluate('int'), int)
+
+    def test_dotted(self):
+        self.assertEqual(defopt._evaluate('A.b', stack_depth=0), 'success')
+
+    def test_nested(self):
+        def lookup():
+            self.assertEqual(defopt._evaluate('A', stack_depth=1), A)
+        lookup()
+
+
+class A:
+    b = 'success'
