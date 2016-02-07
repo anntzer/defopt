@@ -21,6 +21,7 @@ setup(
     py_modules=['defopt'],
     test_suite='test_defopt',
     install_requires=['docutils'],
+    extras_require={':python_version=="3.3"': ['enum34']},
     tests_require=['coverage'],
     setup_requires=['nose'],
     classifiers=[
