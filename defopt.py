@@ -4,6 +4,7 @@ from collections import defaultdict, namedtuple
 from enum import Enum
 import inspect
 import logging
+import re
 import sys
 from xml.etree import ElementTree
 
@@ -13,6 +14,7 @@ logging.basicConfig()
 
 Doc = namedtuple('Doc', ('text', 'params'))
 Param = namedtuple('Param', ('text', 'type'))
+Type = namedtuple('Type', ('type', 'container'))
 
 _main = None
 _subcommands = []
@@ -101,34 +103,44 @@ def _populate_parser(func, parser):
     parser.description = doc.text
     parser._enums = {}
     for name, param in sig.parameters.items():
-        default = None
-        nargs = None
+        kwargs = {'help': doc.params[name].text}
+        type_ = _get_type(doc.params[name].type)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
-        if param.default is param.empty:
-            flag = name
-            if param.kind == param.VAR_POSITIONAL:
-                nargs = '*'
+        if param.default == param.empty:
+            if type_.container:
+                assert type_.container == list
+                name_or_flag = '--' + name
+                kwargs['nargs'] = '*'
+                kwargs['required'] = True
+            else:
+                name_or_flag = name
+                if param.kind == param.VAR_POSITIONAL:
+                    kwargs['nargs'] = '*'
         else:
-            flag = '--' + name
-            default = param.default
-        help_ = doc.params[name].text
-        type_ = _evaluate(doc.params[name].type, stack_depth=2)
-        if inspect.isclass(type_) and issubclass(type_, Enum):
+            name_or_flag = '--' + name
+            kwargs['default'] = param.default
+        if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
             # argparse won't handle the enum well so we'll have to post-process
-            choices = [x.name for x in type_]
-            parser._enums[name] = type_
-            type_ = None
+            kwargs['choices'] = [x.name for x in type_.type]
+            parser._enums[name] = type_.type
         else:
-            type_ = _get_parser(type_)
-            choices = None
-        parser.add_argument(flag,
-                            nargs=nargs,
-                            default=default,
-                            type=type_,
-                            choices=choices,
-                            help=help_)
+            kwargs['type'] = _get_parser(type_.type)
+        parser.add_argument(name_or_flag, **kwargs)
     return parser
+
+
+def _get_type(name):
+    match = re.match(r'(\w+)\[(\w+)\]', name)
+    container = None
+    if match:
+        container, name = match.groups()
+        if container == 'list':
+            container = list
+        else:
+            raise ValueError('container types other than list not supported')
+    type_ = _evaluate(name, stack_depth=3)
+    return Type(type_, container)
 
 
 def _substitute_enums(parser, args):
@@ -230,6 +242,8 @@ def _find_parser(type_):
         return type_
     elif type_ == bool:
         return _parse_bool
+    elif type_ == list:
+        raise ValueError('unable to parse list (try list[type])')
     else:
         raise Exception('no parser found for type {}'.format(type_.__name__))
 

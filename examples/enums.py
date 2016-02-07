@@ -22,7 +22,7 @@ class Choice(Enum):
 
 @defopt.main
 def main(arg, opt=None):
-    """Test function with Enum arguments.
+    """Example function with Enum arguments.
 
     :param arg: Enum member to display
     :type arg: Choice

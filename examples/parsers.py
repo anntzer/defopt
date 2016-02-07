@@ -21,7 +21,7 @@ def parse_date(string):
 
 @defopt.main
 def main(date):
-    """Test function with datetime argument.
+    """Example function with datetime argument.
 
     :param date: Date to display
     :type date: datetime

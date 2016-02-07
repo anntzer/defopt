@@ -51,7 +51,7 @@ class TestDefopt(unittest.TestCase):
         def bad(**kwargs):
             """Test function
 
-            :param kwargs: str
+            :type kwargs: str
             """
             pass
 
@@ -160,6 +160,30 @@ class TestParsers(unittest.TestCase):
     def test_no_parser(self):
         with self.assertRaises(Exception):
             defopt._get_parser(A)
+
+    def test_list(self):
+        @defopt.main
+        def main(foo):
+            """Test function
+
+            :type foo: list[float]
+            """
+            self.assertEqual(foo, [1.1, 2.2])
+        defopt.run(['--foo', '1.1', '2.2'])
+
+    def test_other_container(self):
+        @defopt.main
+        def main(foo):
+            """Test function
+
+            :type foo: tuple[float]
+            """
+        with self.assertRaises(ValueError):
+            defopt.run(['--foo', '1.1', '2.2'])
+
+    def test_list_bare(self):
+        with self.assertRaises(ValueError):
+            defopt._get_parser(list)
 
 
 class TestEnums(unittest.TestCase):
