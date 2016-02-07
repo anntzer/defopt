@@ -21,7 +21,8 @@ setup(
     py_modules=['defopt'],
     test_suite='test_defopt',
     install_requires=['docutils'],
-    tests_require=['coverage', 'nose'],
+    tests_require=['coverage'],
+    setup_requires=['nose'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',

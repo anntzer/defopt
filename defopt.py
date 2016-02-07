@@ -77,7 +77,7 @@ def run(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     parser = argparse.ArgumentParser()
-    parser.set_defaults(_func=None)
+    parser.set_defaults()
     if _main:
         _populate_parser(_main, parser)
     if _subcommands:
@@ -89,7 +89,7 @@ def run(argv=None):
     args = parser.parse_args(argv)
     _substitute_enums(parser, args)
     # Workaround for http://bugs.python.org/issue9253#msg186387
-    if _subcommands and args._func is None:
+    if _subcommands and not hasattr(args, '_func'):
         parser.error('too few arguments')
     if _main:
         _call_function(_main, args)
