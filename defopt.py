@@ -211,8 +211,8 @@ def _evaluate(name, stack_depth=None):
     logging.debug('evaluating %s', name)
     things = dict(vars(builtins))
     if stack_depth is not None:
-        things.update(inspect.stack()[stack_depth + 1].frame.f_locals)
-        things.update(inspect.stack()[stack_depth + 1].frame.f_globals)
+        things.update(inspect.stack()[stack_depth + 1][0].f_locals)
+        things.update(inspect.stack()[stack_depth + 1][0].f_globals)
     parts = name.split('.')
     thing = things[parts[0]]
     for part in parts[1:]:
