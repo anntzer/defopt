@@ -21,6 +21,13 @@ _subcommands = []
 _parsers = {}
 
 
+def _clear():
+    global _main
+    _main = None
+    _subcommands.clear()
+    _parsers.clear()
+
+
 def main(func):
     """Register the given function as the main function.
 

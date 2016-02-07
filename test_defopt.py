@@ -1,5 +1,4 @@
 from enum import Enum
-from importlib import reload
 import unittest
 
 import defopt
@@ -7,7 +6,7 @@ import defopt
 
 class TestDefopt(unittest.TestCase):
     def setUp(self):
-        reload(defopt)
+        defopt._clear()
         self.calls = 0
 
     def test_main(self):
@@ -119,7 +118,7 @@ class A:
 
 class TestParsers(unittest.TestCase):
     def setUp(self):
-        reload(defopt)
+        defopt._clear()
 
     def test_parser(self):
         @defopt.main
@@ -188,7 +187,7 @@ class TestParsers(unittest.TestCase):
 
 class TestEnums(unittest.TestCase):
     def setUp(self):
-        reload(defopt)
+        defopt._clear()
 
     def test_enum(self):
         @defopt.main
