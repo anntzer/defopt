@@ -16,11 +16,12 @@ setup(
     long_description=long_description,
     author='evan_',
     author_email='evanunderscore@gmail.com',
-    url='https://pypi.python.org/pypi/pygnurl',
+    url='https://pypi.python.org/pypi/defopt',
     license='GNU General Public License v3',
     py_modules=['defopt'],
     test_suite='test_defopt',
     install_requires=['docutils'],
+    tests_require=['coverage', 'nose'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
