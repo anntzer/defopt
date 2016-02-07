@@ -211,6 +211,17 @@ def _evaluate(name, stack_depth=None):
 
 
 def _get_parser(type_):
+    parser = _find_parser(type_)
+
+    # Make a parser with the name the user expects to see in error messages.
+    def named_parser(string):
+        return parser(string)
+
+    named_parser.__name__ = type_.__name__
+    return named_parser
+
+
+def _find_parser(type_):
     try:
         return _parsers[type_]
     except KeyError:
