@@ -9,6 +9,7 @@ if sys.version_info < (3, 3):
 with open('README.rst') as readme:
     long_description = readme.read()
 
+
 setup(
     name='defopt',
     version='0.1.0',

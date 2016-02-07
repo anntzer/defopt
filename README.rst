@@ -31,10 +31,10 @@ Sphinx-style_ docstrings), simply decorate it with ``@defopt.main``, then call
     def main(greeting, count=1):
         """Display a friendly greeting.
 
-        :param greeting: Greeting to display.
-        :type greeting: `str`
-        :param count: Number of times to display the greeting.
-        :type count: `int`
+        :param greeting: Greeting to display
+        :type greeting: str
+        :param count: Number of times to display the greeting
+        :type count: int
         """
         for _ in range(count):
             print(greeting)
@@ -53,10 +53,17 @@ This function can now be called identically from Python and the command line.
 
 ::
 
-    $ python test.py hello --count 2
+    $ python test.py hello! --count 2
     hello!
     hello!
+
+Development
+-----------
+
+For source code, examples, questions, feature requests and bug reports, visit
+the `GitHub repository`_.
 
 .. _Sphinx-style: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 .. _docopt: http://docopt.org/
 .. _click: http://click.pocoo.org/
+.. _GitHub repository: https://github.com/evanunderscore/defopt
