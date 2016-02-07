@@ -58,6 +58,12 @@ class TestDefopt(unittest.TestCase):
         with self.assertRaises(ValueError):
             defopt.run()
 
+    def test_no_subparser_specified(self):
+        args = self._def_main()
+        self._def_sub1()
+        with self.assertRaises(SystemExit):
+            defopt.run(args)
+
     def _def_main(self):
         def main(foo):
             """Test function
@@ -108,3 +114,44 @@ class TestEvaluate(unittest.TestCase):
 
 class A:
     b = 'success'
+
+
+class TestParsers(unittest.TestCase):
+    def setUp(self):
+        reload(defopt)
+
+    def test_parser(self):
+        @defopt.main
+        def main(value):
+            """Test function
+
+            :type value: int
+            """
+            self.assertEqual(value, 1)
+        defopt.run(['1'])
+
+    def test_registered_parser(self):
+        @defopt.parser(int)
+        def parser(string):
+            return int(string) * 2
+
+        @defopt.main
+        def main(value):
+            """Test function
+
+            :type value: int
+            """
+            self.assertEqual(value, 2)
+        defopt.run(['1'])
+
+    def test_parse_bool(self):
+        parser = defopt._get_parser(bool)
+        self.assertEqual(parser('t'), True)
+        self.assertEqual(parser('FALSE'), False)
+        with self.assertRaises(ValueError):
+            parser('foo')
+
+    def test_double_parser(self):
+        defopt.parser(int)(int)
+        with self.assertRaises(Exception):
+            defopt.parser(int)(int)

@@ -15,6 +15,7 @@ Param = namedtuple('Param', ('text', 'type'))
 
 _main = None
 _subcommands = []
+_parsers = {}
 
 
 def main(func):
@@ -44,6 +45,24 @@ def subcommand(func):
     """
     _subcommands.append(func)
     return func
+
+
+def parser(type_):
+    """Register the given function as a parser for the given type.
+
+    The function must take a single string argument.
+
+    The function is returned unmodified.
+
+    >>> @parser(bool)
+    ... def func(string):
+    ...     return string.lower() in ['y', 'yes']
+    """
+    def decorator(func):
+        if type_ in _parsers:
+            raise Exception('multiple parsers found for {}'.format(type_.__name__))
+        _parsers[type_] = func
+    return decorator
 
 
 def run(argv=None):
@@ -95,7 +114,7 @@ def _populate_parser(func, parser):
         parser.add_argument(flag,
                             help=help_,
                             default=default,
-                            type=type_,
+                            type=_get_parser(type_),
                             nargs=nargs)
     return parser
 
@@ -165,3 +184,23 @@ def _evaluate(name, stack_depth=None):
         thing = things[part]
     logging.debug('evaluated to %r', thing)
     return thing
+
+
+def _get_parser(type_):
+    try:
+        return _parsers[type_]
+    except KeyError:
+        pass
+    if type_ in [int, str, float]:
+        return type_
+    elif type_ == bool:
+        return _parse_bool
+
+
+def _parse_bool(string):
+    if string.lower() in ['t', 'true']:
+        return True
+    elif string.lower() in ['f', 'false']:
+        return False
+    else:
+        raise ValueError('{} is not a valid boolean string'.format(string))
