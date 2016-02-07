@@ -1,3 +1,4 @@
+from enum import Enum
 from importlib import reload
 import unittest
 
@@ -155,3 +156,29 @@ class TestParsers(unittest.TestCase):
         defopt.parser(int)(int)
         with self.assertRaises(Exception):
             defopt.parser(int)(int)
+
+    def test_no_parser(self):
+        with self.assertRaises(Exception):
+            defopt._get_parser(A)
+
+
+class TestEnums(unittest.TestCase):
+    def setUp(self):
+        reload(defopt)
+
+    def test_enum(self):
+        @defopt.main
+        def main(foo):
+            """Test function
+
+            :type foo: Choice
+            """
+        defopt.run(['one'])
+        defopt.run(['two'])
+        with self.assertRaises(SystemExit):
+            defopt.run(['three'])
+
+
+class Choice(Enum):
+    one = 1
+    two = 2

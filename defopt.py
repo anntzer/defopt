@@ -1,6 +1,7 @@
 import argparse
 import builtins
 from collections import defaultdict, namedtuple
+from enum import Enum
 import inspect
 import logging
 import sys
@@ -84,6 +85,7 @@ def run(argv=None):
             _populate_parser(func, subparser)
             subparser.set_defaults(_func=func)
     args = parser.parse_args(argv)
+    _substitute_enums(parser, args)
     # Workaround for http://bugs.python.org/issue9253#msg186387
     if _subcommands and args._func is None:
         parser.error('too few arguments')
@@ -97,6 +99,7 @@ def _populate_parser(func, parser):
     sig = inspect.signature(func)
     doc = _parse_doc(func)
     parser.description = doc.text
+    parser._enums = {}
     for name, param in sig.parameters.items():
         default = None
         nargs = None
@@ -111,12 +114,33 @@ def _populate_parser(func, parser):
             default = param.default
         help_ = doc.params[name].text
         type_ = _evaluate(doc.params[name].type, stack_depth=2)
+        if inspect.isclass(type_) and issubclass(type_, Enum):
+            # argparse won't handle the enum well so we'll have to post-process
+            choices = [x.name for x in type_]
+            parser._enums[name] = type_
+            type_ = None
+        else:
+            type_ = _get_parser(type_)
+            choices = None
         parser.add_argument(flag,
-                            help=help_,
+                            nargs=nargs,
                             default=default,
-                            type=_get_parser(type_),
-                            nargs=nargs)
+                            type=type_,
+                            choices=choices,
+                            help=help_)
     return parser
+
+
+def _substitute_enums(parser, args):
+    """Swap out any enum strings for their members."""
+    if not hasattr(parser, '_enums'):
+        return
+    for name, value in vars(args).items():
+        try:
+            enum = parser._enums[name]
+        except KeyError:
+            continue
+        setattr(args, name, enum[value])
 
 
 def _call_function(func, args):
@@ -195,6 +219,8 @@ def _get_parser(type_):
         return type_
     elif type_ == bool:
         return _parse_bool
+    else:
+        raise Exception('no parser found for type {}'.format(type_.__name__))
 
 
 def _parse_bool(string):
