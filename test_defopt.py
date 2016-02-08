@@ -170,6 +170,16 @@ class TestParsers(unittest.TestCase):
             self.assertEqual(foo, [1.1, 2.2])
         defopt.run(['--foo', '1.1', '2.2'])
 
+    def test_list_kwarg(self):
+        @defopt.main
+        def main(foo=None):
+            """Test function
+
+            :type foo: list[float]
+            """
+            self.assertEqual(foo, [1.1, 2.2])
+        defopt.run(['--foo', '1.1', '2.2'])
+
     def test_other_container(self):
         @defopt.main
         def main(foo):

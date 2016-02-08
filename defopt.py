@@ -114,16 +114,18 @@ def _populate_parser(func, parser):
         type_ = _get_type(doc.params[name].type)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
-        if param.default == param.empty:
-            if type_.container:
-                assert type_.container == list
-                name_or_flag = '--' + name
-                kwargs['nargs'] = '*'
+        if type_.container:
+            assert type_.container == list
+            name_or_flag = '--' + name
+            kwargs['nargs'] = '*'
+            if param.default == param.empty:
                 kwargs['required'] = True
             else:
-                name_or_flag = name
-                if param.kind == param.VAR_POSITIONAL:
-                    kwargs['nargs'] = '*'
+                kwargs['default'] = param.default
+        elif param.default == param.empty:
+            name_or_flag = name
+            if param.kind == param.VAR_POSITIONAL:
+                kwargs['nargs'] = '*'
         else:
             name_or_flag = '--' + name
             kwargs['default'] = param.default
