@@ -211,6 +211,16 @@ class TestEnums(unittest.TestCase):
         with self.assertRaises(SystemExit):
             defopt.run(['three'])
 
+    def test_optional(self):
+        @defopt.main
+        def main(foo=None):
+            """Test function
+
+            :type foo: Choice
+            """
+        defopt.run(['--foo', 'one'])
+        defopt.run([])
+
 
 class Choice(Enum):
     one = 1

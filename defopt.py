@@ -157,6 +157,8 @@ def _substitute_enums(parser, args):
     if not hasattr(parser, '_enums'):
         return
     for name, value in vars(args).items():
+        if value is None:
+            continue
         try:
             enum = parser._enums[name]
         except KeyError:
