@@ -24,10 +24,8 @@ class Choice(Enum):
 def main(arg, opt=None):
     """Example function with Enum arguments.
 
-    :param arg: Enum member to display
-    :type arg: Choice
-    :param opt: Enum member to display
-    :type opt: Choice
+    :param Choice arg: Enum member to display
+    :param Choice opt: Enum member to display
     """
     print('{} ({})'.format(arg, arg.value))
     if opt:

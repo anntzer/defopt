@@ -17,10 +17,8 @@ import defopt
 def main(numbers, multiplier):
     """Example function with a list argument.
 
-    :param numbers: List of numbers to multiply
-    :type numbers: list[float]
-    :param multiplier: Amount to multiply by
-    :type multiplier: float
+    :param list[float] numbers: List of numbers to multiply
+    :param float multiplier: Amount to multiply by
     """
     print([x * multiplier for x in numbers])
 

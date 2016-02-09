@@ -225,3 +225,43 @@ class TestEnums(unittest.TestCase):
 class Choice(Enum):
     one = 1
     two = 2
+
+
+class TestDoc(unittest.TestCase):
+    def test_parse_doc(self):
+        def test(one, two):
+            """Test function
+
+            :param one: first param
+            :type one: int
+            :param float two: second param
+            :returns: str
+            :junk one two: nothing
+            """
+        doc = defopt._parse_doc(test)
+        self.assertEqual(doc.text, 'Test function')
+        one = doc.params['one']
+        self.assertEqual(one.text, 'first param')
+        self.assertEqual(one.type, 'int')
+        two = doc.params['two']
+        self.assertEqual(two.text, 'second param')
+        self.assertEqual(two.type, 'float')
+
+    def test_parse_doubles(self):
+        def test(param):
+            """Test function
+
+            :param int param: the parameter
+            :type param: int
+            """
+        with self.assertRaises(ValueError):
+            defopt._parse_doc(test)
+
+        def test(param):
+            """Test function
+
+            :type param: int
+            :param int param: the parameter
+            """
+        with self.assertRaises(ValueError):
+            defopt._parse_doc(test)

@@ -31,10 +31,8 @@ Sphinx-style_ docstrings), simply decorate it with ``@defopt.main``, then call
     def main(greeting, count=1):
         """Display a friendly greeting.
 
-        :param greeting: Greeting to display
-        :type greeting: str
-        :param count: Number of times to display the greeting
-        :type count: int
+        :param str greeting: Greeting to display
+        :param int count: Number of times to display the greeting
         """
         for _ in range(count):
             print(greeting)
@@ -63,7 +61,7 @@ Development
 For source code, examples, questions, feature requests and bug reports, visit
 the `GitHub repository`_.
 
-.. _Sphinx-style: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
+.. _Sphinx-style: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _docopt: http://docopt.org/
 .. _click: http://click.pocoo.org/
 .. _GitHub repository: https://github.com/evanunderscore/defopt

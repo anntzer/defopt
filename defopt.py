@@ -193,12 +193,24 @@ def _parse_doc(func):
         field_name = field.find('field_name')
         field_body = field.find('field_body')
         parts = field_name.text.split()
-        if len(parts) < 2:
+        if len(parts) == 2:
+            doctype, name = parts
+        elif len(parts) == 3:
+            doctype, type_, name = parts
+            if doctype != 'param':
+                logging.debug('ignoring field %s', field_name.text)
+                continue
+            logging.debug('inline param type %s', type_)
+            if 'type' in params[name]:
+                raise ValueError('type defined twice for {}'.format(name))
+            params[name]['type'] = type_
+        else:
             logging.debug('ignoring field %s', field_name.text)
             continue
-        doctype, name = parts
         text = ''.join(field_body.itertext())
         logging.debug('%s %s: %s', doctype, name, text)
+        if doctype in params[name]:
+            raise ValueError('{} defined twice for {}'.format(doctype, name))
         params[name][doctype] = text
 
     tuples = {}

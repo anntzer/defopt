@@ -23,8 +23,7 @@ def parse_date(string):
 def main(date):
     """Example function with datetime argument.
 
-    :param date: Date to display
-    :type date: datetime
+    :param datetime date: Date to display
     """
     print(date)
 

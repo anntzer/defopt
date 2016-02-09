@@ -12,7 +12,7 @@ with open('README.rst') as readme:
 
 setup(
     name='defopt',
-    version='0.1.0',
+    version='0.2.0',
     description='Effortless argument parsing',
     long_description=long_description,
     author='evan_',
