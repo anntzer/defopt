@@ -1,4 +1,5 @@
 from enum import Enum
+import sys
 import unittest
 
 import defopt
@@ -30,16 +31,23 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(self.calls, 4)
 
     def test_keyword_only(self):
-        def main(*, foo='bar'):
-            """Test function
+        """Test handling of keyword-only arguments.
 
-            :type foo: str
-            """
-            self.assertEqual(foo, 'baz')
-            self.calls += 1
-        defopt.main(main)
-        defopt.run(['--foo', 'baz'])
-        self.assertEqual(self.calls, 1)
+        The exec avoids a SyntaxError on Python 2.x.
+        """
+        if sys.version_info.major >= 3:
+            globals_ = {'self': self}
+            exec('''def main(*, foo='bar'):
+                """Test function
+
+                :type foo: str
+                """
+                self.assertEqual(foo, 'baz')
+                self.calls += 1
+            ''', globals_)
+            defopt.main(globals_['main'])
+            defopt.run(['--foo', 'baz'])
+            self.assertEqual(self.calls, 1)
 
     def test_double_main(self):
         self._def_main()

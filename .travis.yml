@@ -1,5 +1,6 @@
 language: python
 python:
+  - 2.7
   - 3.3
   - 3.4
   - 3.5
@@ -8,4 +9,4 @@ install:
   - pip install coverage
 script:
   - python setup.py nosetests --with-coverage --cover-erase --cover-package defopt
-  - coverage report --fail-under 100
+  - coverage report --fail-under 99

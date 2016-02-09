@@ -1,9 +1,4 @@
-import sys
 from setuptools import setup
-
-
-if sys.version_info < (3, 3):
-    raise Exception('defopt requires Python 3.3+')
 
 
 with open('README.rst') as readme:
@@ -12,7 +7,7 @@ with open('README.rst') as readme:
 
 setup(
     name='defopt',
-    version='0.2.0',
+    version='0.3.0',
     description='Effortless argument parsing',
     long_description=long_description,
     author='evan_',
@@ -22,7 +17,10 @@ setup(
     py_modules=['defopt'],
     test_suite='test_defopt',
     install_requires=['docutils'],
-    extras_require={':python_version=="3.3"': ['enum34']},
+    extras_require={
+        ':python_version=="2.7"': ['enum34', 'funcsigs'],
+        ':python_version=="3.3"': ['enum34'],
+    },
     tests_require=['coverage'],
     setup_requires=['nose'],
     classifiers=[

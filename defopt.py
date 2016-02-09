@@ -1,5 +1,6 @@
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 import argparse
-import builtins
 from collections import defaultdict, namedtuple
 from enum import Enum
 import inspect
@@ -9,6 +10,15 @@ import sys
 from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
+
+try:
+    import builtins
+except ImportError:  # pragma: no cover
+    import __builtin__ as builtins
+
+if not hasattr(inspect, 'signature'):  # pragma: no cover
+    import funcsigs
+    inspect.signature = funcsigs.signature
 
 logging.basicConfig()
 
@@ -22,10 +32,10 @@ _parsers = {}
 
 
 def _clear():
-    global _main
+    global _main, _subcommands, _parsers
     _main = None
-    _subcommands.clear()
-    _parsers.clear()
+    _subcommands = []
+    _parsers = {}
 
 
 def main(func):
