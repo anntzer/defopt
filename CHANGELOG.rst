@@ -1,9 +1,10 @@
 Changelog
 =========
 
-next
-----
+0.3.1 (2016-02-10)
+------------------
 
+* Added support for docstrings that only contain parameter information
 * Added more informative exceptions for insufficiently documented functions
 * Fixed type parsing bug on Python 2 when future is installed
 * Switched to building universal wheels

@@ -301,3 +301,12 @@ class TestDoc(unittest.TestCase):
         doc = defopt._parse_doc(test)
         self.assertEqual(doc.text, '')
         self.assertEqual(doc.params, {})
+
+    def test_param_only(self):
+        def test(param):
+            """:param int param: test"""
+        doc = defopt._parse_doc(test)
+        self.assertEqual(doc.text, '')
+        param = doc.params['param']
+        self.assertEqual(param.text, 'test')
+        self.assertEqual(param.type, 'int')

@@ -205,7 +205,7 @@ def _parse_doc(func):
     dom = publish_doctree(doc).asdom()
     etree = ElementTree.fromstring(dom.toxml())
     doctext = '\n\n'.join(x.text for x in etree.findall('paragraph'))
-    fields = etree.findall('field_list/field')
+    fields = etree.findall('.//field')
 
     params = defaultdict(dict)
     for field in fields:
