@@ -5,6 +5,10 @@ import unittest
 import defopt
 
 
+if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
+    unittest.TestCase.assertRaisesRegex = unittest.TestCase.assertRaisesRegexp
+
+
 class TestDefopt(unittest.TestCase):
     def setUp(self):
         defopt._clear()
@@ -71,6 +75,23 @@ class TestDefopt(unittest.TestCase):
         self._def_sub1()
         with self.assertRaises(SystemExit):
             defopt.run(args)
+
+    def test_no_param_doc(self):
+        @defopt.main
+        def bad(foo):
+            """Test function"""
+        with self.assertRaisesRegex(ValueError, 'doc.*foo'):
+            defopt.run(['foo'])
+
+    def test_no_type_doc(self):
+        @defopt.main
+        def bad(foo):
+            """Test function
+
+            :param foo: no type info
+            """
+        with self.assertRaisesRegex(ValueError, 'type.*foo'):
+            defopt.run(['foo'])
 
     def _def_main(self):
         def main(foo):
@@ -273,3 +294,10 @@ class TestDoc(unittest.TestCase):
             """
         with self.assertRaises(ValueError):
             defopt._parse_doc(test)
+
+    def test_no_doc(self):
+        def test(param):
+            pass
+        doc = defopt._parse_doc(test)
+        self.assertEqual(doc.text, '')
+        self.assertEqual(doc.params, {})

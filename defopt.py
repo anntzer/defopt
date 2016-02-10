@@ -121,6 +121,8 @@ def _populate_parser(func, parser):
     parser.description = doc.text
     parser._enums = {}
     for name, param in sig.parameters.items():
+        if name not in doc.params:
+            raise ValueError('no documentation found for parameter {}'.format(name))
         kwargs = {'help': doc.params[name].text}
         type_ = _get_type(doc.params[name].type)
         if param.kind == param.VAR_KEYWORD:
@@ -193,7 +195,13 @@ def _call_function(func, args):
 
 
 def _parse_doc(func):
+    """Extract documentation from a function's docstring.
+
+    All documented parameters are guaranteed to have type information.
+    """
     doc = inspect.getdoc(func)
+    if doc is None:
+        return Doc('', {})
     dom = publish_doctree(doc).asdom()
     etree = ElementTree.fromstring(dom.toxml())
     doctext = '\n\n'.join(x.text for x in etree.findall('paragraph'))
@@ -226,6 +234,8 @@ def _parse_doc(func):
 
     tuples = {}
     for name, values in params.items():
+        if 'type' not in values:
+            raise ValueError('no type found for parameter {}'.format(name))
         tuples[name] = Param(values.get('param'), values.get('type'))
     return Doc(doctext, tuples)
 

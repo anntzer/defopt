@@ -4,6 +4,7 @@ Changelog
 next
 ----
 
+* Added more informative exceptions for insufficiently documented functions
 * Fixed type parsing bug on Python 2 when future is installed
 * Switched to building universal wheels
 
