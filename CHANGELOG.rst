@@ -1,6 +1,11 @@
 Changelog
 =========
 
+next
+----
+
+* Switch to building universal wheels
+
 0.3.0 (2016-02-10)
 ------------------
 
