@@ -11,10 +11,11 @@ from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
 
+# The 2.x builtin goes first so we don't get future's builtins if installed
 try:
-    import builtins
-except ImportError:  # pragma: no cover
     import __builtin__ as builtins
+except ImportError:  # pragma: no cover
+    import builtins
 
 if not hasattr(inspect, 'signature'):  # pragma: no cover
     import funcsigs

@@ -4,7 +4,8 @@ Changelog
 next
 ----
 
-* Switch to building universal wheels
+* Fixed type parsing bug on Python 2 when future is installed
+* Switched to building universal wheels
 
 0.3.0 (2016-02-10)
 ------------------
