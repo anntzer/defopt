@@ -1,10 +1,11 @@
 Changelog
 =========
 
-0.3.0 (2016-02-??)
+0.3.0 (2016-02-10)
 ------------------
 
 * Added support for Python 2.7
+* Fixed code that was polluting the logging module's root logger
 
 0.2.0 (2016-02-09)
 ------------------

@@ -20,7 +20,7 @@ if not hasattr(inspect, 'signature'):  # pragma: no cover
     import funcsigs
     inspect.signature = funcsigs.signature
 
-logging.basicConfig()
+log = logging.getLogger(__name__)
 
 Doc = namedtuple('Doc', ('text', 'params'))
 Param = namedtuple('Param', ('text', 'type'))
@@ -208,17 +208,17 @@ def _parse_doc(func):
         elif len(parts) == 3:
             doctype, type_, name = parts
             if doctype != 'param':
-                logging.debug('ignoring field %s', field_name.text)
+                log.debug('ignoring field %s', field_name.text)
                 continue
-            logging.debug('inline param type %s', type_)
+            log.debug('inline param type %s', type_)
             if 'type' in params[name]:
                 raise ValueError('type defined twice for {}'.format(name))
             params[name]['type'] = type_
         else:
-            logging.debug('ignoring field %s', field_name.text)
+            log.debug('ignoring field %s', field_name.text)
             continue
         text = ''.join(field_body.itertext())
-        logging.debug('%s %s: %s', doctype, name, text)
+        log.debug('%s %s: %s', doctype, name, text)
         if doctype in params[name]:
             raise ValueError('{} defined twice for {}'.format(doctype, name))
         params[name][doctype] = text
@@ -241,7 +241,7 @@ def _evaluate(name, stack_depth=None):
         If unspecified, `name` is assumed to refer to a builtin.
     :type stack_depth: int
     """
-    logging.debug('evaluating %s', name)
+    log.debug('evaluating %s', name)
     things = dict(vars(builtins))
     if stack_depth is not None:
         things.update(inspect.stack()[stack_depth + 1][0].f_locals)
@@ -251,7 +251,7 @@ def _evaluate(name, stack_depth=None):
     for part in parts[1:]:
         things = vars(thing)
         thing = things[part]
-    logging.debug('evaluated to %r', thing)
+    log.debug('evaluated to %r', thing)
     return thing
 
 
