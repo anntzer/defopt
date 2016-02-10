@@ -55,6 +55,16 @@ This function can now be called identically from Python and the command line.
     hello!
     hello!
 
+To use your defopt command line as a setuptools console entry point, call
+``defopt.run()`` from within your module.
+
+::
+
+    setup(
+        ...,
+        entry_points={'console_scripts': ['test=test:defopt.run']}
+    )
+
 Development
 -----------
 
