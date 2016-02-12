@@ -192,6 +192,31 @@ class TestEnums(unittest.TestCase):
         defopt.run(main, argv=['--foo', 'one'])
         defopt.run(main, argv=[])
 
+    def test_subcommand(self):
+        def sub1(foo):
+            """:type foo: Choice"""
+            self.assertEqual(foo, Choice.one)
+
+        def sub2(bar):
+            """:type bar: Choice"""
+            self.assertEqual(bar, Choice.two)
+
+        defopt.run(sub1, sub2, argv=['sub1', 'one'])
+        defopt.run(sub1, sub2, argv=['sub2', 'two'])
+
+    def test_valuedict(self):
+        valuedict = defopt._ValueDict({'a': 1})
+        self.assertEqual(list(valuedict), ['a'])
+        self.assertIn(1, valuedict)
+        self.assertNotIn('a', valuedict)
+
+    def test_enumgetter(self):
+        getter = defopt._enum_getter(Choice)
+        self.assertEqual(getter('one'), Choice.one)
+        self.assertEqual(getter('two'), Choice.two)
+        self.assertEqual(getter('three'), 'three',
+                         msg='argparse needs to report this value')
+
 
 class Choice(Enum):
     one = 1

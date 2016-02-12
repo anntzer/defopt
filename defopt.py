@@ -79,7 +79,6 @@ def run(*funcs, **kwargs):
             _populate_parser(func, subparser)
             subparser.set_defaults(_func=func)
     args = parser.parse_args(argv)
-    _substitute_enums(parser, args)
     # Workaround for http://bugs.python.org/issue9253#msg186387
     if not main and not hasattr(args, '_func'):
         parser.error('too few arguments')
@@ -93,7 +92,6 @@ def _populate_parser(func, parser):
     sig = inspect.signature(func)
     doc = _parse_doc(func)
     parser.description = doc.text
-    parser._enums = {}
     for name, param in sig.parameters.items():
         if name not in doc.params:
             raise ValueError('no documentation found for parameter {}'.format(name))
@@ -117,13 +115,12 @@ def _populate_parser(func, parser):
             name_or_flag = '--' + name
             kwargs['default'] = param.default
         if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
-            # argparse won't handle the enum well so we'll have to post-process
-            kwargs['choices'] = [x.name for x in type_.type]
-            parser._enums[name] = type_.type
+            # Want these to behave like argparse choices.
+            kwargs['choices'] = _ValueDict({x.name: x for x in type_.type})
+            kwargs['type'] = _enum_getter(type_.type)
         else:
             kwargs['type'] = _get_parser(type_.type)
         parser.add_argument(name_or_flag, **kwargs)
-    return parser
 
 
 def _get_type(name):
@@ -137,20 +134,6 @@ def _get_type(name):
             raise ValueError('container types other than list not supported')
     type_ = _evaluate(name, stack_depth=3)
     return Type(type_, container)
-
-
-def _substitute_enums(parser, args):
-    """Swap out any enum strings for their members."""
-    if not hasattr(parser, '_enums'):
-        return
-    for name, value in vars(args).items():
-        if value is None:
-            continue
-        try:
-            enum = parser._enums[name]
-        except KeyError:
-            continue
-        setattr(args, name, enum[value])
 
 
 def _call_function(func, args):
@@ -273,3 +256,23 @@ def _parse_bool(string):
         return False
     else:
         raise ValueError('{} is not a valid boolean string'.format(string))
+
+
+class _ValueDict(dict):
+    """Dictionary that tests membership based on values instead of keys."""
+    def __contains__(self, item):
+        return item in self.values()
+
+
+def _enum_getter(enum):
+    """Return a function that converts a string to an enum member.
+
+    If ``name`` does not correspond to a member of the enum, it is returned
+    unmodified so that argparse can properly report the invalid value.
+    """
+    def getter(name):
+        try:
+            return enum[name]
+        except KeyError:
+            return name
+    return getter
