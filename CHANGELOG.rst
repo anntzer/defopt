@@ -5,6 +5,7 @@ next
 ----
 
 * Removed decorator interface and added simpler ``defopt.run`` interface
+* Added more informative exceptions for type lookup failures
 * Fixed bug where subcommands did not properly parse Enums
 
 0.3.1 (2016-02-10)

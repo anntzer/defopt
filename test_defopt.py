@@ -107,6 +107,20 @@ class TestEvaluate(unittest.TestCase):
             self.assertEqual(defopt._evaluate('A', stack_depth=1), A)
         lookup()
 
+    def test_no_builtin(self):
+        with self.assertRaisesRegex(AttributeError, 'builtin'):
+            defopt._evaluate('!')
+
+    def test_no_attribute(self):
+        with self.assertRaises(AttributeError):
+            defopt._evaluate('A.b')
+
+    def test_no_type(self):
+        def main(foo):
+            """:param Foo foo: foo"""
+        with self.assertRaisesRegex(ValueError, 'type'):
+            defopt.run(main)
+
 
 class A:
     b = 'success'

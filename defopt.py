@@ -132,7 +132,10 @@ def _get_type(name):
             container = list
         else:
             raise ValueError('container types other than list not supported')
-    type_ = _evaluate(name, stack_depth=3)
+    try:
+        type_ = _evaluate(name, stack_depth=3)
+    except AttributeError:
+        raise ValueError('could not find definition for type {}'.format(name))
     return Type(type_, container)
 
 
@@ -215,10 +218,12 @@ def _evaluate(name, stack_depth=None):
         things.update(inspect.stack()[stack_depth + 1][0].f_locals)
         things.update(inspect.stack()[stack_depth + 1][0].f_globals)
     parts = name.split('.')
-    thing = things[parts[0]]
+    part = parts[0]
+    if part not in things:
+        raise AttributeError("'{}' is not a builtin or module attribute".format(part))
+    thing = things[part]
     for part in parts[1:]:
-        things = vars(thing)
-        thing = things[part]
+        thing = getattr(thing, part)
     log.debug('evaluated to %r', thing)
     return thing
 
