@@ -27,45 +27,7 @@ Doc = namedtuple('Doc', ('text', 'params'))
 Param = namedtuple('Param', ('text', 'type'))
 Type = namedtuple('Type', ('type', 'container'))
 
-_main = None
-_subcommands = []
 _parsers = {}
-
-
-def _clear():
-    global _main, _subcommands, _parsers
-    _main = None
-    _subcommands = []
-    _parsers = {}
-
-
-def main(func):
-    """Register the given function as the main function.
-
-    The function is returned unmodified.
-
-    >>> @main
-    ... def func():
-    ...     pass
-    """
-    global _main
-    if _main is not None:
-        raise Exception('multiple definitions found for main')
-    _main = func
-    return func
-
-
-def subcommand(func):
-    """Register the given function as a subcommand.
-
-    The function is returned unmodified.
-
-    >>> @subcommand
-    ... def func():
-    ...    pass
-    """
-    _subcommands.append(func)
-    return func
 
 
 def parser(type_):
@@ -86,32 +48,44 @@ def parser(type_):
     return decorator
 
 
-def run(argv=None):
-    """Process command line arguments and run the registered functions.
+#   run(*funcs, argv=None):
+def run(*funcs, **kwargs):
+    """Process command line arguments and run the given functions.
 
-    >>> if __name__ == '__main__':
-    ...     run()
+    If ``funcs`` is a single function, it is run as the main function.
+    If ``funcs`` is multiple functions, they are all treated as subparsers.
+
+    :param funcs: Function or functions to process and run
+    :param argv: Command line arguments to parse (default: sys.argv[1:])
     """
+    argv = kwargs.pop('argv', None)
+    if kwargs:
+        raise TypeError('unexpected keyword argument: {}'.format(list(kwargs)[0]))
+    if not funcs:
+        raise ValueError('need at least one function to run')
     if argv is None:
         argv = sys.argv[1:]
+    main = None
+    if len(funcs) == 1:
+        [main] = funcs
     parser = argparse.ArgumentParser()
     parser.set_defaults()
-    if _main:
-        _populate_parser(_main, parser)
-    if _subcommands:
+    if main:
+        _populate_parser(main, parser)
+    else:
         subparsers = parser.add_subparsers()
-        for func in _subcommands:
+        for func in funcs:
             subparser = subparsers.add_parser(func.__name__)
             _populate_parser(func, subparser)
             subparser.set_defaults(_func=func)
     args = parser.parse_args(argv)
     _substitute_enums(parser, args)
     # Workaround for http://bugs.python.org/issue9253#msg186387
-    if _subcommands and not hasattr(args, '_func'):
+    if not main and not hasattr(args, '_func'):
         parser.error('too few arguments')
-    if _main:
-        _call_function(_main, args)
-    if _subcommands:
+    if main:
+        _call_function(main, args)
+    else:
         _call_function(args._func, args)
 
 

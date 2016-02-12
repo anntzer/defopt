@@ -1,6 +1,11 @@
 Changelog
 =========
 
+next
+----
+
+* Removed decorator interface and added simpler ``defopt.run`` interface
+
 0.3.1 (2016-02-10)
 ------------------
 

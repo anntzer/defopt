@@ -27,7 +27,6 @@ Sphinx-style_ docstrings), simply decorate it with ``@defopt.main``, then call
 
     import defopt
 
-    @defopt.main
     def main(greeting, count=1):
         """Display a friendly greeting.
 
@@ -38,7 +37,7 @@ Sphinx-style_ docstrings), simply decorate it with ``@defopt.main``, then call
             print(greeting)
 
     if __name__ == '__main__':
-        defopt.run()
+        defopt.run(main)
 
 This function can now be called identically from Python and the command line.
 
@@ -54,16 +53,6 @@ This function can now be called identically from Python and the command line.
     $ python test.py hello! --count 2
     hello!
     hello!
-
-To use your defopt command line as a setuptools console entry point, call
-``defopt.run()`` from within your module.
-
-::
-
-    setup(
-        ...,
-        entry_points={'console_scripts': ['test=test:defopt.run']}
-    )
 
 Development
 -----------
