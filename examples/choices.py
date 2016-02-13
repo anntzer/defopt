@@ -18,7 +18,7 @@ import defopt
 
 
 def main(arg, opt=None):
-    """Example function with :py:class:`enum.Enum` arguments.
+    """Example function with Enum arguments.
 
     :param Choice arg: Choice to display
     :param Choice opt: Optional choice to display

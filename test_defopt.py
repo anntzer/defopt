@@ -1,4 +1,5 @@
 from enum import Enum
+import subprocess
 import sys
 import textwrap
 import unittest
@@ -303,18 +304,17 @@ class TestDoc(unittest.TestCase):
 if sys.version_info.major != 2:
     from unittest import mock
 
-import subprocess
 
-@unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
 class TestExamples(unittest.TestCase):
-    @mock.patch('examples.choices.print')
-    def test_choices(self, print_):
-        choices.main(choices.Choice.one)
-        print_.assert_called_with('Choice.one (1)')
-        choices.main(choices.Choice.one, choices.Choice.two)
-        print_.assert_called_with('Choice.two (2.0)')
-        with self.assertRaises(AttributeError):
-            choices.main('one')
+    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
+    def test_choices(self):
+        with mock.patch('examples.choices.print', create=True) as print_:
+            choices.main(choices.Choice.one)
+            print_.assert_called_with('Choice.one (1)')
+            choices.main(choices.Choice.one, choices.Choice.two)
+            print_.assert_called_with('Choice.two (2.0)')
+            with self.assertRaises(AttributeError):
+                choices.main('one')
 
     def test_choices_cli(self):
         output = self._run_example(choices, ['one'])
@@ -326,12 +326,13 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b'four', error.exception.output)
         self.assertIn(b'{one,two,three}', error.exception.output)
 
-    @mock.patch('examples.lists.print')
-    def test_lists(self, print_):
-        lists.main([1.2, 3.4], 2)
-        print_.assert_called_with([2.4, 6.8])
-        lists.main([1, 2, 3], 2)
-        print_.assert_called_with([2, 4, 6])
+    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
+    def test_lists(self):
+        with mock.patch('examples.lists.print', create=True) as print_:
+            lists.main([1.2, 3.4], 2)
+            print_.assert_called_with([2.4, 6.8])
+            lists.main([1, 2, 3], 2)
+            print_.assert_called_with([2, 4, 6])
 
     def test_lists_cli(self):
         output = self._run_example(lists, ['2', '--numbers', '1.2', '3.4'])
@@ -339,13 +340,14 @@ class TestExamples(unittest.TestCase):
         output = self._run_example(lists, ['--numbers', '1.2', '3.4', '--', '2'])
         self.assertEqual(output, b'[2.4, 6.8]\n')
 
-    @mock.patch('examples.parsers.print')
-    def test_parsers(self, print_):
-        date = parsers.datetime(2015, 9, 13)
-        parsers.main(date)
-        print_.assert_called_with(date)
-        parsers.main('junk')
-        print_.assert_called_with('junk')
+    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
+    def test_parsers(self):
+        with mock.patch('examples.parsers.print', create=True) as print_:
+            date = parsers.datetime(2015, 9, 13)
+            parsers.main(date)
+            print_.assert_called_with(date)
+            parsers.main('junk')
+            print_.assert_called_with('junk')
 
     def test_parsers_cli(self):
         output = self._run_example(parsers, ['2015-09-13'])
@@ -356,6 +358,6 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b'junk', error.exception.output)
 
     def _run_example(self, example, argv):
-        argv = [sys.executable, example.__file__] + argv
+        argv = [sys.executable, '-m', example.__name__] + argv
         output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
         return output.replace(b'\r\n', b'\n')

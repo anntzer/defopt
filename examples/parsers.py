@@ -17,7 +17,7 @@ import defopt
 
 
 def main(date):
-    """Example function with :py:class:`datetime.datetime` argument.
+    """Example function with a datetime argument.
 
     :param datetime date: Date to display
     """
