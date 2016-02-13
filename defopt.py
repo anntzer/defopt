@@ -1,3 +1,9 @@
+"""Effortless argument parser.
+
+Run Python functions from the command line with ``run(func)``.
+
+Specify type parsers with ``@parser(type)``.
+"""
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import argparse

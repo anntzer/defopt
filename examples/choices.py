@@ -1,7 +1,8 @@
 """Example showing choices in defopt.
 
-If a parameter's type is an Enum subclass, defopt automatically
-turns this into a set of string choices on the command line.
+If a parameter's type is subclass of :py:class:`enum.Enum`,
+defopt automatically turns this into a set of string choices
+on the command line.
 
 Code usage::
 

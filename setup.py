@@ -7,8 +7,8 @@ with open('README.rst') as readme:
 
 setup(
     name='defopt',
-    version='0.3.1',
-    description='Effortless argument parsing',
+    version='1.0.0',
+    description='Effortless argument parser',
     long_description=long_description,
     author='evan_',
     author_email='evanunderscore@gmail.com',
@@ -24,13 +24,17 @@ setup(
     tests_require=['coverage'],
     setup_requires=['nose'],
     classifiers=[
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
     ],
+    keywords='argument parser parsing optparse argparse getopt docopt sphinx',
 )

@@ -11,6 +11,8 @@ Argument types are read from your function's docstring. Both
 
     :param <type> <name>: <description>
 
+::
+
     :param <name>: <description>
     :type <name>: <type>
 

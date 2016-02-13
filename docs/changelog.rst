@@ -1,10 +1,10 @@
 Changelog
 =========
 
-development
------------
+1.0.0 (2016-02-14)
+------------------
 
-* Removed decorator interface and added simpler ``defopt.run`` interface
+* Removed decorator interface and added simpler ``defopt.run()`` interface
 * Added full documentation hosted on Read the Docs
 * Added more informative exceptions for type lookup failures
 * Fixed bug where ``defopt.parser()`` was not returning the input function
