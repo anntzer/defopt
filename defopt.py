@@ -46,6 +46,7 @@ def parser(type_):
         if type_ in _parsers:
             raise Exception('multiple parsers found for {}'.format(type_.__name__))
         _parsers[type_] = func
+        return func
     return decorator
 
 

@@ -7,6 +7,7 @@ development
 * Removed decorator interface and added simpler ``defopt.run`` interface
 * Added full documentation hosted on Read the Docs
 * Added more informative exceptions for type lookup failures
+* Fixed bug where ``defopt.parser()`` was not returning the input function
 * Fixed bug where subcommands did not properly parse Enums
 * Fixed Enum handling to display members in the order they were defined
 * Fixed type lookups to occur in each respective function's global namespace

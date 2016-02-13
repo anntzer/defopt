@@ -191,6 +191,11 @@ class TestParsers(unittest.TestCase):
         with self.assertRaises(ValueError):
             defopt._get_parser(list)
 
+    def test_return(self):
+        @defopt.parser(int)
+        def test(string): pass
+        self.assertIsNotNone(test)
+
 
 class TestEnums(unittest.TestCase):
     def test_enum(self):
