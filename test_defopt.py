@@ -219,7 +219,7 @@ class TestEnums(unittest.TestCase):
         defopt.run(sub1, sub2, argv=['sub2', 'two'])
 
     def test_valuedict(self):
-        valuedict = defopt._ValueDict({'a': 1})
+        valuedict = defopt._ValueOrderedDict({'a': 1})
         self.assertEqual(list(valuedict), ['a'])
         self.assertIn(1, valuedict)
         self.assertNotIn('a', valuedict)

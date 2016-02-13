@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import argparse
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, OrderedDict
 from enum import Enum
 import inspect
 import logging
@@ -118,7 +118,7 @@ def _populate_parser(func, parser):
             kwargs['default'] = param.default
         if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
             # Want these to behave like argparse choices.
-            kwargs['choices'] = _ValueDict({x.name: x for x in type_.type})
+            kwargs['choices'] = _ValueOrderedDict((x.name, x) for x in type_.type)
             kwargs['type'] = _enum_getter(type_.type)
         else:
             kwargs['type'] = _get_parser(type_.type)
@@ -265,8 +265,8 @@ def _parse_bool(string):
         raise ValueError('{} is not a valid boolean string'.format(string))
 
 
-class _ValueDict(dict):
-    """Dictionary that tests membership based on values instead of keys."""
+class _ValueOrderedDict(OrderedDict):
+    """OrderedDict that tests membership based on values instead of keys."""
     def __contains__(self, item):
         return item in self.values()
 
