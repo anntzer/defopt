@@ -14,12 +14,6 @@ from datetime import datetime
 import defopt
 
 
-@defopt.parser(datetime)
-def parse_date(string):
-    return datetime.strptime(string, '%Y-%m-%d')
-
-
-@defopt.main
 def main(date):
     """Example function with datetime argument.
 
@@ -28,5 +22,10 @@ def main(date):
     print(date)
 
 
+@defopt.parser(datetime)
+def parse_date(string):
+    return datetime.strptime(string, '%Y-%m-%d')
+
+
 if __name__ == '__main__':
-    defopt.run()
+    defopt.run(main)

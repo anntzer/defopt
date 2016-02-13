@@ -13,7 +13,6 @@ Command line usage:
 import defopt
 
 
-@defopt.main
 def main(numbers, multiplier):
     """Example function with a list argument.
 
@@ -24,4 +23,4 @@ def main(numbers, multiplier):
 
 
 if __name__ == '__main__':
-    defopt.run()
+    defopt.run(main)

@@ -14,13 +14,6 @@ from enum import Enum
 import defopt
 
 
-class Choice(Enum):
-    one = 1
-    two = 2.0
-    three = '03'
-
-
-@defopt.main
 def main(arg, opt=None):
     """Example function with Enum arguments.
 
@@ -32,5 +25,11 @@ def main(arg, opt=None):
         print('{} ({})'.format(opt, opt.value))
 
 
+class Choice(Enum):
+    one = 1
+    two = 2.0
+    three = '03'
+
+
 if __name__ == '__main__':
-    defopt.run()
+    defopt.run(main)

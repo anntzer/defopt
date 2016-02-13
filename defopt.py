@@ -23,23 +23,24 @@ if not hasattr(inspect, 'signature'):  # pragma: no cover
 
 log = logging.getLogger(__name__)
 
-Doc = namedtuple('Doc', ('text', 'params'))
-Param = namedtuple('Param', ('text', 'type'))
-Type = namedtuple('Type', ('type', 'container'))
+_Doc = namedtuple('_Doc', ('text', 'params'))
+_Param = namedtuple('_Param', ('text', 'type'))
+_Type = namedtuple('_Type', ('type', 'container'))
 
 _parsers = {}
 
 
 def parser(type_):
-    """Register the given function as a parser for the given type.
+    """Return a function that registers a parser for ``type_``.
 
-    The function must take a single string argument.
+    The function must take a single string argument and is returned unmodified.
 
-    The function is returned unmodified.
+    Use as a decorator.
 
-    >>> @parser(bool)
-    ... def func(string):
-    ...     return string.lower() in ['y', 'yes']
+    >>> @parser(type)
+    ... def func(string): pass
+
+    :param type type_: Type to register parser for
     """
     def decorator(func):
         if type_ in _parsers:
@@ -48,15 +49,16 @@ def parser(type_):
     return decorator
 
 
-#   run(*funcs, argv=None):
+# This signature is overridden in docs/api.rst with the Python 3 version.
 def run(*funcs, **kwargs):
     """Process command line arguments and run the given functions.
 
-    If ``funcs`` is a single function, it is run as the main function.
-    If ``funcs`` is multiple functions, they are all treated as subparsers.
+    If ``funcs`` is a single function, it is parsed and run.
+    If ``funcs`` is multiple functions, each one is given a subparser with its
+    name, and only the chosen function is run.
 
-    :param funcs: Function or functions to process and run
-    :param argv: Command line arguments to parse (default: sys.argv[1:])
+    :param function funcs: Function or functions to process and run
+    :param list[str] argv: Command line arguments to parse (default: sys.argv[1:])
     """
     argv = kwargs.pop('argv', None)
     if kwargs:
@@ -136,7 +138,7 @@ def _get_type(name):
         type_ = _evaluate(name, stack_depth=3)
     except AttributeError:
         raise ValueError('could not find definition for type {}'.format(name))
-    return Type(type_, container)
+    return _Type(type_, container)
 
 
 def _call_function(func, args):
@@ -161,7 +163,7 @@ def _parse_doc(func):
     """
     doc = inspect.getdoc(func)
     if doc is None:
-        return Doc('', {})
+        return _Doc('', {})
     dom = publish_doctree(doc).asdom()
     etree = ElementTree.fromstring(dom.toxml())
     doctext = '\n\n'.join(x.text for x in etree.findall('paragraph'))
@@ -196,8 +198,8 @@ def _parse_doc(func):
     for name, values in params.items():
         if 'type' not in values:
             raise ValueError('no type found for parameter {}'.format(name))
-        tuples[name] = Param(values.get('param'), values.get('type'))
-    return Doc(doctext, tuples)
+        tuples[name] = _Param(values.get('param'), values.get('type'))
+    return _Doc(doctext, tuples)
 
 
 def _evaluate(name, stack_depth=None):
