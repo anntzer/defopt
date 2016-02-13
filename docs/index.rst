@@ -5,3 +5,4 @@
 
    features
    api
+   changelog

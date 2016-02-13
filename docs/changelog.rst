@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+development
+-----------
 
 * Removed decorator interface and added simpler ``defopt.run`` interface
 * Added full documentation hosted on Read the Docs
