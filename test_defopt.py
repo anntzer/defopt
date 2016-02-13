@@ -1,5 +1,6 @@
 from enum import Enum
 import sys
+import textwrap
 import unittest
 
 import defopt
@@ -25,20 +26,18 @@ class TestDefopt(unittest.TestCase):
         defopt.run(sub1, sub2, argv=sub2_args)
         self.assertEqual(self.calls, 2)
 
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
-        """Test handling of keyword-only arguments.
-
-        The exec avoids a SyntaxError on Python 2.x.
-        """
-        if sys.version_info.major >= 3:
-            globals_ = {'self': self}
-            exec('''def main(*, foo='bar'):
+        # Need to hide execution inside exec for Python 2's benefit.
+        globals_ = {'self': self}
+        exec(textwrap.dedent('''\
+            def main(*, foo='bar'):
                 """:type foo: str"""
                 self.assertEqual(foo, 'baz')
                 self.calls += 1
-            ''', globals_)
-            defopt.run(globals_['main'], argv=['--foo', 'baz'])
-            self.assertEqual(self.calls, 1)
+        '''), globals_)
+        defopt.run(globals_['main'], argv=['--foo', 'baz'])
+        self.assertEqual(self.calls, 1)
 
     def test_var_keywords(self):
         def bad(**kwargs):
@@ -100,12 +99,7 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(defopt._evaluate('int'), int)
 
     def test_dotted(self):
-        self.assertEqual(defopt._evaluate('A.b', stack_depth=0), 'success')
-
-    def test_nested(self):
-        def lookup():
-            self.assertEqual(defopt._evaluate('A', stack_depth=1), A)
-        lookup()
+        self.assertEqual(defopt._evaluate('A.b', globals()), 'success')
 
     def test_no_builtin(self):
         with self.assertRaisesRegex(AttributeError, 'builtin'):
@@ -113,7 +107,7 @@ class TestEvaluate(unittest.TestCase):
 
     def test_no_attribute(self):
         with self.assertRaises(AttributeError):
-            defopt._evaluate('A.b')
+            defopt._evaluate('A.c', globals())
 
     def test_no_type(self):
         def main(foo):
@@ -121,9 +115,16 @@ class TestEvaluate(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'type'):
             defopt.run(main)
 
+    def test_other_globals(self):
+        self.assertEqual(defopt._evaluate('A.b', {'A': C}), 'other')
+
 
 class A:
     b = 'success'
+
+
+class C:
+    b = 'other'
 
 
 class TestParsers(unittest.TestCase):

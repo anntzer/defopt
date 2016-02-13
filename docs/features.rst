@@ -14,8 +14,8 @@ Argument types are read from your function's docstring. Both
     :param <name>: <description>
     :type <name>: <type>
 
-``<type>`` is parsed in your module's global scope at the time the command line
-is run. See Lists_, Choices_ and Parsers_ for more information on specific
+``<type>`` is evaluated in the function's global scope at the time the command
+line is run. See Lists_, Choices_ and Parsers_ for more information on specific
 types.
 
 Subcommands

@@ -98,7 +98,7 @@ def _populate_parser(func, parser):
         if name not in doc.params:
             raise ValueError('no documentation found for parameter {}'.format(name))
         kwargs = {'help': doc.params[name].text}
-        type_ = _get_type(doc.params[name].type)
+        type_ = _get_type(doc.params[name].type, func)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         if type_.container:
@@ -125,7 +125,7 @@ def _populate_parser(func, parser):
         parser.add_argument(name_or_flag, **kwargs)
 
 
-def _get_type(name):
+def _get_type(name, func):
     match = re.match(r'(\w+)\[(\w+)\]', name)
     container = None
     if match:
@@ -135,7 +135,7 @@ def _get_type(name):
         else:
             raise ValueError('container types other than list not supported')
     try:
-        type_ = _evaluate(name, stack_depth=3)
+        type_ = _evaluate(name, func.__globals__)
     except AttributeError:
         raise ValueError('could not find definition for type {}'.format(name))
     return _Type(type_, container)
@@ -202,32 +202,28 @@ def _parse_doc(func):
     return _Doc(doctext, tuples)
 
 
-def _evaluate(name, stack_depth=None):
+def _evaluate(name, globals_=None):
     """Find an object by name.
 
-    :param name: Name of the object to evaluate. May contain dotted lookups,
-        e.g. 'a.b' finds 'a' in the target frame, then looks inside 'a'
-        to find 'b'.
-    :type name: str
-    :param stack_depth: How far up the stack to evaluate locals and globals.
-        Specify 0 for your frame, 1 for your caller's frame, etc.
-        If unspecified, `name` is assumed to refer to a builtin.
-    :type stack_depth: int
+    :param str name: Name of the object to evaluate. May contain dotted
+        lookups, e.g. 'a.b' finds 'a' in the target namespace, then looks
+        inside 'a' to find 'b'.
+    :param dict[str, object] globals_: Globals to inspect for name. If not
+        supplied, ``name`` is assumed to refer to a built-in.
     """
     log.debug('evaluating %s', name)
-    things = dict(vars(builtins))
-    if stack_depth is not None:
-        things.update(inspect.stack()[stack_depth + 1][0].f_locals)
-        things.update(inspect.stack()[stack_depth + 1][0].f_globals)
+    namespace = dict(vars(builtins))
+    if globals_:
+        namespace.update(globals_)
     parts = name.split('.')
     part = parts[0]
-    if part not in things:
+    if part not in namespace:
         raise AttributeError("'{}' is not a builtin or module attribute".format(part))
-    thing = things[part]
+    member = namespace[part]
     for part in parts[1:]:
-        thing = getattr(thing, part)
-    log.debug('evaluated to %r', thing)
-    return thing
+        member = getattr(member, part)
+    log.debug('evaluated to %r', member)
+    return member
 
 
 def _get_parser(type_):
