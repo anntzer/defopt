@@ -300,6 +300,27 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(param.text, 'test')
         self.assertEqual(param.type, 'int')
 
+    def test_implicit_role(self):
+        def test():
+            """start `int` end"""
+        doc = defopt._parse_doc(test)
+        self.assertEqual(doc.text, 'start int end')
+
+    @unittest.skip
+    def test_explicit_role_desired(self):
+        """Desired output for issue #1."""
+        def test():
+            """start :py:class:`int` end"""
+        doc = defopt._parse_doc(test)
+        self.assertEqual(doc.text, 'start int end')
+
+    def test_explicit_role_actual(self):
+        """Workaround output for issue #1."""
+        def test():
+            """start :py:class:`int` end"""
+        doc = defopt._parse_doc(test)
+        self.assertEqual(doc.text, 'start :py:class:`int` end')
+
 
 if sys.version_info.major != 2:
     from unittest import mock

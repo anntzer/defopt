@@ -17,7 +17,7 @@ import defopt
 
 
 def main(date):
-    """Example function with a datetime argument.
+    """Example function with a `datetime.datetime` argument.
 
     :param datetime date: Date to display
     """
@@ -26,7 +26,7 @@ def main(date):
 
 @defopt.parser(datetime)
 def parse_date(string):
-    """Parse a :py:class:`datetime.datetime` using a simple string format.
+    """Parse a `datetime.datetime` using a simple string format.
 
     :param str string: String to parse
     :rtype: datetime

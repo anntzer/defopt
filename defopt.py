@@ -173,7 +173,7 @@ def _parse_doc(func):
         return _Doc('', {})
     dom = publish_doctree(doc).asdom()
     etree = ElementTree.fromstring(dom.toxml())
-    doctext = '\n\n'.join(x.text for x in etree.findall('paragraph'))
+    doctext = '\n\n'.join(_get_text(x) for x in etree.findall('paragraph'))
     fields = etree.findall('.//field')
 
     params = defaultdict(dict)
@@ -195,7 +195,7 @@ def _parse_doc(func):
         else:
             log.debug('ignoring field %s', field_name.text)
             continue
-        text = ''.join(field_body.itertext())
+        text = _get_text(field_body)
         log.debug('%s %s: %s', doctype, name, text)
         if doctype in params[name]:
             raise ValueError('{} defined twice for {}'.format(doctype, name))
@@ -207,6 +207,10 @@ def _parse_doc(func):
             raise ValueError('no type found for parameter {}'.format(name))
         tuples[name] = _Param(values.get('param'), values.get('type'))
     return _Doc(doctext, tuples)
+
+
+def _get_text(node):
+    return ''.join(node.itertext())
 
 
 def _evaluate(name, globals_=None):

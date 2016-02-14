@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.1 (2016-02-14)
+------------------
+
+* Added workaround to display raw text of any unparsed element (issue #1)
+
 1.0.0 (2016-02-14)
 ------------------
 
