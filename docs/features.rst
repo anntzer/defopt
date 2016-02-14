@@ -16,14 +16,14 @@ Argument types are read from your function's docstring. Both
     :param <name>: <description>
     :type <name>: <type>
 
-``<type>`` is evaluated in the function's global scope at the time the command
-line is run. See Lists_, Choices_ and Parsers_ for more information on specific
-types.
+``<type>`` is evaluated in the function's global namespace when
+:py:class:`defopt.run` is called. See Lists_, Choices_ and Parsers_ for more
+information on specific types.
 
 Subcommands
 -----------
 
-If multiple commands are passed to ``defopt.run()``, they are treated as
+If multiple commands are passed to :py:class:`defopt.run`, they are treated as
 subcommands which are run by name.
 
 ::
@@ -63,8 +63,8 @@ A runnable example is available at `examples/lists.py`_.
 Choices
 -------
 
-If one of your argument types is an ``Enum`` [1]_ subclass, this is handled
-specially on the command line to produce more helpful output.
+If one of your argument types is a subclass of :py:class:`enum.Enum` [1]_, this
+is handled specially on the command line to produce more helpful output.
 
 ::
 

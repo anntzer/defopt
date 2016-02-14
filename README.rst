@@ -78,7 +78,7 @@ Philosopy
 defopt was developed with the following guiding principles in mind:
 
 #. **The interface can be fully understood in seconds.** If it took any longer,
-   your time would be better spent learning a more flexible interface.
+   your time would be better spent learning a more flexible tool.
 
 #. **Anything you learn applies to the existing ecosystem.** The Sphinx-style_
    docstrings used by defopt are also used by Sphinx's autodoc_ extension to

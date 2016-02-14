@@ -39,7 +39,7 @@ _parsers = {}
 def parser(type_):
     """Return a function that registers a parser for ``type_``.
 
-    The function must take a single string argument and is returned unmodified.
+    The parser must take a single string argument and is returned unmodified.
 
     Use as a decorator.
 
