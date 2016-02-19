@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.abspath('..'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.napoleon',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -287,4 +288,5 @@ texinfo_documents = [
 
 autodoc_member_order = 'bysource'
 
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'sphinx': ('http://www.sphinx-doc.org/en/latest/', None)}

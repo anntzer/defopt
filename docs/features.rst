@@ -1,6 +1,16 @@
 Features
 ========
 
+Docstring Styles
+----------------
+
+In addition to the standard Sphinx_-style, you can also use Google_- and
+Numpy_-style docstrings. These are converted using Napoleon_ [#]_. If you are
+using one of these alternate styles and generating documentation with
+`sphinx.ext.autodoc`, be sure to also enable `sphinx.ext.napoleon`.
+
+A runnable example is available at `examples/styles.py`_.
+
 Types
 -----
 
@@ -63,7 +73,7 @@ A runnable example is available at `examples/lists.py`_.
 Choices
 -------
 
-If one of your argument types is a subclass of `enum.Enum` [1]_, this is
+If one of your argument types is a subclass of `enum.Enum` [#]_, this is
 handled specially on the command line to produce more helpful output.
 
 ::
@@ -143,9 +153,17 @@ You can then reference this entry point in your ``setup.py`` file.
         entry_points={'console_scripts': ['name=test:entry_point']}
     )
 
+.. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
+.. _Google: http://google.github.io/styleguide/pyguide.html
+.. _Numpy: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
+.. _Napoleon: https://sphinxcontrib-napoleon.readthedocs.org/en/latest/
+.. _examples/styles.py: https://github.com/evanunderscore/defopt/blob/master/examples/styles.py
 .. _examples/lists.py: https://github.com/evanunderscore/defopt/blob/master/examples/lists.py
 .. _examples/choices.py: https://github.com/evanunderscore/defopt/blob/master/examples/choices.py
 .. _examples/parsers.py: https://github.com/evanunderscore/defopt/blob/master/examples/parsers.py
 
-.. [1] The ``enum`` module was introduced in Python 3.4. If you are using an
+.. [#] While Napoleon is included with Sphinx as `sphinx.ext.napoleon`, defopt
+   depends on ``sphinxcontrib-napoleon`` so that end users of your command line
+   tool are not required to install Sphinx and all of its dependencies.
+.. [#] The ``enum`` module was introduced in Python 3.4. If you are using an
    older version of Python, the backport will be installed as a dependency.

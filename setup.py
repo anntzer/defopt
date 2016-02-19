@@ -16,12 +16,12 @@ setup(
     license='GNU General Public License v3',
     py_modules=['defopt'],
     test_suite='test_defopt',
-    install_requires=['docutils'],
+    install_requires=['docutils', 'sphinxcontrib-napoleon'],
     extras_require={
         ':python_version=="2.7"': ['enum34', 'funcsigs'],
         ':python_version=="3.3"': ['enum34'],
     },
-    tests_require=['coverage'],
+    tests_require=['coverage', 'mock'],
     setup_requires=['nose'],
     classifiers=[
         'Programming Language :: Python',

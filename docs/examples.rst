@@ -31,4 +31,13 @@ Parsers
     :undoc-members:
     :show-inheritance:
 
+Docstring Styles
+----------------
+
+.. automodule:: examples.styles
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 .. _examples: https://github.com/evanunderscore/defopt/tree/master/examples

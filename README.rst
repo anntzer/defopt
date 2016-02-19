@@ -21,8 +21,8 @@ command line interface up to someone else, defopt is for you.
 Usage
 -----
 
-Once you have written your function and Sphinx-style_ docstring, simply hand it
-to ``defopt.run()`` and you're done.
+Once you have written and documented_ your function, simply pass it to
+`defopt.run()` and you're done.
 
 ::
 
@@ -80,7 +80,7 @@ defopt was developed with the following guiding principles in mind:
 #. **The interface can be fully understood in seconds.** If it took any longer,
    your time would be better spent learning a more flexible tool.
 
-#. **Anything you learn applies to the existing ecosystem.** The Sphinx-style_
+#. **Anything you learn applies to the existing ecosystem.** The exact same
    docstrings used by defopt are also used by Sphinx's autodoc_ extension to
    generate documentation, and by your IDE to do type checking. Chances are you
    already know everything you need to know to use defopt.
@@ -105,11 +105,11 @@ Documentation
 
 Documentation is hosted on `Read the Docs`_.
 
-.. _Sphinx-style: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 .. _docopt: http://docopt.org/
 .. _click: http://click.pocoo.org/
 .. _plac: http://plac.googlecode.com/hg/doc/plac.html
+.. _documented: http://defopt.readthedocs.org/en/latest/features.html#docstring-styles
 .. _GitHub repository: https://github.com/evanunderscore/defopt
 .. _Read the Docs: http://defopt.readthedocs.org/en/latest/
 

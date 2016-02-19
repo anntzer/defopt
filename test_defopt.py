@@ -4,8 +4,10 @@ import sys
 import textwrap
 import unittest
 
+import mock
+
 import defopt
-from examples import choices, lists, parsers
+from examples import choices, lists, parsers, styles
 
 
 if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
@@ -331,21 +333,76 @@ class TestDoc(unittest.TestCase):
         doc = defopt._parse_doc(test)
         self.assertEqual(doc.text, 'start :py:class:`int` end')
 
+    def test_sphinx(self):
+        def func(arg1, arg2):
+            """One line summary.
 
-if sys.version_info.major != 2:
-    from unittest import mock
+            Extended description.
+
+            :param int arg1: Description of `arg1`
+            :param str arg2: Description of `arg2`
+            :returns: Description of return value.
+            :rtype: str
+            """
+        doc = defopt._parse_doc(func)
+        self._check_doc(doc)
+
+    def test_google(self):
+        # Docstring taken from Napoleon's example.
+        def func(arg1, arg2):
+            """One line summary.
+
+            Extended description.
+
+            Args:
+              arg1(int): Description of `arg1`
+              arg2(str): Description of `arg2`
+            Returns:
+              str: Description of return value.
+            """
+        doc = defopt._parse_doc(func)
+        self._check_doc(doc)
+
+    def test_numpy(self):
+        # Docstring taken from Napoleon's example.
+        def func(arg1, arg2):
+            """One line summary.
+
+            Extended description.
+
+            Parameters
+            ----------
+            arg1 : int
+                Description of `arg1`
+            arg2 : str
+                Description of `arg2`
+            Returns
+            -------
+            str
+                Description of return value.
+            """
+        doc = defopt._parse_doc(func)
+        self._check_doc(doc)
+
+    def _check_doc(self, doc):
+        self.assertEqual(doc.text, 'One line summary.\n\nExtended description.')
+        self.assertEqual(len(doc.params), 2)
+        self.assertEqual(doc.params['arg1'].text, 'Description of arg1')
+        self.assertEqual(doc.params['arg1'].type, 'int')
+        self.assertEqual(doc.params['arg2'].text, 'Description of arg2')
+        self.assertEqual(doc.params['arg2'].type, 'str')
 
 
 class TestExamples(unittest.TestCase):
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    def test_choices(self):
-        with mock.patch('examples.choices.print', create=True) as print_:
-            choices.main(choices.Choice.one)
-            print_.assert_called_with('Choice.one (1)')
-            choices.main(choices.Choice.one, choices.Choice.two)
-            print_.assert_called_with('Choice.two (2.0)')
-            with self.assertRaises(AttributeError):
-                choices.main('one')
+    @mock.patch('examples.choices.print', create=True)
+    def test_choices(self, print_):
+        choices.main(choices.Choice.one)
+        print_.assert_called_with('Choice.one (1)')
+        choices.main(choices.Choice.one, choices.Choice.two)
+        print_.assert_called_with('Choice.two (2.0)')
+        with self.assertRaises(AttributeError):
+            choices.main('one')
 
     def test_choices_cli(self):
         output = self._run_example(choices, ['one'])
@@ -358,12 +415,12 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b'{one,two,three}', error.exception.output)
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    def test_lists(self):
-        with mock.patch('examples.lists.print', create=True) as print_:
-            lists.main([1.2, 3.4], 2)
-            print_.assert_called_with([2.4, 6.8])
-            lists.main([1, 2, 3], 2)
-            print_.assert_called_with([2, 4, 6])
+    @mock.patch('examples.lists.print', create=True)
+    def test_lists(self, print_):
+        lists.main([1.2, 3.4], 2)
+        print_.assert_called_with([2.4, 6.8])
+        lists.main([1, 2, 3], 2)
+        print_.assert_called_with([2, 4, 6])
 
     def test_lists_cli(self):
         output = self._run_example(lists, ['2', '--numbers', '1.2', '3.4'])
@@ -372,13 +429,13 @@ class TestExamples(unittest.TestCase):
         self.assertEqual(output, b'[2.4, 6.8]\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    def test_parsers(self):
-        with mock.patch('examples.parsers.print', create=True) as print_:
-            date = parsers.datetime(2015, 9, 13)
-            parsers.main(date)
-            print_.assert_called_with(date)
-            parsers.main('junk')
-            print_.assert_called_with('junk')
+    @mock.patch('examples.parsers.print', create=True)
+    def test_parsers(self, print_):
+        date = parsers.datetime(2015, 9, 13)
+        parsers.main(date)
+        print_.assert_called_with(date)
+        parsers.main('junk')
+        print_.assert_called_with('junk')
 
     def test_parsers_cli(self):
         output = self._run_example(parsers, ['2015-09-13'])
@@ -387,6 +444,21 @@ class TestExamples(unittest.TestCase):
             self._run_example(parsers, ['junk'])
         self.assertIn(b'datetime', error.exception.output)
         self.assertIn(b'junk', error.exception.output)
+
+    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
+    @mock.patch('examples.styles.print', create=True)
+    def test_styles(self, print_):
+        for command in [styles.sphinx, styles.google, styles.numpy]:
+            command(2)
+            print_.assert_called_with(4)
+            command(2, 'bye')
+            print_.assert_called_with('bye')
+
+    def test_styles_cli(self):
+        for style in ['sphinx', 'google', 'numpy']:
+            args = [style, '2', '--farewell', 'bye']
+            output = self._run_example(styles, args)
+            self.assertEqual(output, b'4\nbye\n')
 
     def _run_example(self, example, argv):
         argv = [sys.executable, '-m', example.__name__] + argv

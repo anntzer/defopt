@@ -4,6 +4,7 @@ Changelog
 development
 -----------
 
+* Added support for Google- and Numpy-style docstrings
 * Changed ``defopt.run`` to return the value from the called function
 
 1.0.1 (2016-02-14)

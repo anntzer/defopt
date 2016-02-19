@@ -16,6 +16,7 @@ import sys
 from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
+from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 
 # The 2.x builtin goes first so we don't get future's builtins if installed
 try:
@@ -176,6 +177,12 @@ def _parse_doc(func):
     doc = inspect.getdoc(func)
     if doc is None:
         return _Doc('', {})
+
+    # Convert Google- or Numpy-style docstrings to RST.
+    # (Should do nothing if not in either style.)
+    doc = str(GoogleDocstring(doc))
+    doc = str(NumpyDocstring(doc))
+
     dom = publish_doctree(doc).asdom()
     etree = ElementTree.fromstring(dom.toxml())
     doctext = '\n\n'.join(_get_text(x) for x in etree.findall('paragraph'))
