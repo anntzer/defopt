@@ -74,6 +74,16 @@ class TestDefopt(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'type.*foo'):
             defopt.run(bad, argv=['foo'])
 
+    def test_return(self):
+        def one():
+            return 1
+
+        def none():
+            pass
+
+        self.assertEqual(defopt.run(one, none, argv=['one']), 1)
+        self.assertEqual(defopt.run(one, none, argv=['none']), None)
+
     def _def_main(self):
         def main(foo):
             """:type foo: str"""

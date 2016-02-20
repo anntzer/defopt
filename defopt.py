@@ -48,6 +48,9 @@ def run(*funcs, **kwargs):
 
     :param function funcs: Function or functions to process and run
     :param list[str] argv: Command line arguments to parse (default: sys.argv[1:])
+    :return: The value returned by the function that was run.
+        (This is experimental behavior and will be confirmed or removed in a
+        future version.)
     """
     argv = kwargs.pop('argv', None)
     if kwargs:
@@ -74,9 +77,9 @@ def run(*funcs, **kwargs):
     if not main and not hasattr(args, '_func'):
         parser.error('too few arguments')
     if main:
-        _call_function(main, args)
+        return _call_function(main, args)
     else:
-        _call_function(args._func, args)
+        return _call_function(args._func, args)
 
 
 def parser(type_):
@@ -162,7 +165,7 @@ def _call_function(func, args):
             positionals.extend(arg)
         else:
             keywords[name] = arg
-    func(*positionals, **keywords)
+    return func(*positionals, **keywords)
 
 
 def _parse_doc(func):
