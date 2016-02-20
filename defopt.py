@@ -36,29 +36,11 @@ _Type = namedtuple('_Type', ('type', 'container'))
 _parsers = {}
 
 
-def parser(type_):
-    """Return a function that registers a parser for ``type_``.
-
-    The parser must take a single string argument and is returned unmodified.
-
-    Use as a decorator.
-
-    >>> @parser(type)
-    ... def func(string): pass
-
-    :param type type_: Type to register parser for
-    """
-    def decorator(func):
-        if type_ in _parsers:
-            raise Exception('multiple parsers found for {}'.format(type_.__name__))
-        _parsers[type_] = func
-        return func
-    return decorator
-
-
 # This signature is overridden in docs/api.rst with the Python 3 version.
 def run(*funcs, **kwargs):
-    """Process command line arguments and run the given functions.
+    """run(*funcs, argv=None)
+
+    Process command line arguments and run the given functions.
 
     If ``funcs`` is a single function, it is parsed and run.
     If ``funcs`` is multiple functions, each one is given a subparser with its
@@ -95,6 +77,26 @@ def run(*funcs, **kwargs):
         _call_function(main, args)
     else:
         _call_function(args._func, args)
+
+
+def parser(type_):
+    """Return a function that registers a parser for ``type_``.
+
+    The parser must take a single string argument and is returned unmodified.
+
+    Use as a decorator.
+
+    >>> @parser(type)
+    ... def func(string): pass
+
+    :param type type_: Type to register parser for
+    """
+    def decorator(func):
+        if type_ in _parsers:
+            raise Exception('multiple parsers found for {}'.format(type_.__name__))
+        _parsers[type_] = func
+        return func
+    return decorator
 
 
 def _populate_parser(func, parser):
