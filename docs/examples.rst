@@ -39,5 +39,9 @@ Docstring Styles
     :undoc-members:
     :show-inheritance:
 
+.. Not building examples.annotations because ReadTheDocs currently seems to
+   have trouble building on Python 3 (examples.choices.Choice doesn't display
+   properly). When that is resolved, I'll check the state of annotations in
+   Sphinx.
 
 .. _examples: https://github.com/evanunderscore/defopt/tree/master/examples

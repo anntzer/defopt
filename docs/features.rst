@@ -153,17 +153,42 @@ You can then reference this entry point in your ``setup.py`` file.
         entry_points={'console_scripts': ['name=test:entry_point']}
     )
 
+Annotations
+-----------
+
+Python 3 introduced function annotations, and `PEP 0484`_ standardized their
+use for type hints.
+
+When passed to `defopt.run`, any function annotations are assumed to be type
+hints. `~typing.List`, `~typing.Sequence` and `~typing.Iterable` from the
+`typing` module [#]_ are all treated in the same way as `list` (see Lists_).
+
+::
+
+    from typing import Iterable
+    def func(arg1: int, arg2: Iterable[float]):
+        """No further type information required."""
+
+You may mix annotations with types in your docstring, but if type information
+for a parameter is given in both, they must be the same.
+
+A runnable example is available at `examples/annotations.py`_.
+
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _Google: http://google.github.io/styleguide/pyguide.html
 .. _Numpy: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _Napoleon: https://sphinxcontrib-napoleon.readthedocs.org/en/latest/
+.. _PEP 0484: https://www.python.org/dev/peps/pep-0484/
 .. _examples/styles.py: https://github.com/evanunderscore/defopt/blob/master/examples/styles.py
 .. _examples/lists.py: https://github.com/evanunderscore/defopt/blob/master/examples/lists.py
 .. _examples/choices.py: https://github.com/evanunderscore/defopt/blob/master/examples/choices.py
 .. _examples/parsers.py: https://github.com/evanunderscore/defopt/blob/master/examples/parsers.py
+.. _examples/annotations.py: https://github.com/evanunderscore/defopt/blob/master/examples/annotations.py
 
 .. [#] While Napoleon is included with Sphinx as `sphinx.ext.napoleon`, defopt
    depends on ``sphinxcontrib-napoleon`` so that end users of your command line
    tool are not required to install Sphinx and all of its dependencies.
-.. [#] The ``enum`` module was introduced in Python 3.4. If you are using an
-   older version of Python, the backport will be installed as a dependency.
+.. [#] `enum` was introduced in Python 3.4. If you are using an older version
+   of Python, the backport will be installed as a dependency.
+.. [#] `typing` was introduced in Python 3.5. If you are using an older version
+   of Python, the backport will be installed as a dependency.

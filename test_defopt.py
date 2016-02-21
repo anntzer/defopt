@@ -2,6 +2,7 @@ from enum import Enum
 import subprocess
 import sys
 import textwrap
+import typing
 import unittest
 
 import mock
@@ -67,7 +68,7 @@ class TestDefopt(unittest.TestCase):
     def test_no_param_doc(self):
         def bad(foo):
             """Test function"""
-        with self.assertRaisesRegex(ValueError, 'doc.*foo'):
+        with self.assertRaisesRegex(ValueError, 'type.*foo'):
             defopt.run(bad, argv=['foo'])
 
     def test_no_type_doc(self):
@@ -110,18 +111,18 @@ class TestDefopt(unittest.TestCase):
 
 class TestEvaluate(unittest.TestCase):
     def test_builtin(self):
-        self.assertEqual(defopt._evaluate('int'), int)
+        self.assertEqual(defopt._evaluate_type('int'), int)
 
     def test_dotted(self):
-        self.assertEqual(defopt._evaluate('A.b', globals()), 'success')
+        self.assertEqual(defopt._evaluate_type('A.b', globals()), 'success')
 
     def test_no_builtin(self):
-        with self.assertRaisesRegex(AttributeError, 'builtin'):
-            defopt._evaluate('!')
+        with self.assertRaisesRegex(ValueError, 'definition.*!'):
+            defopt._evaluate_type('!')
 
     def test_no_attribute(self):
-        with self.assertRaises(AttributeError):
-            defopt._evaluate('A.c', globals())
+        with self.assertRaises(ValueError):
+            defopt._evaluate_type('A.c', globals())
 
     def test_no_type(self):
         def main(foo):
@@ -130,7 +131,7 @@ class TestEvaluate(unittest.TestCase):
             defopt.run(main)
 
     def test_other_globals(self):
-        self.assertEqual(defopt._evaluate('A.b', {'A': C}), 'other')
+        self.assertEqual(defopt._evaluate_type('A.b', {'A': C}), 'other')
 
 
 class A:
@@ -191,15 +192,6 @@ class TestParsers(unittest.TestCase):
             """
             self.assertEqual(foo, [1.1, 2.2])
         defopt.run(main, argv=['--foo', '1.1', '2.2'])
-
-    def test_other_container(self):
-        def main(foo):
-            """Test function
-
-            :type foo: tuple[float]
-            """
-        with self.assertRaises(ValueError):
-            defopt.run(main, argv=['--foo', '1.1', '2.2'])
 
     def test_list_bare(self):
         with self.assertRaises(ValueError):
@@ -392,8 +384,85 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(doc.params['arg2'].text, 'Description of arg2')
         self.assertEqual(doc.params['arg2'].type, 'str')
 
+    def test_sequence(self):
+        globalns = {'Sequence': typing.Sequence}
+        type_ = defopt._get_type_from_doc('Sequence[int]', globalns)
+        self.assertEqual(type_.container, list)
+        self.assertEqual(type_.type, int)
+
+    def test_iterable(self):
+        globalns = {'typing': typing}
+        type_ = defopt._get_type_from_doc('typing.Iterable[int]', globalns)
+        self.assertEqual(type_.container, list)
+        self.assertEqual(type_.type, int)
+
+    def test_other(self):
+        with self.assertRaisesRegexp(ValueError, 'unsupported.*tuple'):
+            defopt._get_type_from_doc('tuple[int]', {})
+
+
+class TestAnnotations(unittest.TestCase):
+    def test_simple(self):
+        type_ = defopt._get_type_from_hint(int)
+        self.assertEqual(type_.type, int)
+        self.assertEqual(type_.container, None)
+
+    def test_container(self):
+        type_ = defopt._get_type_from_hint(typing.Sequence[int])
+        self.assertEqual(type_.type, int)
+        self.assertEqual(type_.container, list)
+
+    def test_optional(self):
+        type_ = defopt._get_type_from_hint(typing.Optional[int])
+        self.assertEqual(type_.type, int)
+        self.assertEqual(type_.container, None)
+
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    def test_conflicting(self):
+        # Need to hide execution inside exec for Python 2's benefit.
+        globals_ = {}
+        exec(textwrap.dedent('''\
+            def foo(bar: int):
+                """:type bar: float"""
+        '''), globals_)
+        with self.assertRaisesRegex(ValueError, 'bar.*float.*int'):
+            defopt.run(globals_['foo'], argv='1')
+
+    def test_none(self):
+        def foo(bar):
+            """No type information"""
+        with self.assertRaisesRegex(ValueError, 'no type'):
+            defopt.run(foo, argv='1')
+
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    def test_same(self):
+        # Need to hide execution inside exec for Python 2's benefit.
+        globals_ = {}
+        exec(textwrap.dedent('''\
+            def foo(bar: int):
+                """:type bar: int"""
+        '''), globals_)
+        defopt.run(globals_['foo'], argv='1')
+
 
 class TestExamples(unittest.TestCase):
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
+    @mock.patch('examples.annotations.print', create=True)
+    def test_annotations(self, print_):
+        from examples import annotations
+        for command in [annotations.documented, annotations.undocumented]:
+            command([1, 2], 3)
+            print_.assert_called_with([1, 8])
+
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    def test_annotations_cli(self):
+        from examples import annotations
+        for command in ['documented', 'undocumented']:
+            args = [command, '--numbers', '1', '2', '--', '3']
+            output = self._run_example(annotations, args)
+            self.assertEqual(output, b'[1.0, 8.0]\n')
+
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('examples.choices.print', create=True)
     def test_choices(self, print_):

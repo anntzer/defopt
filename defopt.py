@@ -13,6 +13,7 @@ import inspect
 import logging
 import re
 import sys
+import typing
 from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
@@ -27,6 +28,11 @@ except ImportError:  # pragma: no cover
 if not hasattr(inspect, 'signature'):  # pragma: no cover
     import funcsigs
     inspect.signature = funcsigs.signature
+
+if sys.version_info.major == 2:  # pragma: no cover
+    typing.get_type_hints = lambda *args, **kwargs: {}
+
+_LIST_TYPES = [typing.List, typing.Iterable, typing.Sequence]
 
 log = logging.getLogger(__name__)
 
@@ -106,12 +112,13 @@ def parser(type_):
 def _populate_parser(func, parser):
     sig = inspect.signature(func)
     doc = _parse_doc(func)
+    hints = typing.get_type_hints(func)
     parser.description = doc.text
     for name, param in sig.parameters.items():
-        if name not in doc.params:
-            raise ValueError('no documentation found for parameter {}'.format(name))
-        kwargs = {'help': doc.params[name].text}
-        type_ = _get_type(doc.params[name].type, func)
+        kwargs = {}
+        if name in doc.params:
+            kwargs['help'] = doc.params[name].text
+        type_ = _get_type(func, name, doc, hints)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         if type_.container:
@@ -138,20 +145,62 @@ def _populate_parser(func, parser):
         parser.add_argument(name_or_flag, **kwargs)
 
 
-def _get_type(name, func):
-    match = re.match(r'(\w+)\[(\w+)\]', name)
+def _get_type(func, name, doc, hints):
+    """Retrieve a type from either documentation or annotations.
+
+    If both are specified, they must agree exactly.
+    """
+    doc_type = doc.params.get(name, _Param(None, None)).type
+    if doc_type is not None:
+        doc_type = _get_type_from_doc(doc_type, func.__globals__)
+
+    try:
+        hint = hints[name]
+    except KeyError:
+        hint_type = None
+    else:
+        hint_type = _get_type_from_hint(hint)
+
+    chosen = [x is not None for x in [doc_type, hint_type]]
+    if not any(chosen):
+        raise ValueError('no type found for parameter {}'.format(name))
+    if all(chosen) and doc_type != hint_type:
+        raise ValueError('conflicting types found for parameter {}: {}, {}'
+                         .format(name, doc.params[name].type, hint.__name__))
+    return doc_type or hint_type
+
+
+def _get_type_from_doc(name, globalns):
+    match = re.match(r'([\w\.]+)\[([\w\.]+)\]', name)
     container = None
     if match:
         container, name = match.groups()
-        if container == 'list':
+        container = _evaluate_type(container, globalns)
+        if container in [list] + _LIST_TYPES:
             container = list
         else:
-            raise ValueError('container types other than list not supported')
-    try:
-        type_ = _evaluate(name, func.__globals__)
-    except AttributeError:
-        raise ValueError('could not find definition for type {}'.format(name))
+            raise ValueError('unsupported container type: {}'.format(container.__name__))
+    type_ = _evaluate_type(name, globalns)
     return _Type(type_, container)
+
+
+def _get_type_from_hint(hint):
+    if any(_is_generic_type(hint, x) for x in _LIST_TYPES):
+        [type_] = hint.__parameters__
+        return _Type(type_, list)
+    elif issubclass(hint, typing.Union):
+        # For Union[type, NoneType], just use type.
+        if len(hint.__union_params__) == 2:
+            type_, none = hint.__union_params__
+            if none == type(None):
+                return _Type(type_, None)
+    return _Type(hint, None)
+
+
+def _is_generic_type(thing, generic_type):
+    if not hasattr(thing, '__origin__'):
+        return False
+    return thing.__origin__ == generic_type
 
 
 def _call_function(func, args):
@@ -170,10 +219,7 @@ def _call_function(func, args):
 
 
 def _parse_doc(func):
-    """Extract documentation from a function's docstring.
-
-    All documented parameters are guaranteed to have type information.
-    """
+    """Extract documentation from a function's docstring."""
     doc = inspect.getdoc(func)
     if doc is None:
         return _Doc('', {})
@@ -215,8 +261,6 @@ def _parse_doc(func):
 
     tuples = {}
     for name, values in params.items():
-        if 'type' not in values:
-            raise ValueError('no type found for parameter {}'.format(name))
         tuples[name] = _Param(values.get('param'), values.get('type'))
     return _Doc(doctext, tuples)
 
@@ -225,7 +269,7 @@ def _get_text(node):
     return ''.join(node.itertext())
 
 
-def _evaluate(name, globals_=None):
+def _evaluate_type(name, globals_=None):
     """Find an object by name.
 
     :param str name: Name of the object to evaluate. May contain dotted
@@ -234,19 +278,22 @@ def _evaluate(name, globals_=None):
     :param dict[str, object] globals_: Globals to inspect for name. If not
         supplied, ``name`` is assumed to refer to a built-in.
     """
-    log.debug('evaluating %s', name)
-    namespace = dict(vars(builtins))
-    if globals_:
-        namespace.update(globals_)
-    parts = name.split('.')
-    part = parts[0]
-    if part not in namespace:
-        raise AttributeError("'{}' is not a builtin or module attribute".format(part))
-    member = namespace[part]
-    for part in parts[1:]:
-        member = getattr(member, part)
-    log.debug('evaluated to %r', member)
-    return member
+    try:
+        log.debug('evaluating %s', name)
+        namespace = dict(vars(builtins))
+        if globals_:
+            namespace.update(globals_)
+        parts = name.split('.')
+        part = parts[0]
+        if part not in namespace:
+            raise AttributeError("'{}' is not a builtin or module attribute".format(part))
+        member = namespace[part]
+        for part in parts[1:]:
+            member = getattr(member, part)
+        log.debug('evaluated to %r', member)
+        return member
+    except AttributeError:
+        raise ValueError('could not find definition for type {}'.format(name))
 
 
 def _get_parser(type_):

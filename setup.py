@@ -18,8 +18,9 @@ setup(
     test_suite='test_defopt',
     install_requires=['docutils', 'sphinxcontrib-napoleon'],
     extras_require={
-        ':python_version=="2.7"': ['enum34', 'funcsigs'],
-        ':python_version=="3.3"': ['enum34'],
+        ':python_version=="2.7"': ['enum34', 'funcsigs', 'typing'],
+        ':python_version=="3.3"': ['enum34', 'typing'],
+        ':python_version=="3.4"': ['typing'],
     },
     tests_require=['coverage', 'mock'],
     setup_requires=['nose'],
