@@ -1,8 +1,8 @@
 Changelog
 =========
 
-development
------------
+1.1.0 (2016-02-21)
+------------------
 
 * Added support for Google- and Numpy-style docstrings
 * Changed ``defopt.run`` to return the value from the called function
@@ -15,10 +15,10 @@ development
 1.0.0 (2016-02-14)
 ------------------
 
-* Removed decorator interface and added simpler ``defopt.run()`` interface
+* Removed decorator interface and added simpler ``defopt.run`` interface
 * Added full documentation hosted on Read the Docs
 * Added more informative exceptions for type lookup failures
-* Fixed bug where ``defopt.parser()`` was not returning the input function
+* Fixed bug where ``defopt.parser`` was not returning the input function
 * Fixed type lookups to occur in each respective function's global namespace
 * Fixed bug where subcommands did not properly parse Enums
 * Fixed Enum handling to display members in the order they were defined
