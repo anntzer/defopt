@@ -166,6 +166,7 @@ class TestParsers(unittest.TestCase):
         parser = defopt._get_parser(bool)
         self.assertEqual(parser('t'), True)
         self.assertEqual(parser('FALSE'), False)
+        self.assertEqual(parser('1'), True)
         with self.assertRaises(ValueError):
             parser('foo')
 

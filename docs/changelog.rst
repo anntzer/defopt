@@ -5,6 +5,7 @@ development
 -----------
 
 * Added support for type annotations
+* Added '1' and '0' as accepted values for True and False respectively
 
 1.1.0 (2016-02-21)
 ------------------

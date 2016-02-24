@@ -323,9 +323,9 @@ def _find_parser(type_):
 
 
 def _parse_bool(string):
-    if string.lower() in ['t', 'true']:
+    if string.lower() in ['t', 'true', '1']:
         return True
-    elif string.lower() in ['f', 'false']:
+    elif string.lower() in ['f', 'false', '0']:
         return False
     else:
         raise ValueError('{} is not a valid boolean string'.format(string))
