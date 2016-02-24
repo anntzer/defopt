@@ -5,6 +5,8 @@ development
 -----------
 
 * Added support for type annotations
+* Added parameter defaults to help text
+* Removed default line wrapping of help text
 * Added '1' and '0' as accepted values for True and False respectively
 
 1.1.0 (2016-02-21)

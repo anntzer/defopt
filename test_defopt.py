@@ -401,6 +401,17 @@ class TestDoc(unittest.TestCase):
         with self.assertRaisesRegexp(ValueError, 'unsupported.*tuple'):
             defopt._get_type_from_doc('tuple[int]', {})
 
+    def test_literal_block(self):
+        def func():
+            """
+            ::
+
+                Literal block
+                    Multiple lines
+            """
+        doc = defopt._parse_doc(func)
+        self.assertEqual(doc.text, '    Literal block\n        Multiple lines')
+
 
 class TestAnnotations(unittest.TestCase):
     def test_simple(self):

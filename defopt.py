@@ -7,13 +7,14 @@ Specify type parsers with ``@parser(type)``.
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import argparse
-from collections import defaultdict, namedtuple, OrderedDict
-from enum import Enum
 import inspect
 import logging
 import re
 import sys
 import typing
+from argparse import ArgumentParser, RawTextHelpFormatter, ArgumentDefaultsHelpFormatter
+from collections import defaultdict, namedtuple, OrderedDict
+from enum import Enum
 from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
@@ -55,7 +56,7 @@ def run(*funcs, **kwargs):
 
     :param function funcs: Function or functions to process and run
     :param list[str] argv: Command line arguments to parse (default: sys.argv[1:])
-    :return: The value returned by the function that was run.
+    :return: The value returned by the function that was run
         (This is experimental behavior and will be confirmed or removed in a
         future version.)
     """
@@ -69,14 +70,14 @@ def run(*funcs, **kwargs):
     main = None
     if len(funcs) == 1:
         [main] = funcs
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser(formatter_class=_Formatter)
     parser.set_defaults()
     if main:
         _populate_parser(main, parser)
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
-            subparser = subparsers.add_parser(func.__name__)
+            subparser = subparsers.add_parser(func.__name__, formatter_class=_Formatter)
             _populate_parser(func, subparser)
             subparser.set_defaults(_func=func)
     args = parser.parse_args(argv)
@@ -87,6 +88,10 @@ def run(*funcs, **kwargs):
         return _call_function(main, args)
     else:
         return _call_function(args._func, args)
+
+
+class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):
+    pass
 
 
 def parser(type_):
@@ -231,7 +236,13 @@ def _parse_doc(func):
 
     dom = publish_doctree(doc).asdom()
     etree = ElementTree.fromstring(dom.toxml())
-    doctext = '\n\n'.join(_get_text(x) for x in etree.findall('paragraph'))
+    doctext = []
+    for element in etree:
+        if element.tag == 'paragraph':
+            doctext.append(_get_text(element))
+        elif element.tag == 'literal_block':
+            doctext.append(_indent(_get_text(element)))
+    doctext = '\n\n'.join(doctext)
     fields = etree.findall('.//field')
 
     params = defaultdict(dict)
@@ -267,6 +278,11 @@ def _parse_doc(func):
 
 def _get_text(node):
     return ''.join(node.itertext())
+
+
+def _indent(text):
+    tab = '    '
+    return tab + text.replace('\n', '\n' + tab)
 
 
 def _evaluate_type(name, globals_=None):

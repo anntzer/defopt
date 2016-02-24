@@ -9,7 +9,7 @@ Code usage::
 
 Command line usage::
 
-    $ choices.py one --opt two
+    $ python choices.py one --opt two
 """
 from enum import Enum
 

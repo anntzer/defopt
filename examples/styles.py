@@ -9,7 +9,7 @@ Code usage::
 
 Command line usage::
 
-    $ styles.py sphinx 2 --farewell goodbye!
+    $ python styles.py sphinx 2 --farewell goodbye!
 """
 import defopt
 
@@ -18,6 +18,18 @@ def sphinx(integer, farewell=None):
     """Example function with a Sphinx-style docstring.
 
     Squares a given integer.
+
+    .. This is a comment; it won't show up anywhere but here.
+       Below is a literal block which will be displayed with a
+       4-space indent in the help string and as a code block
+       in the documentation.
+
+    ::
+
+        $ python styles.py sphinx 2 --farewell goodbye!
+        4
+        goodbye!
+
 
     :param int integer: Number to square
     :param str farewell: Parting message
@@ -32,6 +44,17 @@ def google(integer, farewell=None):
 
     Squares a given integer.
 
+    .. This is a comment; it won't show up anywhere but here.
+       Below is a literal block which will be displayed with a
+       4-space indent in the help string and as a code block
+       in the documentation.
+
+    ::
+
+        $ python styles.py google 2 --farewell goodbye!
+        4
+        goodbye!
+
     Args:
       integer(int): Number to square
       farewell(str): Parting message
@@ -45,6 +68,17 @@ def numpy(integer, farewell=None):
     """Example function with a Numpy-style docstring.
 
     Squares a given integer.
+
+    .. This is a comment; it won't show up anywhere but here.
+       Below is a literal block which will be displayed with a
+       4-space indent in the help string and as a code block
+       in the documentation.
+
+    ::
+
+        $ python styles.py numpy 2 --farewell goodbye!
+        4
+        goodbye!
 
     Parameters
     ----------

@@ -55,7 +55,7 @@ informative help message.
 
     optional arguments:
       -h, --help     show this help message and exit
-      --count COUNT  Number of times to display the greeting
+      --count COUNT  Number of times to display the greeting (default: 1)
 
 Your function can now be called identically from Python and the command line.
 

@@ -15,8 +15,8 @@ Code usage::
 
 Command line usage::
 
-    $ annotations.py documented 2 --numbers 1.2 3.4
-    $ annotations.py documented --numbers 1.2 3.4 -- 2
+    $ python annotations.py documented 2 --numbers 1.2 3.4
+    $ python annotations.py documented --numbers 1.2 3.4 -- 2
 """
 from typing import Iterable
 

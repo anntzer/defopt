@@ -9,7 +9,7 @@ Code usage::
 
 Command line usage::
 
-    $ parsers.py 2015-09-13
+    $ python parsers.py 2015-09-13
 """
 from datetime import datetime
 
