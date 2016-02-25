@@ -1,8 +1,8 @@
 Changelog
 =========
 
-development
------------
+1.2.0 (2016-02-25)
+------------------
 
 * Added support for type annotations
 * Added parameter defaults to help text
