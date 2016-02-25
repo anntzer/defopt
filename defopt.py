@@ -6,7 +6,6 @@ Specify type parsers with ``@parser(type)``.
 """
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-import argparse
 import inspect
 import logging
 import re
@@ -176,17 +175,15 @@ def _get_type(func, name, doc, hints):
 
 
 def _get_type_from_doc(name, globalns):
-    match = re.match(r'([\w\.]+)\[([\w\.]+)\]', name)
-    container = None
+    # Support for legacy list syntax "list[type]".
+    # (This intentionally won't catch `List` or `typing.List`)
+    match = re.match(r'([a-z]\w+)\[([\w\.]+)\]', name)
     if match:
-        container, name = match.groups()
-        container = _evaluate_type(container, globalns)
-        if container in [list] + _LIST_TYPES:
-            container = list
-        else:
-            raise ValueError('unsupported container type: {}'.format(container.__name__))
-    type_ = _evaluate_type(name, globalns)
-    return _Type(type_, container)
+        container, type_ = match.groups()
+        if container != 'list':
+            raise ValueError('unsupported container type: {}'.format(container))
+        return _Type(eval(type_, globalns), list)
+    return _get_type_from_hint(eval(name, globalns))
 
 
 def _get_type_from_hint(hint):
@@ -283,33 +280,6 @@ def _get_text(node):
 def _indent(text):
     tab = '    '
     return tab + text.replace('\n', '\n' + tab)
-
-
-def _evaluate_type(name, globals_=None):
-    """Find an object by name.
-
-    :param str name: Name of the object to evaluate. May contain dotted
-        lookups, e.g. 'a.b' finds 'a' in the target namespace, then looks
-        inside 'a' to find 'b'.
-    :param dict[str, object] globals_: Globals to inspect for name. If not
-        supplied, ``name`` is assumed to refer to a built-in.
-    """
-    try:
-        log.debug('evaluating %s', name)
-        namespace = dict(vars(builtins))
-        if globals_:
-            namespace.update(globals_)
-        parts = name.split('.')
-        part = parts[0]
-        if part not in namespace:
-            raise AttributeError("'{}' is not a builtin or module attribute".format(part))
-        member = namespace[part]
-        for part in parts[1:]:
-            member = getattr(member, part)
-        log.debug('evaluated to %r', member)
-        return member
-    except AttributeError:
-        raise ValueError('could not find definition for type {}'.format(name))
 
 
 def _get_parser(type_):

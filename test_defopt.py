@@ -109,39 +109,6 @@ class TestDefopt(unittest.TestCase):
         return sub2, ['sub2', '--baz', '1.1']
 
 
-class TestEvaluate(unittest.TestCase):
-    def test_builtin(self):
-        self.assertEqual(defopt._evaluate_type('int'), int)
-
-    def test_dotted(self):
-        self.assertEqual(defopt._evaluate_type('A.b', globals()), 'success')
-
-    def test_no_builtin(self):
-        with self.assertRaisesRegex(ValueError, 'definition.*!'):
-            defopt._evaluate_type('!')
-
-    def test_no_attribute(self):
-        with self.assertRaises(ValueError):
-            defopt._evaluate_type('A.c', globals())
-
-    def test_no_type(self):
-        def main(foo):
-            """:param Foo foo: foo"""
-        with self.assertRaisesRegex(ValueError, 'type'):
-            defopt.run(main)
-
-    def test_other_globals(self):
-        self.assertEqual(defopt._evaluate_type('A.b', {'A': C}), 'other')
-
-
-class A:
-    b = 'success'
-
-
-class C:
-    b = 'other'
-
-
 class TestParsers(unittest.TestCase):
     def setUp(self):
         defopt._parsers = {}
@@ -176,8 +143,8 @@ class TestParsers(unittest.TestCase):
             defopt.parser(int)(int)
 
     def test_no_parser(self):
-        with self.assertRaises(Exception):
-            defopt._get_parser(A)
+        with self.assertRaisesRegex(Exception, 'no parser'):
+            defopt._get_parser(object)
 
     def test_list(self):
         def main(foo):
