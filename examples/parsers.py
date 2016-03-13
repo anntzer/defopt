@@ -1,7 +1,8 @@
 """Example showing parsers in defopt.
 
 If a type is not simple enough for defopt to parse on its own,
-you can explicitly specify parsers for types using decorators.
+you can explicitly specify parsers for types by passing a mapping
+to `defopt.run`.
 
 Code usage::
 
@@ -24,7 +25,6 @@ def main(date):
     print(date)
 
 
-@defopt.parser(datetime)
 def parse_date(string):
     """Parse a `datetime.datetime` using a simple string format.
 
@@ -35,4 +35,4 @@ def parse_date(string):
 
 
 if __name__ == '__main__':
-    defopt.run(main)
+    defopt.run(main, parsers={datetime: parse_date})

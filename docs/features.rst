@@ -15,9 +15,7 @@ Types
 -----
 
 Argument types are read from your function's docstring. Both
-``param`` and ``type`` are supported.
-
-::
+``param`` and ``type`` are supported. ::
 
     :param <type> <name>: <description>
 
@@ -34,15 +32,11 @@ Subcommands
 -----------
 
 If multiple commands are passed to `defopt.run`, they are treated as
-subcommands which are run by name.
-
-::
+subcommands which are run by name. ::
 
     defopt.run(func1, func2)
 
-The command line usage will indicate this.
-
-::
+The command line usage will indicate this. ::
 
     usage: test.py [-h] {func1,func2} ...
 
@@ -56,15 +50,11 @@ Lists are automatically converted to flags which take zero or more arguments.
 If the argument is positional, the flag is marked as required.
 
 When declaring that a parameter is a list, use the established convention of
-putting the contained type inside square brackets.
-
-::
+putting the contained type inside square brackets. ::
 
     :param list[int] numbers: A sequence of numbers
 
-You can now specify your list on the command line using multiple arguments.
-
-::
+You can now specify your list on the command line using multiple arguments. ::
 
     test.py --numbers 1 2 3
 
@@ -74,16 +64,12 @@ Choices
 -------
 
 If one of your argument types is a subclass of `enum.Enum` [#]_, this is
-handled specially on the command line to produce more helpful output.
-
-::
+handled specially on the command line to produce more helpful output. ::
 
     positional arguments:
       {red,blue,yellow}  Your favorite color
 
-This also produces a more helpful message when you choose an invalid option.
-
-::
+This also produces a more helpful message when you choose an invalid option. ::
 
     test.py: error: argument color: invalid choice: 'black'
                                     (choose from 'red', 'blue', 'yellow')
@@ -94,18 +80,15 @@ Parsers
 -------
 
 You can use arbitrary argument types as long as you provide functions to parse
-them from strings.
+them from strings. ::
 
-::
-
-    @defopt.parser(Person)
     def parse_person(string):
         last, first = string.split(',')
         return Person(first.strip(), last.strip())
 
-You can now build ``Person`` objects directly from the command line.
+    defopt.run(..., parsers={Person: parse_person})
 
-::
+You can now build ``Person`` objects directly from the command line. ::
 
     test.py --person "VAN ROSSUM, Guido"
 
@@ -116,18 +99,14 @@ Variable Positional Arguments
 
 If your function definition contains ``*args``, the parser will accept zero or
 more positional arguments. When specifying a type, specify the type of the
-elements, not the container.
-
-::
+elements, not the container. ::
 
     def main(*numbers):
         """:param int numbers: Positional numeric arguments"""
 
 This will create a parser that accepts zero or more positional arguments which
 are individually parsed as integers. They are passed as they would be from code
-and received as a tuple.
-
-::
+and received as a tuple. ::
 
     test.py 1 2 3
 
@@ -137,16 +116,12 @@ Entry Points
 ------------
 
 To use your script as a console entry point with setuptools, you need to create
-a function that can be called without arguments.
-
-::
+a function that can be called without arguments. ::
 
     def entry_point():
         defopt.run(main)
 
-You can then reference this entry point in your ``setup.py`` file.
-
-::
+You can then reference this entry point in your ``setup.py`` file. ::
 
     setup(
         ...,
@@ -161,9 +136,7 @@ use for type hints.
 
 When passed to `defopt.run`, any function annotations are assumed to be type
 hints. `~typing.List`, `~typing.Sequence` and `~typing.Iterable` from the
-`typing` module [#]_ are all treated in the same way as `list` (see Lists_).
-
-::
+`typing` module [#]_ are all treated in the same way as `list` (see Lists_). ::
 
     from typing import Iterable
     def func(arg1: int, arg2: Iterable[float]):

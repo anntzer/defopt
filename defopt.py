@@ -1,8 +1,6 @@
 """Effortless argument parser.
 
 Run Python functions from the command line with ``run(func)``.
-
-Specify type parsers with ``@parser(type)``.
 """
 from __future__ import absolute_import, division, unicode_literals, print_function
 
@@ -10,10 +8,12 @@ import inspect
 import logging
 import re
 import sys
-import typing
+import warnings
 from argparse import ArgumentParser, RawTextHelpFormatter, ArgumentDefaultsHelpFormatter
 from collections import defaultdict, namedtuple, OrderedDict
 from enum import Enum
+from typing import List, Iterable, Sequence, Union, Callable, Dict
+from typing import get_type_hints as _get_type_hints
 from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
@@ -30,9 +30,10 @@ if not hasattr(inspect, 'signature'):  # pragma: no cover
     inspect.signature = funcsigs.signature
 
 if sys.version_info.major == 2:  # pragma: no cover
-    typing.get_type_hints = lambda *args, **kwargs: {}
+    def _get_type_hints(*args, **kwargs):
+        return {}
 
-_LIST_TYPES = [typing.List, typing.Iterable, typing.Sequence]
+_LIST_TYPES = [List, Iterable, Sequence]
 
 log = logging.getLogger(__name__)
 
@@ -43,9 +44,8 @@ _Type = namedtuple('_Type', ('type', 'container'))
 _parsers = {}
 
 
-# This signature is overridden in docs/api.rst with the Python 3 version.
 def run(*funcs, **kwargs):
-    """run(*funcs, argv=None)
+    """run(*funcs, parsers=None, argv=None)
 
     Process command line arguments and run the given functions.
 
@@ -53,12 +53,16 @@ def run(*funcs, **kwargs):
     If ``funcs`` is multiple functions, each one is given a subparser with its
     name, and only the chosen function is run.
 
-    :param function funcs: Function or functions to process and run
-    :param list[str] argv: Command line arguments to parse (default: sys.argv[1:])
+    :param Callable funcs: Function or functions to process and run
+    :param parsers: Dictionary mapping types to parsers to use for parsing
+        function arguments.
+    :type parsers: Dict[type, Callable[[str], type]]
+    :param List[str] argv: Command line arguments to parse (default: sys.argv[1:])
     :return: The value returned by the function that was run
         (This is experimental behavior and will be confirmed or removed in a
         future version.)
     """
+    parsers = kwargs.pop('parsers', None)
     argv = kwargs.pop('argv', None)
     if kwargs:
         raise TypeError('unexpected keyword argument: {}'.format(list(kwargs)[0]))
@@ -72,12 +76,12 @@ def run(*funcs, **kwargs):
     parser = ArgumentParser(formatter_class=_Formatter)
     parser.set_defaults()
     if main:
-        _populate_parser(main, parser)
+        _populate_parser(main, parser, parsers)
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
             subparser = subparsers.add_parser(func.__name__, formatter_class=_Formatter)
-            _populate_parser(func, subparser)
+            _populate_parser(func, subparser, parsers)
             subparser.set_defaults(_func=func)
     args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
@@ -103,8 +107,12 @@ def parser(type_):
     >>> @parser(type)
     ... def func(string): pass
 
+    (Deprecated since defopt 1.3; specify parsers in call to `run`.)
+
     :param type type_: Type to register parser for
     """
+    warnings.warn('Deprecated since defopt 1.3; specify parsers in call to run',
+                  DeprecationWarning)
     def decorator(func):
         if type_ in _parsers:
             raise Exception('multiple parsers found for {}'.format(type_.__name__))
@@ -113,10 +121,10 @@ def parser(type_):
     return decorator
 
 
-def _populate_parser(func, parser):
+def _populate_parser(func, parser, parsers=None):
     sig = inspect.signature(func)
     doc = _parse_doc(func)
-    hints = typing.get_type_hints(func)
+    hints = _get_type_hints(func)
     parser.description = doc.text
     for name, param in sig.parameters.items():
         kwargs = {}
@@ -145,7 +153,7 @@ def _populate_parser(func, parser):
             kwargs['choices'] = _ValueOrderedDict((x.name, x) for x in type_.type)
             kwargs['type'] = _enum_getter(type_.type)
         else:
-            kwargs['type'] = _get_parser(type_.type)
+            kwargs['type'] = _get_parser(type_.type, parsers)
         parser.add_argument(name_or_flag, **kwargs)
 
 
@@ -190,7 +198,7 @@ def _get_type_from_hint(hint):
     if any(_is_generic_type(hint, x) for x in _LIST_TYPES):
         [type_] = hint.__parameters__
         return _Type(type_, list)
-    elif issubclass(hint, typing.Union):
+    elif issubclass(hint, Union):
         # For Union[type, NoneType], just use type.
         if len(hint.__union_params__) == 2:
             type_, none = hint.__union_params__
@@ -282,8 +290,8 @@ def _indent(text):
     return tab + text.replace('\n', '\n' + tab)
 
 
-def _get_parser(type_):
-    parser = _find_parser(type_)
+def _get_parser(type_, parsers=None):
+    parser = _find_parser(type_, parsers or {})
 
     # Make a parser with the name the user expects to see in error messages.
     def named_parser(string):
@@ -293,7 +301,11 @@ def _get_parser(type_):
     return named_parser
 
 
-def _find_parser(type_):
+def _find_parser(type_, parsers):
+    try:
+        return parsers[type_]
+    except KeyError:
+        pass
     try:
         return _parsers[type_]
     except KeyError:

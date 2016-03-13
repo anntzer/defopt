@@ -1,6 +1,12 @@
 Changelog
 =========
 
+development
+-----------
+
+* Added ``parsers`` argument to ``defopt.run``
+* Deprecated ``defopt.parser``
+
 1.2.0 (2016-02-25)
 ------------------
 

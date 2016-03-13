@@ -110,24 +110,20 @@ class TestDefopt(unittest.TestCase):
 
 
 class TestParsers(unittest.TestCase):
-    def setUp(self):
-        defopt._parsers = {}
-
     def test_parser(self):
         def main(value):
             """:type value: int"""
             self.assertEqual(value, 1)
         defopt.run(main, argv=['1'])
 
-    def test_registered_parser(self):
-        @defopt.parser(int)
+    def test_overridden_parser(self):
         def parser(string):
             return int(string) * 2
 
         def main(value):
             """:type value: int"""
             self.assertEqual(value, 2)
-        defopt.run(main, argv=['1'])
+        defopt.run(main, parsers={int: parser}, argv=['1'])
 
     def test_parse_bool(self):
         parser = defopt._get_parser(bool)
@@ -137,14 +133,9 @@ class TestParsers(unittest.TestCase):
         with self.assertRaises(ValueError):
             parser('foo')
 
-    def test_double_parser(self):
-        defopt.parser(int)(int)
-        with self.assertRaises(Exception):
-            defopt.parser(int)(int)
-
     def test_no_parser(self):
         with self.assertRaisesRegex(Exception, 'no parser'):
-            defopt._get_parser(object)
+            defopt._get_parser(object, parsers={type: type})
 
     def test_list(self):
         def main(foo):
@@ -164,6 +155,26 @@ class TestParsers(unittest.TestCase):
     def test_list_bare(self):
         with self.assertRaises(ValueError):
             defopt._get_parser(list)
+
+
+class TestParsersDeprecated(unittest.TestCase):
+    def setUp(self):
+        defopt._parsers = {}
+
+    def test_registered_parser(self):
+        @defopt.parser(int)
+        def parser(string):
+            return int(string) * 2
+
+        def main(value):
+            """:type value: int"""
+            self.assertEqual(value, 2)
+        defopt.run(main, argv=['1'])
+
+    def test_double_parser(self):
+        defopt.parser(int)(int)
+        with self.assertRaises(Exception):
+            defopt.parser(int)(int)
 
     def test_return(self):
         @defopt.parser(int)
