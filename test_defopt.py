@@ -8,7 +8,7 @@ import unittest
 import mock
 
 import defopt
-from examples import choices, lists, parsers, styles
+from examples import booleans, choices, lists, parsers, styles
 
 
 if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
@@ -155,6 +155,25 @@ class TestParsers(unittest.TestCase):
     def test_list_bare(self):
         with self.assertRaises(ValueError):
             defopt._get_parser(list)
+
+    def test_bool(self):
+        def main(foo):
+            """:type foo: bool"""
+            return foo
+        self.assertIs(defopt.run(main, argv=['1']), True)
+        self.assertIs(defopt.run(main, argv=['0']), False)
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=[])
+
+    def test_bool_kwarg(self):
+        default = object()
+
+        def main(foo=default):
+            """:type foo: bool"""
+            return foo
+        self.assertIs(defopt.run(main, argv=['--foo']), True)
+        self.assertIs(defopt.run(main, argv=['--no-foo']), False)
+        self.assertIs(defopt.run(main, argv=[]), default)
 
 
 class TestParsersDeprecated(unittest.TestCase):
@@ -452,6 +471,20 @@ class TestExamples(unittest.TestCase):
             args = [command, '--numbers', '1', '2', '--', '3']
             output = self._run_example(annotations, args)
             self.assertEqual(output, b'[1.0, 8.0]\n')
+
+    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
+    @mock.patch('examples.booleans.print', create=True)
+    def test_booleans(self, print_):
+        booleans.main('test', upper=False, repeat=True)
+        print_.assert_has_calls([mock.call('test'), mock.call('test')])
+        booleans.main('test')
+        print_.assert_called_with('TEST')
+
+    def test_booleans_cli(self):
+        output = self._run_example(booleans, ['test', '--no-upper', '--repeat'])
+        self.assertEqual(output, b'test\ntest\n')
+        output = self._run_example(booleans, ['test'])
+        self.assertEqual(output, b'TEST\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('examples.choices.print', create=True)

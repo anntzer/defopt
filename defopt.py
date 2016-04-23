@@ -131,6 +131,18 @@ def _populate_parser(func, parser, parsers=None):
         type_ = _get_type(func, name, doc, hints)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
+        if type_.type == bool and param.default != param.empty:
+            # Special case: just add parameterless --name and --no-name flags.
+            parser.add_argument('--' + name,
+                                action='store_true',
+                                default=param.default,
+                                # Add help if available.
+                                **kwargs)
+            parser.add_argument('--no-' + name,
+                                action='store_false',
+                                default=param.default,
+                                dest=name)
+            continue
         if type_.container:
             assert type_.container == list
             name_or_flag = '--' + name

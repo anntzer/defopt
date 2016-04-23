@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.0.0 (develop)
+---------------
+
+* Added automatic ``--name`` and ``--no-name`` flags for optional booleans
+
 1.3.0 (2016-03-21)
 ------------------
 

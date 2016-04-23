@@ -25,8 +25,8 @@ Argument types are read from your function's docstring. Both
     :type <name>: <type>
 
 ``<type>`` is evaluated in the function's global namespace when `defopt.run` is
-called. See Lists_, Choices_ and Parsers_ for more information on specific
-types.
+called. See Booleans_, Lists_, Choices_ and Parsers_ for more information on
+specific types.
 
 Subcommands
 -----------
@@ -42,6 +42,21 @@ The command line usage will indicate this. ::
 
     positional arguments:
       {func1,func2}
+
+Booleans
+--------
+
+Optional boolean arguments are automatically converted to two separate flags:
+``--name`` which stores `True` and ``--no-name`` which stores `False`. Your
+help text and the default will be displayed next to the ``--name`` flag::
+
+    --flag      Set "flag" to True (default: False)
+    --no-flag
+
+Note that this does not apply to mandatory boolean arguments; these must be
+specified as one of ``1/t/true`` or ``0/f/false`` (case insensitive).
+
+A runnable example is available at `examples/booleans.py`_.
 
 Lists
 -----
@@ -153,6 +168,7 @@ A runnable example is available at `examples/annotations.py`_.
 .. _Napoleon: https://sphinxcontrib-napoleon.readthedocs.org/en/latest/
 .. _PEP 0484: https://www.python.org/dev/peps/pep-0484/
 .. _examples/styles.py: https://github.com/evanunderscore/defopt/blob/master/examples/styles.py
+.. _examples/booleans.py: https://github.com/evanunderscore/defopt/blob/master/examples/booleans.py
 .. _examples/lists.py: https://github.com/evanunderscore/defopt/blob/master/examples/lists.py
 .. _examples/choices.py: https://github.com/evanunderscore/defopt/blob/master/examples/choices.py
 .. _examples/parsers.py: https://github.com/evanunderscore/defopt/blob/master/examples/parsers.py
