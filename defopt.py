@@ -59,8 +59,6 @@ def run(*funcs, **kwargs):
     :type parsers: Dict[type, Callable[[str], type]]
     :param List[str] argv: Command line arguments to parse (default: sys.argv[1:])
     :return: The value returned by the function that was run
-        (This is experimental behavior and will be confirmed or removed in a
-        future version.)
     """
     parsers = kwargs.pop('parsers', None)
     argv = kwargs.pop('argv', None)
