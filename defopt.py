@@ -44,7 +44,7 @@ _parsers = {}
 
 
 def run(*funcs, **kwargs):
-    """run(*funcs, parsers=None, argv=None)
+    """run(*funcs, parsers=None, short=None, argv=None)
 
     Process command line arguments and run the given functions.
 
@@ -56,10 +56,14 @@ def run(*funcs, **kwargs):
     :param parsers: Dictionary mapping types to parsers to use for parsing
         function arguments.
     :type parsers: Dict[type, Callable[[str], type]]
+    :param short: Dictionary mapping parameter names to letters to use as
+        alternative short flags.
+    :type short: Dict[str, str]
     :param List[str] argv: Command line arguments to parse (default: sys.argv[1:])
     :return: The value returned by the function that was run
     """
     parsers = kwargs.pop('parsers', None)
+    short = kwargs.pop('short', {})
     argv = kwargs.pop('argv', None)
     if kwargs:
         raise TypeError('unexpected keyword argument: {}'.format(list(kwargs)[0]))
@@ -73,12 +77,12 @@ def run(*funcs, **kwargs):
     parser = ArgumentParser(formatter_class=_Formatter)
     parser.set_defaults()
     if main:
-        _populate_parser(main, parser, parsers)
+        _populate_parser(main, parser, parsers, short)
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
             subparser = subparsers.add_parser(func.__name__, formatter_class=_Formatter)
-            _populate_parser(func, subparser, parsers)
+            _populate_parser(func, subparser, parsers, short)
             subparser.set_defaults(_func=func)
     args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
@@ -100,13 +104,12 @@ def parser(type_):
         '(specify mapping from type to parser in call to defopt.run)')
 
 
-def _populate_parser(func, parser, parsers=None):
+def _populate_parser(func, parser, parsers, short):
     sig = inspect.signature(func)
     doc = _parse_doc(func)
     hints = _get_type_hints(func)
     parser.description = doc.text
     for name, param in sig.parameters.items():
-        flagname = name.replace('_', '-')
         kwargs = {}
         if name in doc.params:
             kwargs['help'] = doc.params[name].text
@@ -115,30 +118,28 @@ def _populate_parser(func, parser, parsers=None):
             raise ValueError('**kwargs not supported')
         if type_.type == bool and param.default != param.empty:
             # Special case: just add parameterless --name and --no-name flags.
-            parser.add_argument('--' + flagname,
-                                action='store_true',
-                                default=param.default,
-                                # Add help if available.
-                                **kwargs)
-            parser.add_argument('--no-' + flagname,
-                                action='store_false',
-                                default=param.default,
-                                dest=name)
+            _add_argument(parser, name, short,
+                          action='store_true',
+                          default=param.default,
+                          # Add help if available.
+                          **kwargs)
+            _add_argument(parser, 'no-' + name, short,
+                          action='store_false',
+                          default=param.default,
+                          dest=name)
             continue
         if type_.container:
             assert type_.container == list
-            name_or_flag = '--' + flagname
             kwargs['nargs'] = '*'
             if param.default == param.empty:
                 kwargs['required'] = True
             else:
                 kwargs['default'] = param.default
         elif param.default == param.empty:
-            name_or_flag = name
+            kwargs['_positional'] = True
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['nargs'] = '*'
         else:
-            name_or_flag = '--' + flagname
             kwargs['default'] = param.default
         if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
             # Want these to behave like argparse choices.
@@ -146,7 +147,18 @@ def _populate_parser(func, parser, parsers=None):
             kwargs['type'] = _enum_getter(type_.type)
         else:
             kwargs['type'] = _get_parser(type_.type, parsers)
-        parser.add_argument(name_or_flag, **kwargs)
+        _add_argument(parser, name, short, **kwargs)
+
+
+def _add_argument(parser, name, short, _positional=False, **kwargs):
+    if _positional:
+        args = [name]
+    else:
+        name = name.replace('_', '-')
+        args = ['--' + name]
+        if name in short:
+            args.insert(0, '-' + short[name])
+    return parser.add_argument(*args, **kwargs)
 
 
 def _get_type(func, name, doc, hints):

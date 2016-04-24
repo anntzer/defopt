@@ -58,6 +58,17 @@ replaced by hyphens. Names of positional arguments are used unmodified::
       -h, --help            show this help message and exit
       --optional-arg OPTIONAL_ARG
 
+If you wish to specify that a particular flag should also have an associated
+short version, you can pass a mapping to `defopt.run`::
+
+    defopt.run(main, short={'optional-arg': 'o'})
+
+Now, ``-o`` is exactly equivalent to ``--optional-arg``::
+
+      -o OPTIONAL_ARG, --optional-arg OPTIONAL_ARG
+
+A runnable example is available at `examples/short.py`_.
+
 Booleans
 --------
 
@@ -183,6 +194,7 @@ A runnable example is available at `examples/annotations.py`_.
 .. _Napoleon: https://sphinxcontrib-napoleon.readthedocs.org/en/latest/
 .. _PEP 0484: https://www.python.org/dev/peps/pep-0484/
 .. _examples/styles.py: https://github.com/evanunderscore/defopt/blob/master/examples/styles.py
+.. _examples/short.py: https://github.com/evanunderscore/defopt/blob/master/examples/short.py
 .. _examples/booleans.py: https://github.com/evanunderscore/defopt/blob/master/examples/booleans.py
 .. _examples/lists.py: https://github.com/evanunderscore/defopt/blob/master/examples/lists.py
 .. _examples/choices.py: https://github.com/evanunderscore/defopt/blob/master/examples/choices.py

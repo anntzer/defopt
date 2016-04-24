@@ -4,6 +4,7 @@ Changelog
 2.0.0 (develop)
 ---------------
 
+* Added ability to specify short flags
 * Added automatic ``--name`` and ``--no-name`` flags for optional booleans
 * Added automatic translation of underscores to hyphens in all flags
 * Removed ``defopt.parser``

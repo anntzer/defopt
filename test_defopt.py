@@ -8,7 +8,7 @@ import unittest
 import mock
 
 import defopt
-from examples import booleans, choices, lists, parsers, styles
+from examples import booleans, choices, lists, parsers, short, styles
 
 
 if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
@@ -192,6 +192,24 @@ class TestParsersDeprecated(unittest.TestCase):
             @defopt.parser
             def func():
                 pass
+
+
+class TestFlags(unittest.TestCase):
+    def test_short_flags(self):
+        def func(foo=1):
+            """:type foo: int"""
+            return foo
+        out = defopt.run(func, short={'foo': 'f'}, argv=['-f', '2'])
+        self.assertEqual(out, 2)
+
+    def test_short_negation(self):
+        def func(foo=False):
+            """:type foo: bool"""
+            return foo
+        out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'}, argv=['-f'])
+        self.assertIs(out, True)
+        out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'}, argv=['-F'])
+        self.assertIs(out, False)
 
 
 class TestEnums(unittest.TestCase):
@@ -529,6 +547,20 @@ class TestExamples(unittest.TestCase):
             self._run_example(parsers, ['junk'])
         self.assertIn(b'datetime', error.exception.output)
         self.assertIn(b'junk', error.exception.output)
+
+    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
+    @mock.patch('examples.short.print', create=True)
+    def test_short(self, print_):
+        short.main()
+        print_.assert_has_calls([mock.call('hello!')])
+        short.main(count=2)
+        print_.assert_has_calls([mock.call('hello!'), mock.call('hello!')])
+
+    def test_short_cli(self):
+        output = self._run_example(short, ['--count', '2'])
+        self.assertEqual(output, b'hello!\nhello!\n')
+        output = self._run_example(short, ['-c', '2'])
+        self.assertEqual(output, b'hello!\nhello!\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('examples.styles.print', create=True)
