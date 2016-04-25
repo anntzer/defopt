@@ -87,6 +87,16 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(defopt.run(one, none, argv=['one']), 1)
         self.assertEqual(defopt.run(one, none, argv=['none']), None)
 
+    def test_underscores(self):
+        def main(a_b_c, d_e_f=None):
+            """Test function
+
+            :type a_b_c: int
+            :type d_e_f: int
+            """
+            return a_b_c, d_e_f
+        self.assertEqual(defopt.run(main, argv=['1', '--d-e-f', '2']), (1, 2))
+
     def _def_main(self):
         def main(foo):
             """:type foo: str"""

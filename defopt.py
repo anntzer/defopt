@@ -106,6 +106,7 @@ def _populate_parser(func, parser, parsers=None):
     hints = _get_type_hints(func)
     parser.description = doc.text
     for name, param in sig.parameters.items():
+        flagname = name.replace('_', '-')
         kwargs = {}
         if name in doc.params:
             kwargs['help'] = doc.params[name].text
@@ -114,19 +115,19 @@ def _populate_parser(func, parser, parsers=None):
             raise ValueError('**kwargs not supported')
         if type_.type == bool and param.default != param.empty:
             # Special case: just add parameterless --name and --no-name flags.
-            parser.add_argument('--' + name,
+            parser.add_argument('--' + flagname,
                                 action='store_true',
                                 default=param.default,
                                 # Add help if available.
                                 **kwargs)
-            parser.add_argument('--no-' + name,
+            parser.add_argument('--no-' + flagname,
                                 action='store_false',
                                 default=param.default,
                                 dest=name)
             continue
         if type_.container:
             assert type_.container == list
-            name_or_flag = '--' + name
+            name_or_flag = '--' + flagname
             kwargs['nargs'] = '*'
             if param.default == param.empty:
                 kwargs['required'] = True
@@ -137,7 +138,7 @@ def _populate_parser(func, parser, parsers=None):
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['nargs'] = '*'
         else:
-            name_or_flag = '--' + name
+            name_or_flag = '--' + flagname
             kwargs['default'] = param.default
         if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
             # Want these to behave like argparse choices.

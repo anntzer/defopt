@@ -43,6 +43,21 @@ The command line usage will indicate this. ::
     positional arguments:
       {func1,func2}
 
+Flags
+-----
+
+Any optional arguments are converted to flags, with all underscores in the name
+replaced by hyphens. Names of positional arguments are used unmodified::
+
+    usage: test.py [-h] [--optional-arg OPTIONAL_ARG] positional_arg
+
+    positional arguments:
+      positional_arg
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --optional-arg OPTIONAL_ARG
+
 Booleans
 --------
 

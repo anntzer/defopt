@@ -5,6 +5,7 @@ Changelog
 ---------------
 
 * Added automatic ``--name`` and ``--no-name`` flags for optional booleans
+* Added automatic translation of underscores to hyphens in all flags
 * Removed ``defopt.parser``
 
 1.3.0 (2016-03-21)
