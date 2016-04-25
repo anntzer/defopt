@@ -8,7 +8,6 @@ import inspect
 import logging
 import re
 import sys
-import warnings
 from argparse import ArgumentParser, RawTextHelpFormatter, ArgumentDefaultsHelpFormatter
 from collections import defaultdict, namedtuple, OrderedDict
 from enum import Enum
@@ -96,27 +95,9 @@ class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):
 
 
 def parser(type_):
-    """Return a function that registers a parser for ``type_``.
-
-    The parser must take a single string argument and is returned unmodified.
-
-    Use as a decorator.
-
-    >>> @parser(type)
-    ... def func(string): pass
-
-    (Deprecated since defopt 1.3; specify parsers in call to `run`.)
-
-    :param type type_: Type to register parser for
-    """
-    warnings.warn('Deprecated since defopt 1.3; specify parsers in call to run',
-                  DeprecationWarning)
-    def decorator(func):
-        if type_ in _parsers:
-            raise Exception('multiple parsers found for {}'.format(type_.__name__))
-        _parsers[type_] = func
-        return func
-    return decorator
+    raise DeprecationWarning(
+        'this function was deprecated in defopt 1.3 and removed in defopt 2.0 '
+        '(specify mapping from type to parser in call to defopt.run)')
 
 
 def _populate_parser(func, parser, parsers=None):

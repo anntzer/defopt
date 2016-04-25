@@ -177,28 +177,11 @@ class TestParsers(unittest.TestCase):
 
 
 class TestParsersDeprecated(unittest.TestCase):
-    def setUp(self):
-        defopt._parsers = {}
-
-    def test_registered_parser(self):
-        @defopt.parser(int)
-        def parser(string):
-            return int(string) * 2
-
-        def main(value):
-            """:type value: int"""
-            self.assertEqual(value, 2)
-        defopt.run(main, argv=['1'])
-
-    def test_double_parser(self):
-        defopt.parser(int)(int)
-        with self.assertRaises(Exception):
-            defopt.parser(int)(int)
-
-    def test_return(self):
-        @defopt.parser(int)
-        def test(string): pass
-        self.assertIsNotNone(test)
+    def test_removed(self):
+        with self.assertRaises(DeprecationWarning):
+            @defopt.parser
+            def func():
+                pass
 
 
 class TestEnums(unittest.TestCase):
