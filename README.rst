@@ -15,7 +15,7 @@ defopt will not:
 - Allow you to build highly complex or customized command line tools
 
 If you want total control over how your command line looks or behaves, try
-docopt_, click_ or plac_. If you just want to write Python code and leave the
+docopt_, click_ or argh_. If you just want to write Python code and leave the
 command line interface up to someone else, defopt is for you.
 
 Usage
@@ -108,7 +108,7 @@ Documentation is hosted on `Read the Docs`_.
 .. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 .. _docopt: http://docopt.org/
 .. _click: http://click.pocoo.org/
-.. _plac: http://plac.googlecode.com/hg/doc/plac.html
+.. _argh: http://argh.readthedocs.org/en/latest/
 .. _documented: http://defopt.readthedocs.org/en/latest/features.html#docstring-styles
 .. _GitHub repository: https://github.com/evanunderscore/defopt
 .. _Read the Docs: http://defopt.readthedocs.org/en/latest/
