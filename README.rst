@@ -108,9 +108,9 @@ Documentation is hosted on `Read the Docs`_.
 .. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 .. _docopt: http://docopt.org/
 .. _click: http://click.pocoo.org/
-.. _argh: http://argh.readthedocs.org/en/latest/
-.. _documented: http://defopt.readthedocs.org/en/latest/features.html#docstring-styles
+.. _argh: http://argh.readthedocs.io/en/latest/
+.. _documented: http://defopt.readthedocs.io/en/latest/features.html#docstring-styles
 .. _GitHub repository: https://github.com/evanunderscore/defopt
-.. _Read the Docs: http://defopt.readthedocs.org/en/latest/
+.. _Read the Docs: http://defopt.readthedocs.io/en/latest/
 
 .. This document is included in docs/index.rst; table of contents appears here.

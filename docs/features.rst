@@ -191,7 +191,7 @@ A runnable example is available at `examples/annotations.py`_.
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _Google: http://google.github.io/styleguide/pyguide.html
 .. _Numpy: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
-.. _Napoleon: https://sphinxcontrib-napoleon.readthedocs.org/en/latest/
+.. _Napoleon: https://sphinxcontrib-napoleon.readthedocs.io/en/latest/
 .. _PEP 0484: https://www.python.org/dev/peps/pep-0484/
 .. _examples/styles.py: https://github.com/evanunderscore/defopt/blob/master/examples/styles.py
 .. _examples/short.py: https://github.com/evanunderscore/defopt/blob/master/examples/short.py
