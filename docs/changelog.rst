@@ -1,8 +1,8 @@
 Changelog
 =========
 
-2.0.0 (develop)
----------------
+2.0.0 (2016-05-10)
+------------------
 
 * Added ability to specify short flags
 * Added automatic ``--name`` and ``--no-name`` flags for optional booleans
