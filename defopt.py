@@ -200,7 +200,9 @@ def _get_type_from_doc(name, globalns):
 
 def _get_type_from_hint(hint):
     if any(_is_generic_type(hint, x) for x in _LIST_TYPES):
-        [type_] = hint.__parameters__
+        # In Python 3.5.2, typing.GenericType distinguishes between
+        # parameters (which are unfilled) and args (which are filled).
+        [type_] = getattr(hint, '__args__', hint.__parameters__)
         return _Type(type_, list)
     elif issubclass(hint, Union):
         # For Union[type, NoneType], just use type.
