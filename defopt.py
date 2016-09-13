@@ -116,31 +116,32 @@ def _populate_parser(func, parser, parsers, short):
         type_ = _get_type(func, name, doc, hints)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
-        if type_.type == bool and param.default != param.empty:
+        required = param.default == param.empty
+        positional = required and not type_.container and param.kind != param.KEYWORD_ONLY
+        if type_.type == bool and not positional:
             # Special case: just add parameterless --name and --no-name flags.
-            _add_argument(parser, name, short,
+            group = parser.add_mutually_exclusive_group(required=required)
+            _add_argument(group, name, short,
                           action='store_true',
                           default=param.default,
                           # Add help if available.
                           **kwargs)
-            _add_argument(parser, 'no-' + name, short,
+            _add_argument(group, 'no-' + name, short,
                           action='store_false',
                           default=param.default,
                           dest=name)
             continue
-        if type_.container:
-            assert type_.container == list
-            kwargs['nargs'] = '*'
-            if param.default == param.empty:
-                kwargs['required'] = True
-            else:
-                kwargs['default'] = param.default
-        elif param.default == param.empty:
+        if positional:
             kwargs['_positional'] = True
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['nargs'] = '*'
+        elif required:
+            kwargs['required'] = True
         else:
             kwargs['default'] = param.default
+        if type_.container:
+            assert type_.container == list
+            kwargs['nargs'] = '*'
         if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
             # Want these to behave like argparse choices.
             kwargs['choices'] = _ValueOrderedDict((x.name, x) for x in type_.type)

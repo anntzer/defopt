@@ -38,11 +38,25 @@ class TestDefopt(unittest.TestCase):
         exec(textwrap.dedent('''\
             def main(*, foo='bar'):
                 """:type foo: str"""
-                self.assertEqual(foo, 'baz')
-                self.calls += 1
+                return foo
         '''), globals_)
-        defopt.run(globals_['main'], argv=['--foo', 'baz'])
-        self.assertEqual(self.calls, 1)
+        main = globals_['main']
+        self.assertEqual(defopt.run(main, argv=['--foo', 'baz']), 'baz')
+        self.assertEqual(defopt.run(main, argv=[]), 'bar')
+
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    def test_keyword_only_no_default(self):
+        # Need to hide execution inside exec for Python 2's benefit.
+        globals_ = {'self': self}
+        exec(textwrap.dedent('''\
+            def main(*, foo):
+                """:type foo: str"""
+                return foo
+        '''), globals_)
+        main = globals_['main']
+        self.assertEqual(defopt.run(main, argv=['--foo', 'baz']), 'baz')
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=[])
 
     def test_var_keywords(self):
         def bad(**kwargs):
@@ -166,6 +180,20 @@ class TestParsers(unittest.TestCase):
         with self.assertRaises(ValueError):
             defopt._get_parser(list)
 
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    def test_list_keyword_only(self):
+        # Need to hide execution inside exec for Python 2's benefit.
+        globals_ = {'self': self}
+        exec(textwrap.dedent('''\
+            def main(*, foo):
+                """:type foo: list[int]"""
+                return foo
+        '''), globals_)
+        main = globals_['main']
+        self.assertEqual(defopt.run(main, argv=['--foo', '1', '2']), [1, 2])
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=[])
+
     def test_bool(self):
         def main(foo):
             """:type foo: bool"""
@@ -184,6 +212,29 @@ class TestParsers(unittest.TestCase):
         self.assertIs(defopt.run(main, argv=['--foo']), True)
         self.assertIs(defopt.run(main, argv=['--no-foo']), False)
         self.assertIs(defopt.run(main, argv=[]), default)
+
+    @unittest.skipIf(sys.version_info < (3, 4), 'expectedFailure ignores SystemExit')
+    @unittest.expectedFailure
+    def test_bool_kwarg_override(self):
+        def main(foo=True):
+            """:type foo: bool"""
+            return foo
+        self.assertIs(defopt.run(main, argv=['--foo', '--no-foo']), False)
+
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    def test_bool_keyword_only(self):
+        # Need to hide execution inside exec for Python 2's benefit.
+        globals_ = {'self': self}
+        exec(textwrap.dedent('''\
+            def main(*, foo):
+                """:type foo: bool"""
+                return foo
+        '''), globals_)
+        main = globals_['main']
+        self.assertIs(defopt.run(main, argv=['--foo']), True)
+        self.assertIs(defopt.run(main, argv=['--no-foo']), False)
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=[])
 
 
 class TestParsersDeprecated(unittest.TestCase):

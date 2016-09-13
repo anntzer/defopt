@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.0.0 (develop)
+---------------
+
+* Changed keyword-only arguments without defaults to required flags
+
 2.0.1 (2016-09-13)
 ------------------
 

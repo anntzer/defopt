@@ -46,33 +46,35 @@ The command line usage will indicate this. ::
 Flags
 -----
 
-Any optional arguments are converted to flags, with all underscores in the name
+Any keyword arguments are converted to flags, with all underscores in the name
 replaced by hyphens. Names of positional arguments are used unmodified::
 
-    usage: test.py [-h] [--optional-arg OPTIONAL_ARG] positional_arg
+    usage: test.py [-h] [--keyword-arg KEYWORD_ARG] positional_arg
 
     positional arguments:
       positional_arg
 
     optional arguments:
       -h, --help            show this help message and exit
-      --optional-arg OPTIONAL_ARG
+      --keyword-arg KEYWORD_ARG
+
+In Python 3, any keyword-only arguments without defaults are marked as required.
 
 If you wish to specify that a particular flag should also have an associated
 short version, you can pass a mapping to `defopt.run`::
 
-    defopt.run(main, short={'optional-arg': 'o'})
+    defopt.run(main, short={'keyword-arg': 'k'})
 
-Now, ``-o`` is exactly equivalent to ``--optional-arg``::
+Now, ``-k`` is exactly equivalent to ``--keyword-arg``::
 
-      -o OPTIONAL_ARG, --optional-arg OPTIONAL_ARG
+      -k KEYWORD_ARG, --keyword-arg KEYWORD_ARG
 
 A runnable example is available at `examples/short.py`_.
 
 Booleans
 --------
 
-Optional boolean arguments are automatically converted to two separate flags:
+Boolean keyword arguments are automatically converted to two separate flags:
 ``--name`` which stores `True` and ``--no-name`` which stores `False`. Your
 help text and the default will be displayed next to the ``--name`` flag::
 
