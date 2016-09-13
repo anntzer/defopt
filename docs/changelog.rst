@@ -1,8 +1,8 @@
 Changelog
 =========
 
-development
------------
+2.0.1 (2016-09-13)
+------------------
 
 * Fixed handling of generic types in Python 3.5.2 (and typing 3.5.2)
 
