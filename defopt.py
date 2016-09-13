@@ -200,7 +200,7 @@ def _get_type_from_doc(name, globalns):
 
 def _get_type_from_hint(hint):
     if any(_is_generic_type(hint, x) for x in _LIST_TYPES):
-        # In Python 3.5.2, typing.GenericType distinguishes between
+        # In Python 3.5.2, typing.GenericMeta distinguishes between
         # parameters (which are unfilled) and args (which are filled).
         [type_] = getattr(hint, '__args__', hint.__parameters__)
         return _Type(type_, list)
