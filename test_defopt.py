@@ -319,7 +319,7 @@ class TestDoc(unittest.TestCase):
         doc = defopt._parse_doc(test)
         self.assertEqual(doc.text, 'start int end')
 
-    @unittest.skip
+    @unittest.expectedFailure
     def test_explicit_role_desired(self):
         """Desired output for issue #1."""
         def test():
