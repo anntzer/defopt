@@ -16,25 +16,26 @@ if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
 
 
 class TestDefopt(unittest.TestCase):
-    def setUp(self):
-        self.calls = 0
-
     def test_main(self):
-        main, args = self._def_main()
-        defopt.run(main, argv=args)
-        self.assertEqual(self.calls, 1)
+        def main(foo):
+            """:type foo: str"""
+            return foo
+        self.assertEqual(defopt.run(main, argv=['foo']), 'foo')
 
     def test_subcommands(self):
-        sub1, sub1_args = self._def_sub1()
-        sub2, sub2_args = self._def_sub2()
-        defopt.run(sub1, sub2, argv=sub1_args)
-        defopt.run(sub1, sub2, argv=sub2_args)
-        self.assertEqual(self.calls, 2)
+        def sub1(*bar):
+            """:type bar: float"""
+            return bar
+        def sub2(baz=None):
+            """:type baz: int"""
+            return baz
+        self.assertEqual(defopt.run(sub1, sub2, argv=['sub1', '1.1']), (1.1,))
+        self.assertEqual(defopt.run(sub1, sub2, argv=['sub2', '--baz', '1']), 1)
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
         # Need to hide execution inside exec for Python 2's benefit.
-        globals_ = {'self': self}
+        globals_ = {}
         exec(textwrap.dedent('''\
             def main(*, foo='bar'):
                 """:type foo: str"""
@@ -47,7 +48,7 @@ class TestDefopt(unittest.TestCase):
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only_no_default(self):
         # Need to hide execution inside exec for Python 2's benefit.
-        globals_ = {'self': self}
+        globals_ = {}
         exec(textwrap.dedent('''\
             def main(*, foo):
                 """:type foo: str"""
@@ -74,8 +75,10 @@ class TestDefopt(unittest.TestCase):
             defopt.run(foo=None)
 
     def test_no_subparser_specified(self):
-        sub1, _ = self._def_sub1()
-        sub2, _ = self._def_sub2()
+        def sub1():
+            pass
+        def sub2():
+            pass
         with self.assertRaises(SystemExit):
             defopt.run(sub1, sub2, argv=[])
 
@@ -111,34 +114,13 @@ class TestDefopt(unittest.TestCase):
             return a_b_c, d_e_f
         self.assertEqual(defopt.run(main, argv=['1', '--d-e-f', '2']), (1, 2))
 
-    def _def_main(self):
-        def main(foo):
-            """:type foo: str"""
-            self.assertEqual(foo, 'foo')
-            self.calls += 1
-        return main, ['foo']
-
-    def _def_sub1(self):
-        def sub1(*bar):
-            """:type bar: int"""
-            self.assertEqual(bar, (1,))
-            self.calls += 1
-        return sub1, ['sub1', '1']
-
-    def _def_sub2(self):
-        def sub2(baz=None):
-            """:type baz: float"""
-            self.assertEqual(baz, 1.1)
-            self.calls += 1
-        return sub2, ['sub2', '--baz', '1.1']
-
 
 class TestParsers(unittest.TestCase):
     def test_parser(self):
         def main(value):
             """:type value: int"""
-            self.assertEqual(value, 1)
-        defopt.run(main, argv=['1'])
+            return value
+        self.assertEqual(defopt.run(main, argv=['1']), 1)
 
     def test_overridden_parser(self):
         def parser(string):
@@ -146,8 +128,8 @@ class TestParsers(unittest.TestCase):
 
         def main(value):
             """:type value: int"""
-            self.assertEqual(value, 2)
-        defopt.run(main, parsers={int: parser}, argv=['1'])
+            return value
+        self.assertEqual(defopt.run(main, parsers={int: parser}, argv=['1']), 2)
 
     def test_parse_bool(self):
         parser = defopt._get_parser(bool)
@@ -164,8 +146,8 @@ class TestParsers(unittest.TestCase):
     def test_list(self):
         def main(foo):
             """:type foo: list[float]"""
-            self.assertEqual(foo, [1.1, 2.2])
-        defopt.run(main, argv=['--foo', '1.1', '2.2'])
+            return foo
+        self.assertEqual(defopt.run(main, argv=['--foo', '1.1', '2.2']), [1.1, 2.2])
 
     def test_list_kwarg(self):
         def main(foo=None):
@@ -173,8 +155,8 @@ class TestParsers(unittest.TestCase):
 
             :type foo: list[float]
             """
-            self.assertEqual(foo, [1.1, 2.2])
-        defopt.run(main, argv=['--foo', '1.1', '2.2'])
+            return foo
+        self.assertEqual(defopt.run(main, argv=['--foo', '1.1', '2.2']), [1.1, 2.2])
 
     def test_list_bare(self):
         with self.assertRaises(ValueError):
@@ -183,7 +165,7 @@ class TestParsers(unittest.TestCase):
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_list_keyword_only(self):
         # Need to hide execution inside exec for Python 2's benefit.
-        globals_ = {'self': self}
+        globals_ = {}
         exec(textwrap.dedent('''\
             def main(*, foo):
                 """:type foo: list[int]"""
@@ -224,7 +206,7 @@ class TestParsers(unittest.TestCase):
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_bool_keyword_only(self):
         # Need to hide execution inside exec for Python 2's benefit.
-        globals_ = {'self': self}
+        globals_ = {}
         exec(textwrap.dedent('''\
             def main(*, foo):
                 """:type foo: bool"""
@@ -267,28 +249,30 @@ class TestEnums(unittest.TestCase):
     def test_enum(self):
         def main(foo):
             """:type foo: Choice"""
-        defopt.run(main, argv=['one'])
-        defopt.run(main, argv=['two'])
+            return foo
+        self.assertEqual(defopt.run(main, argv=['one']), Choice.one)
+        self.assertEqual(defopt.run(main, argv=['two']), Choice.two)
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=['three'])
 
     def test_optional(self):
         def main(foo=None):
             """:type foo: Choice"""
-        defopt.run(main, argv=['--foo', 'one'])
-        defopt.run(main, argv=[])
+            return foo
+        self.assertEqual(defopt.run(main, argv=['--foo', 'one']), Choice.one)
+        self.assertIs(defopt.run(main, argv=[]), None)
 
     def test_subcommand(self):
         def sub1(foo):
             """:type foo: Choice"""
-            self.assertEqual(foo, Choice.one)
+            return foo
 
         def sub2(bar):
             """:type bar: Choice"""
-            self.assertEqual(bar, Choice.two)
+            return bar
 
-        defopt.run(sub1, sub2, argv=['sub1', 'one'])
-        defopt.run(sub1, sub2, argv=['sub2', 'two'])
+        self.assertEqual(defopt.run(sub1, sub2, argv=['sub1', 'one']), Choice.one)
+        self.assertEqual(defopt.run(sub1, sub2, argv=['sub2', 'two']), Choice.two)
 
     def test_valuedict(self):
         valuedict = defopt._ValueOrderedDict({'a': 1})
