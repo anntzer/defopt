@@ -16,7 +16,11 @@ from typing import get_type_hints as _get_type_hints
 from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
-from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
+try:
+    from sphinx.ext.napoleon.docstring import GoogleDocstring, NumpyDocstring
+except ImportError:  # pragma: no cover
+    from sphinxcontrib.napoleon.docstring import GoogleDocstring
+    from sphinxcontrib.napoleon.docstring import NumpyDocstring
 
 # The 2.x builtin goes first so we don't get future's builtins if installed
 try:

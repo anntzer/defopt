@@ -206,6 +206,7 @@ A runnable example is available at `examples/annotations.py`_.
 .. [#] While Napoleon is included with Sphinx as `sphinx.ext.napoleon`, defopt
    depends on ``sphinxcontrib-napoleon`` so that end users of your command line
    tool are not required to install Sphinx and all of its dependencies.
+   However, if Sphinx is installed, defopt can just use that.
 .. [#] `enum` was introduced in Python 3.4. If you are using an older version
    of Python, the backport will be installed as a dependency.
 .. [#] `typing` was introduced in Python 3.5. If you are using an older version
