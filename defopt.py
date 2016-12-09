@@ -205,19 +205,32 @@ def _get_type_from_hint(hint):
         # parameters (which are unfilled) and args (which are filled).
         [type_] = getattr(hint, '__args__', hint.__parameters__)
         return _Type(type_, list)
-    elif issubclass(hint, Union):
+    elif _is_generic_type(hint, Union):
         # For Union[type, NoneType], just use type.
-        if len(hint.__union_params__) == 2:
-            type_, none = hint.__union_params__
+        args = _get_union_args(hint)
+        if len(args) == 2:
+            type_, none = args
             if none == type(None):
                 return _Type(type_, None)
     return _Type(hint, None)
 
 
 def _is_generic_type(thing, generic_type):
-    if not hasattr(thing, '__origin__'):
-        return False
-    return thing.__origin__ == generic_type
+    if hasattr(thing, '__origin__'):
+        return thing.__origin__ is generic_type
+    # Unions from older versions of typing don't have a __origin__,
+    # so we have to find some other way to identify them.
+    # (see https://github.com/python/typing/pull/283).
+    if generic_type is Union:
+        return getattr(thing, '__union_params__', [])
+    return False
+
+
+def _get_union_args(union):
+    try:
+        return union.__args__
+    except AttributeError:
+        return union.__union_params__
 
 
 def _call_function(func, args):

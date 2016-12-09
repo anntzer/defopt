@@ -4,6 +4,7 @@ Changelog
 3.0.0 (develop)
 ---------------
 
+* Added support for Python 3.6
 * Changed keyword-only arguments without defaults to required flags
 * Added support for all variants of ``param`` and ``type``
 * Added support for list-typed variable positional arguments
