@@ -16,7 +16,7 @@ setup(
     license='GNU General Public License v3',
     py_modules=['defopt'],
     test_suite='test_defopt',
-    install_requires=['docutils', 'sphinxcontrib-napoleon'],
+    install_requires=['docutils', 'sphinxcontrib-napoleon>=0.5.1'],
     extras_require={
         ':python_version=="2.7"': ['enum34', 'funcsigs', 'typing'],
         ':python_version=="3.3"': ['enum34', 'typing'],

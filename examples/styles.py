@@ -32,7 +32,7 @@ def sphinx(integer, farewell=None):
 
 
     :param int integer: Number to square
-    :param str farewell: Parting message
+    :keyword str farewell: Parting message
     """
     print(integer ** 2)
     if farewell is not None:
@@ -57,6 +57,8 @@ def google(integer, farewell=None):
 
     Args:
       integer(int): Number to square
+
+    Keyword Arguments:
       farewell(str): Parting message
     """
     print(integer ** 2)
@@ -84,6 +86,9 @@ def numpy(integer, farewell=None):
     ----------
     integer : int
         Number to square
+
+    Keyword Arguments
+    -----------------
     farewell : str
         Parting message
     """

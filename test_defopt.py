@@ -313,6 +313,25 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(two.text, 'second param')
         self.assertEqual(two.type, 'float')
 
+    def test_parse_params(self):
+        def test(first, second, third, fourth, fifth, sixth):
+            """Test function
+
+            :param first: first param
+            :parameter int second: second param
+            :arg third: third param
+            :argument float fourth: fourth param
+            :key fifth: fifth param
+            :keyword str sixth: sixth param
+            """
+        doc = defopt._parse_doc(test)
+        self.assertEqual(doc.params['first'].text, 'first param')
+        self.assertEqual(doc.params['second'].text, 'second param')
+        self.assertEqual(doc.params['third'].text, 'third param')
+        self.assertEqual(doc.params['fourth'].text, 'fourth param')
+        self.assertEqual(doc.params['fifth'].text, 'fifth param')
+        self.assertEqual(doc.params['sixth'].text, 'sixth param')
+
     def test_parse_doubles(self):
         def test(param):
             """Test function
@@ -370,13 +389,14 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(doc.text, 'start :py:class:`int` end')
 
     def test_sphinx(self):
-        def func(arg1, arg2):
+        def func(arg1, arg2, arg3=None):
             """One line summary.
 
             Extended description.
 
             :param int arg1: Description of `arg1`
             :param str arg2: Description of `arg2`
+            :keyword float arg3: Description of `arg3`
             :returns: Description of return value.
             :rtype: str
             """
@@ -384,8 +404,8 @@ class TestDoc(unittest.TestCase):
         self._check_doc(doc)
 
     def test_google(self):
-        # Docstring taken from Napoleon's example.
-        def func(arg1, arg2):
+        # Docstring taken from Napoleon's example (plus a keyword argument).
+        def func(arg1, arg2, arg3=None):
             """One line summary.
 
             Extended description.
@@ -393,6 +413,8 @@ class TestDoc(unittest.TestCase):
             Args:
               arg1(int): Description of `arg1`
               arg2(str): Description of `arg2`
+            Keyword Arguments:
+              arg3(float): Description of `arg3`
             Returns:
               str: Description of return value.
             """
@@ -400,8 +422,8 @@ class TestDoc(unittest.TestCase):
         self._check_doc(doc)
 
     def test_numpy(self):
-        # Docstring taken from Napoleon's example.
-        def func(arg1, arg2):
+        # Docstring taken from Napoleon's example (plus a keyword argument).
+        def func(arg1, arg2, arg3=None):
             """One line summary.
 
             Extended description.
@@ -412,6 +434,10 @@ class TestDoc(unittest.TestCase):
                 Description of `arg1`
             arg2 : str
                 Description of `arg2`
+            Keyword Arguments
+            -----------------
+            arg3 : float
+                Description of `arg3`
             Returns
             -------
             str
@@ -422,11 +448,13 @@ class TestDoc(unittest.TestCase):
 
     def _check_doc(self, doc):
         self.assertEqual(doc.text, 'One line summary.\n\nExtended description.')
-        self.assertEqual(len(doc.params), 2)
+        self.assertEqual(len(doc.params), 3)
         self.assertEqual(doc.params['arg1'].text, 'Description of arg1')
         self.assertEqual(doc.params['arg1'].type, 'int')
         self.assertEqual(doc.params['arg2'].text, 'Description of arg2')
         self.assertEqual(doc.params['arg2'].type, 'str')
+        self.assertEqual(doc.params['arg3'].text, 'Description of arg3')
+        self.assertEqual(doc.params['arg3'].type, 'float')
 
     def test_sequence(self):
         globalns = {'Sequence': typing.Sequence}

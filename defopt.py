@@ -33,6 +33,8 @@ if sys.version_info.major == 2:  # pragma: no cover
         return {}
 
 _LIST_TYPES = [List, Iterable, Sequence]
+_PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
+_TYPE_NAMES = ['type', 'kwtype']
 
 log = logging.getLogger(__name__)
 
@@ -266,7 +268,7 @@ def _parse_doc(func):
             doctype, name = parts
         elif len(parts) == 3:
             doctype, type_, name = parts
-            if doctype != 'param':
+            if doctype not in _PARAM_TYPES:
                 log.debug('ignoring field %s', field_name.text)
                 continue
             log.debug('inline param type %s', type_)
@@ -276,6 +278,10 @@ def _parse_doc(func):
         else:
             log.debug('ignoring field %s', field_name.text)
             continue
+        if doctype in _PARAM_TYPES:
+            doctype = 'param'
+        if doctype in _TYPE_NAMES:
+            doctype = 'type'
         text = _get_text(field_body)
         log.debug('%s %s: %s', doctype, name, text)
         if doctype in params[name]:
