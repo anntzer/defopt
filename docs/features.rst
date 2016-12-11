@@ -153,7 +153,13 @@ and received as a tuple. ::
 
     test.py 1 2 3
 
+If the argument is a list type (see Lists_ and Annotations_), this will instead
+create a flag that can be specified multiple times, each time creating a new
+list.
+
 Variable keyword arguments (``**kwargs``) are not supported.
+
+A runnable example is available at `examples/starargs.py`_.
 
 Entry Points
 ------------
@@ -201,6 +207,7 @@ A runnable example is available at `examples/annotations.py`_.
 .. _examples/lists.py: https://github.com/evanunderscore/defopt/blob/master/examples/lists.py
 .. _examples/choices.py: https://github.com/evanunderscore/defopt/blob/master/examples/choices.py
 .. _examples/parsers.py: https://github.com/evanunderscore/defopt/blob/master/examples/parsers.py
+.. _examples/starargs.py: https://github.com/evanunderscore/defopt/blob/master/examples/starargs.py
 .. _examples/annotations.py: https://github.com/evanunderscore/defopt/blob/master/examples/annotations.py
 
 .. [#] While Napoleon is included with Sphinx as `sphinx.ext.napoleon`, defopt

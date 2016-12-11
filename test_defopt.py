@@ -8,7 +8,7 @@ import unittest
 import mock
 
 import defopt
-from examples import booleans, choices, lists, parsers, short, styles
+from examples import booleans, choices, lists, parsers, short, starargs, styles
 
 
 if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
@@ -31,6 +31,13 @@ class TestDefopt(unittest.TestCase):
             return baz
         self.assertEqual(defopt.run(sub1, sub2, argv=['sub1', '1.1']), (1.1,))
         self.assertEqual(defopt.run(sub1, sub2, argv=['sub2', '--baz', '1']), 1)
+
+    def test_var_positional(self):
+        def main(*foo):
+            """:type foo: int"""
+            return foo
+        self.assertEqual(defopt.run(main, argv=['1', '2']), (1, 2))
+        self.assertEqual(defopt.run(main, argv=[]), ())
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
@@ -176,6 +183,18 @@ class TestParsers(unittest.TestCase):
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
 
+    def test_list_var_positional(self):
+        def modern(*foo):
+            """:type foo: typing.Iterable[int]"""
+            return foo
+        def legacy(*foo):
+            """:type foo: list[int]"""
+            return foo
+        for func in modern, legacy:
+            out = defopt.run(func, argv=['--foo', '1', '--foo', '2', '3'])
+            self.assertEqual(out, ([1], [2, 3]))
+            self.assertEqual(defopt.run(func, argv=[]), ())
+
     def test_bool(self):
         def main(foo):
             """:type foo: bool"""
@@ -184,6 +203,27 @@ class TestParsers(unittest.TestCase):
         self.assertIs(defopt.run(main, argv=['0']), False)
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
+
+    def test_bool_list(self):
+        def main(foo):
+            """:type foo: list[bool]"""
+            return foo
+        self.assertEqual(defopt.run(main, argv=['--foo', '1', '0']), [True, False])
+
+    def test_bool_var_positional(self):
+        def main(*foo):
+            """:type foo: bool"""
+            return foo
+        self.assertEqual(defopt.run(main, argv=['1', '1', '0']), (True, True, False))
+        self.assertEqual(defopt.run(main, argv=[]), ())
+
+    def test_bool_list_var_positional(self):
+        def main(*foo):
+            """:type foo: list[bool]"""
+            return foo
+        argv = ['--foo', '1', '--foo', '0', '0']
+        self.assertEqual(defopt.run(main, argv=argv), ([True], [False, False]))
+        self.assertEqual(defopt.run(main, argv=[]), ())
 
     def test_bool_kwarg(self):
         default = object()
@@ -616,6 +656,21 @@ class TestExamples(unittest.TestCase):
         self.assertEqual(output, b'hello!\nhello!\n')
         output = self._run_example(short, ['-c', '2'])
         self.assertEqual(output, b'hello!\nhello!\n')
+
+    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
+    @mock.patch('examples.starargs.print', create=True)
+    def test_starargs(self, print_):
+        starargs.plain(1, 2, 3)
+        print_.assert_has_calls([mock.call(1), mock.call(2), mock.call(3)])
+        starargs.iterable([1, 2], [3, 4, 5])
+        print_.assert_has_calls([mock.call([1, 2]), mock.call([3, 4, 5])])
+
+    def test_starargs_cli(self):
+        output = self._run_example(starargs, ['plain', '1', '2', '3'])
+        self.assertEqual(output, b'1\n2\n3\n')
+        args = ['iterable', '--groups', '1', '2', '--groups', '3', '4', '5']
+        output = self._run_example(starargs, args)
+        self.assertEqual(output, b'[1, 2]\n[3, 4, 5]\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('examples.styles.print', create=True)

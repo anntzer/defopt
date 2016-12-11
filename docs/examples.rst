@@ -44,6 +44,15 @@ Parsers
     :undoc-members:
     :show-inheritance:
 
+Variable Positional Arguments
+-----------------------------
+
+.. automodule:: examples.starargs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 Docstring Styles
 ----------------
 

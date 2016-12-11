@@ -6,6 +6,7 @@ Changelog
 
 * Changed keyword-only arguments without defaults to required flags
 * Added support for all variants of ``param`` and ``type``
+* Added support for list-typed variable positional arguments
 
 2.0.1 (2016-09-13)
 ------------------

@@ -110,9 +110,9 @@ def _populate_parser(func, parser, parsers, short):
         type_ = _get_type(func, name, doc, hints)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
-        required = param.default == param.empty
-        positional = required and not type_.container and param.kind != param.KEYWORD_ONLY
-        if type_.type == bool and not positional:
+        required = param.default == param.empty and param.kind != param.VAR_POSITIONAL
+        positional = param.default == param.empty and not type_.container and param.kind != param.KEYWORD_ONLY
+        if type_.type == bool and not positional and not type_.container:
             # Special case: just add parameterless --name and --no-name flags.
             group = parser.add_mutually_exclusive_group(required=required)
             _add_argument(group, name, short,
@@ -136,6 +136,9 @@ def _populate_parser(func, parser, parsers, short):
         if type_.container:
             assert type_.container == list
             kwargs['nargs'] = '*'
+            if param.kind == param.VAR_POSITIONAL:
+                kwargs['action'] = 'append'
+                kwargs['default'] = []
         if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
             # Want these to behave like argparse choices.
             kwargs['choices'] = _ValueOrderedDict((x.name, x) for x in type_.type)
