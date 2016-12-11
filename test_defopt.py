@@ -219,14 +219,6 @@ class TestParsers(unittest.TestCase):
             defopt.run(main, argv=[])
 
 
-class TestParsersDeprecated(unittest.TestCase):
-    def test_removed(self):
-        with self.assertRaises(DeprecationWarning):
-            @defopt.parser
-            def func():
-                pass
-
-
 class TestFlags(unittest.TestCase):
     def test_short_flags(self):
         def func(foo=1):

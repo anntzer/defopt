@@ -42,8 +42,6 @@ _Doc = namedtuple('_Doc', ('text', 'params'))
 _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
 
-_parsers = {}
-
 
 def run(*funcs, **kwargs):
     """run(*funcs, parsers=None, short=None, argv=None)
@@ -98,12 +96,6 @@ def run(*funcs, **kwargs):
 
 class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):
     pass
-
-
-def parser(type_):
-    raise DeprecationWarning(
-        'this function was deprecated in defopt 1.3 and removed in defopt 2.0 '
-        '(specify mapping from type to parser in call to defopt.run)')
 
 
 def _populate_parser(func, parser, parsers, short):
@@ -317,10 +309,6 @@ def _get_parser(type_, parsers=None):
 def _find_parser(type_, parsers):
     try:
         return parsers[type_]
-    except KeyError:
-        pass
-    try:
-        return _parsers[type_]
     except KeyError:
         pass
     if type_ in [int, str, float]:
