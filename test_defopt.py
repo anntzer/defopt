@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from enum import Enum
 import subprocess
 import sys
@@ -553,6 +554,59 @@ class TestAnnotations(unittest.TestCase):
                 return bar
         '''), globals_)
         self.assertEqual(defopt.run(globals_['foo'], argv=['1']), 1)
+
+
+class TestHelp(unittest.TestCase):
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    def test_keyword_only(self):
+        globals_ = {}
+        exec(textwrap.dedent('''\
+            def foo(*, bar):
+                """:param int bar: baz"""
+                return bar
+        '''), globals_)
+        self.assertNotIn('default', self._get_help(globals_['foo']))
+
+    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
+    def test_keyword_only_bool(self):
+        globals_ = {}
+        exec(textwrap.dedent('''\
+            def foo(*, bar):
+                """:param bool bar: baz"""
+                return bar
+        '''), globals_)
+        self.assertNotIn('default', self._get_help(globals_['foo']))
+
+    @unittest.expectedFailure
+    def test_var_positional_desired(self):
+        def foo(*bar):
+            """:param int bar: baz"""
+            return bar
+        self.assertNotIn('default', self._get_help(foo))
+
+    def test_var_positional_actual(self):
+        def foo(*bar):
+            """:param int bar: baz"""
+            return bar
+        self.assertIn('(default: [])', self._get_help(foo))
+
+    @unittest.expectedFailure
+    def test_list_var_positional_desired(self):
+        def foo(*bar):
+            """:param list[int] bar: baz"""
+            return bar
+        self.assertNotIn('default', self._get_help(foo))
+
+    def test_list_var_positional_actual(self):
+        def foo(*bar):
+            """:param list[int] bar: baz"""
+            return bar
+        self.assertIn('(default: [])', self._get_help(foo))
+
+    def _get_help(self, func):
+        parser = ArgumentParser(formatter_class=defopt._Formatter)
+        defopt._populate_parser(func, parser, {}, {})
+        return parser.format_help()
 
 
 class TestExamples(unittest.TestCase):

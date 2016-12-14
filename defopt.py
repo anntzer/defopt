@@ -8,7 +8,7 @@ import inspect
 import logging
 import re
 import sys
-from argparse import ArgumentParser, RawTextHelpFormatter, ArgumentDefaultsHelpFormatter
+from argparse import SUPPRESS, ArgumentParser, RawTextHelpFormatter, ArgumentDefaultsHelpFormatter
 from collections import defaultdict, namedtuple, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
@@ -75,7 +75,6 @@ def run(*funcs, **kwargs):
     if len(funcs) == 1:
         [main] = funcs
     parser = ArgumentParser(formatter_class=_Formatter)
-    parser.set_defaults()
     if main:
         _populate_parser(main, parser, parsers, short)
     else:
@@ -110,29 +109,33 @@ def _populate_parser(func, parser, parsers, short):
         type_ = _get_type(func, name, doc, hints)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
-        required = param.default == param.empty and param.kind != param.VAR_POSITIONAL
-        positional = param.default == param.empty and not type_.container and param.kind != param.KEYWORD_ONLY
+        hasdefault = param.default != param.empty
+        default = param.default if hasdefault else SUPPRESS
+        required = not hasdefault and param.kind != param.VAR_POSITIONAL
+        positional = not hasdefault and not type_.container and param.kind != param.KEYWORD_ONLY
         if type_.type == bool and not positional and not type_.container:
             # Special case: just add parameterless --name and --no-name flags.
             group = parser.add_mutually_exclusive_group(required=required)
             _add_argument(group, name, short,
                           action='store_true',
-                          default=param.default,
+                          default=default,
                           # Add help if available.
                           **kwargs)
             _add_argument(group, 'no-' + name, short,
                           action='store_false',
-                          default=param.default,
+                          default=default,
                           dest=name)
             continue
         if positional:
             kwargs['_positional'] = True
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['nargs'] = '*'
-        elif required:
-            kwargs['required'] = True
+                # This is purely to override the displayed default of None.
+                # Ideally we wouldn't want to show a default at all.
+                kwargs['default'] = []
         else:
-            kwargs['default'] = param.default
+            kwargs['required'] = required
+            kwargs['default'] = default
         if type_.container:
             assert type_.container == list
             kwargs['nargs'] = '*'
