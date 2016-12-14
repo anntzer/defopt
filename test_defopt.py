@@ -41,7 +41,6 @@ class TestDefopt(unittest.TestCase):
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
-        # Need to hide execution inside exec for Python 2's benefit.
         globals_ = {}
         exec(textwrap.dedent('''\
             def main(*, foo='bar'):
@@ -54,7 +53,6 @@ class TestDefopt(unittest.TestCase):
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only_no_default(self):
-        # Need to hide execution inside exec for Python 2's benefit.
         globals_ = {}
         exec(textwrap.dedent('''\
             def main(*, foo):
@@ -171,7 +169,6 @@ class TestParsers(unittest.TestCase):
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_list_keyword_only(self):
-        # Need to hide execution inside exec for Python 2's benefit.
         globals_ = {}
         exec(textwrap.dedent('''\
             def main(*, foo):
@@ -245,7 +242,6 @@ class TestParsers(unittest.TestCase):
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_bool_keyword_only(self):
-        # Need to hide execution inside exec for Python 2's benefit.
         globals_ = {}
         exec(textwrap.dedent('''\
             def main(*, foo):
@@ -534,36 +530,35 @@ class TestAnnotations(unittest.TestCase):
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_conflicting(self):
-        # Need to hide execution inside exec for Python 2's benefit.
         globals_ = {}
         exec(textwrap.dedent('''\
             def foo(bar: int):
                 """:type bar: float"""
         '''), globals_)
         with self.assertRaisesRegex(ValueError, 'bar.*float.*int'):
-            defopt.run(globals_['foo'], argv='1')
+            defopt.run(globals_['foo'], argv=['1'])
 
     def test_none(self):
         def foo(bar):
             """No type information"""
         with self.assertRaisesRegex(ValueError, 'no type'):
-            defopt.run(foo, argv='1')
+            defopt.run(foo, argv=['1'])
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_same(self):
-        # Need to hide execution inside exec for Python 2's benefit.
         globals_ = {}
         exec(textwrap.dedent('''\
             def foo(bar: int):
                 """:type bar: int"""
+                return bar
         '''), globals_)
-        defopt.run(globals_['foo'], argv='1')
+        self.assertEqual(defopt.run(globals_['foo'], argv=['1']), 1)
 
 
 class TestExamples(unittest.TestCase):
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    @mock.patch('examples.annotations.print', create=True)
+    @mock.patch('builtins.print')
     def test_annotations(self, print_):
         from examples import annotations
         for command in [annotations.documented, annotations.undocumented]:
@@ -579,7 +574,7 @@ class TestExamples(unittest.TestCase):
             self.assertEqual(output, b'[1.0, 8.0]\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    @mock.patch('examples.booleans.print', create=True)
+    @mock.patch('builtins.print')
     def test_booleans(self, print_):
         booleans.main('test', upper=False, repeat=True)
         print_.assert_has_calls([mock.call('test'), mock.call('test')])
@@ -593,7 +588,7 @@ class TestExamples(unittest.TestCase):
         self.assertEqual(output, b'TEST\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    @mock.patch('examples.choices.print', create=True)
+    @mock.patch('builtins.print')
     def test_choices(self, print_):
         choices.main(choices.Choice.one)
         print_.assert_called_with('Choice.one (1)')
@@ -613,7 +608,7 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b'{one,two,three}', error.exception.output)
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    @mock.patch('examples.lists.print', create=True)
+    @mock.patch('builtins.print')
     def test_lists(self, print_):
         lists.main([1.2, 3.4], 2)
         print_.assert_called_with([2.4, 6.8])
@@ -627,7 +622,7 @@ class TestExamples(unittest.TestCase):
         self.assertEqual(output, b'[2.4, 6.8]\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    @mock.patch('examples.parsers.print', create=True)
+    @mock.patch('builtins.print')
     def test_parsers(self, print_):
         date = parsers.datetime(2015, 9, 13)
         parsers.main(date)
@@ -644,7 +639,7 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b'junk', error.exception.output)
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    @mock.patch('examples.short.print', create=True)
+    @mock.patch('builtins.print')
     def test_short(self, print_):
         short.main()
         print_.assert_has_calls([mock.call('hello!')])
@@ -658,7 +653,7 @@ class TestExamples(unittest.TestCase):
         self.assertEqual(output, b'hello!\nhello!\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    @mock.patch('examples.starargs.print', create=True)
+    @mock.patch('builtins.print')
     def test_starargs(self, print_):
         starargs.plain(1, 2, 3)
         print_.assert_has_calls([mock.call(1), mock.call(2), mock.call(3)])
@@ -673,7 +668,7 @@ class TestExamples(unittest.TestCase):
         self.assertEqual(output, b'[1, 2]\n[3, 4, 5]\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
-    @mock.patch('examples.styles.print', create=True)
+    @mock.patch('builtins.print')
     def test_styles(self, print_):
         for command in [styles.sphinx, styles.google, styles.numpy]:
             command(2)
