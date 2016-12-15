@@ -587,31 +587,17 @@ class TestHelp(unittest.TestCase):
         '''), globals_)
         self.assertNotIn('default', self._get_help(globals_['foo']))
 
-    @unittest.expectedFailure
-    def test_var_positional_desired(self):
+    def test_var_positional(self):
         def foo(*bar):
             """:param int bar: baz"""
             return bar
         self.assertNotIn('default', self._get_help(foo))
 
-    def test_var_positional_actual(self):
-        def foo(*bar):
-            """:param int bar: baz"""
-            return bar
-        self.assertIn('(default: [])', self._get_help(foo))
-
-    @unittest.expectedFailure
-    def test_list_var_positional_desired(self):
+    def test_list_var_positional(self):
         def foo(*bar):
             """:param list[int] bar: baz"""
             return bar
         self.assertNotIn('default', self._get_help(foo))
-
-    def test_list_var_positional_actual(self):
-        def foo(*bar):
-            """:param list[int] bar: baz"""
-            return bar
-        self.assertIn('(default: [])', self._get_help(foo))
 
     def test_no_interpolation(self):
         def foo(bar):

@@ -8,7 +8,7 @@ import inspect
 import logging
 import re
 import sys
-from argparse import SUPPRESS, ArgumentParser, RawTextHelpFormatter, ArgumentDefaultsHelpFormatter
+from argparse import SUPPRESS, ArgumentParser, RawTextHelpFormatter
 from collections import defaultdict, namedtuple, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
@@ -36,6 +36,8 @@ log = logging.getLogger(__name__)
 _Doc = namedtuple('_Doc', ('text', 'params'))
 _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
+
+_Formatter = RawTextHelpFormatter
 
 
 def run(*funcs, **kwargs):
@@ -88,10 +90,6 @@ def run(*funcs, **kwargs):
         return _call_function(args._func, args)
 
 
-class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):
-    pass
-
-
 def _populate_parser(func, parser, parsers, short):
     sig = _inspect_signature(func)
     doc = _parse_doc(func)
@@ -99,14 +97,18 @@ def _populate_parser(func, parser, parsers, short):
     parser.description = doc.text
     for name, param in sig.parameters.items():
         kwargs = {}
+        hasdefault = param.default != param.empty
         if name in doc.params:
-            help_ = doc.params[name].text
-            if help_ is not None:
-                kwargs['help'] = help_.replace('%', '%%')
+            help_ = doc.params[name].text or ''
+            help_ = help_.replace('%', '%%')
+            if hasdefault:
+                if help_:
+                    help_ += ' '
+                help_ += '(default: %(default)s)'
+            kwargs['help'] = help_
         type_ = _get_type(func, name, doc, hints)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
-        hasdefault = param.default != param.empty
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = not hasdefault and not type_.container and param.kind != param.KEYWORD_ONLY
@@ -127,9 +129,6 @@ def _populate_parser(func, parser, parsers, short):
             kwargs['_positional'] = True
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['nargs'] = '*'
-                # This is purely to override the displayed default of None.
-                # Ideally we wouldn't want to show a default at all.
-                kwargs['default'] = []
         else:
             kwargs['required'] = required
             kwargs['default'] = default
