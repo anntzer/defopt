@@ -18,15 +18,10 @@ from xml.etree import ElementTree
 from docutils.core import publish_doctree
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 
-# The 2.x builtin goes first so we don't get future's builtins if installed
 try:
-    import __builtin__ as builtins
+    from inspect import signature as _inspect_signature
 except ImportError:  # pragma: no cover
-    import builtins
-
-if not hasattr(inspect, 'signature'):  # pragma: no cover
-    import funcsigs
-    inspect.signature = funcsigs.signature
+    from funcsigs import signature as _inspect_signature
 
 if sys.version_info.major == 2:  # pragma: no cover
     def _get_type_hints(*args, **kwargs):
@@ -98,7 +93,7 @@ class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):
 
 
 def _populate_parser(func, parser, parsers, short):
-    sig = inspect.signature(func)
+    sig = _inspect_signature(func)
     doc = _parse_doc(func)
     hints = _get_type_hints(func)
     parser.description = doc.text
@@ -236,7 +231,7 @@ def _get_union_args(union):
 def _call_function(func, args):
     positionals = []
     keywords = {}
-    sig = inspect.signature(func)
+    sig = _inspect_signature(func)
     for name, param in sig.parameters.items():
         arg = getattr(args, name)
         if param.kind in [param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD]:
