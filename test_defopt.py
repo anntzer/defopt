@@ -613,6 +613,13 @@ class TestHelp(unittest.TestCase):
             return bar
         self.assertIn('(default: [])', self._get_help(foo))
 
+    def test_no_interpolation(self):
+        def foo(bar):
+            """:param int bar: %(prog)s"""
+            return bar
+        self.assertIn('%(prog)s', self._get_help(foo))
+        self.assertNotIn('%%', self._get_help(foo))
+
     def _get_help(self, func):
         parser = ArgumentParser(formatter_class=defopt._Formatter)
         defopt._populate_parser(func, parser, {}, {})

@@ -100,7 +100,9 @@ def _populate_parser(func, parser, parsers, short):
     for name, param in sig.parameters.items():
         kwargs = {}
         if name in doc.params:
-            kwargs['help'] = doc.params[name].text
+            help_ = doc.params[name].text
+            if help_ is not None:
+                kwargs['help'] = help_.replace('%', '%%')
         type_ = _get_type(func, name, doc, hints)
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
