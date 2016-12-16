@@ -27,6 +27,8 @@ if sys.version_info.major == 2:  # pragma: no cover
     def _get_type_hints(*args, **kwargs):
         return {}
 
+__version__ = '3.0.0'
+
 _LIST_TYPES = [List, Iterable, Sequence]
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
 _TYPE_NAMES = ['type', 'kwtype']

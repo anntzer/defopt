@@ -7,7 +7,7 @@ with open('README.rst') as readme:
 
 setup(
     name='defopt',
-    version='2.0.1',
+    version='3.0.0',
     description='Effortless argument parser',
     long_description=long_description,
     author='evan_',

@@ -1,14 +1,15 @@
 Changelog
 =========
 
-3.0.0 (develop)
----------------
+3.0.0 (2016-12-16)
+------------------
 
 * Added support for Python 3.6
 * Changed keyword-only arguments without defaults to required flags
 * Added support for all variants of ``param`` and ``type``
 * Added support for list-typed variable positional arguments
 * Fixed help message formatting to avoid argparse's string interpolation
+* Added __version__ attribute
 
 2.0.1 (2016-09-13)
 ------------------
