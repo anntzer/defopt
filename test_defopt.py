@@ -6,7 +6,10 @@ import textwrap
 import typing
 import unittest
 
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 import defopt
 from examples import booleans, choices, lists, parsers, short, starargs, styles
@@ -757,3 +760,7 @@ class TestExamples(unittest.TestCase):
         argv = [sys.executable, '-m', example.__name__] + argv
         output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
         return output.replace(b'\r\n', b'\n')
+
+
+if __name__ == "__main__":
+    unittest.main()
