@@ -55,8 +55,8 @@ def run(*funcs, **kwargs):
     :param parsers: Dictionary mapping types to parsers to use for parsing
         function arguments.
     :type parsers: Dict[type, Callable[[str], type]]
-    :param short: Dictionary mapping parameter names to letters to use as
-        alternative short flags.
+    :param short: Dictionary mapping parameter names (after conversion of
+        underscores to dashes) to letters, to use as alternative short flags.
     :type short: Dict[str, str]
     :param List[str] argv: Command line arguments to parse (default:
         sys.argv[1:])
