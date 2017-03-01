@@ -2,13 +2,15 @@
 
 Run Python functions from the command line with ``run(func)``.
 """
-from __future__ import absolute_import, division, unicode_literals, print_function
+from __future__ import (
+    absolute_import, division, unicode_literals, print_function)
 
 import inspect
 import logging
 import re
 import sys
-from argparse import SUPPRESS, ArgumentParser, RawTextHelpFormatter, ArgumentDefaultsHelpFormatter
+from argparse import (SUPPRESS, ArgumentParser, RawTextHelpFormatter,
+                      ArgumentDefaultsHelpFormatter)
 from collections import defaultdict, namedtuple, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
@@ -56,14 +58,16 @@ def run(*funcs, **kwargs):
     :param short: Dictionary mapping parameter names to letters to use as
         alternative short flags.
     :type short: Dict[str, str]
-    :param List[str] argv: Command line arguments to parse (default: sys.argv[1:])
+    :param List[str] argv: Command line arguments to parse (default:
+        sys.argv[1:])
     :return: The value returned by the function that was run
     """
     parsers = kwargs.pop('parsers', None)
     short = kwargs.pop('short', {})
     argv = kwargs.pop('argv', None)
     if kwargs:
-        raise TypeError('unexpected keyword argument: {}'.format(list(kwargs)[0]))
+        raise TypeError(
+            'unexpected keyword argument: {}'.format(list(kwargs)[0]))
     if not funcs:
         raise ValueError('need at least one function to run')
     if argv is None:
@@ -77,7 +81,8 @@ def run(*funcs, **kwargs):
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
-            subparser = subparsers.add_parser(func.__name__, formatter_class=_Formatter)
+            subparser = subparsers.add_parser(
+                func.__name__, formatter_class=_Formatter)
             _populate_parser(func, subparser, parsers, short)
             subparser.set_defaults(_func=func)
     args = parser.parse_args(argv)
@@ -111,7 +116,8 @@ def _populate_parser(func, parser, parsers, short):
         hasdefault = param.default != param.empty
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
-        positional = not hasdefault and not type_.container and param.kind != param.KEYWORD_ONLY
+        positional = (not hasdefault and not type_.container
+                      and param.kind != param.KEYWORD_ONLY)
         if type_.type == bool and not positional and not type_.container:
             # Special case: just add parameterless --name and --no-name flags.
             group = parser.add_mutually_exclusive_group(required=required)
@@ -143,7 +149,8 @@ def _populate_parser(func, parser, parsers, short):
                 kwargs['default'] = []
         if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
             # Want these to behave like argparse choices.
-            kwargs['choices'] = _ValueOrderedDict((x.name, x) for x in type_.type)
+            kwargs['choices'] = _ValueOrderedDict(
+                (x.name, x) for x in type_.type)
             kwargs['type'] = _enum_getter(type_.type)
         else:
             kwargs['type'] = _get_parser(type_.type, parsers)
@@ -193,7 +200,8 @@ def _get_type_from_doc(name, globalns):
     if match:
         container, type_ = match.groups()
         if container != 'list':
-            raise ValueError('unsupported container type: {}'.format(container))
+            raise ValueError(
+                'unsupported container type: {}'.format(container))
         return _Type(eval(type_, globalns), list)
     return _get_type_from_hint(eval(name, globalns))
 
