@@ -288,6 +288,19 @@ class TestFlags(unittest.TestCase):
         out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'}, argv=['-F'])
         self.assertIs(out, False)
 
+    def test_auto_short(self):
+        def func(foo=1, bar=2, baz=3):
+            """
+            :type foo: int
+            :type bar: int
+            :type baz: int
+            """
+            return foo
+        out = defopt.run(func, argv=['-f', '2'])
+        self.assertEqual(out, 2)
+        with self.assertRaises(SystemExit):
+            defopt.run(func, argv=['-b', '2'])
+
 
 class TestEnums(unittest.TestCase):
     def test_enum(self):
@@ -742,7 +755,7 @@ class TestExamples(unittest.TestCase):
     def test_short_cli(self):
         output = self._run_example(short, ['--count', '2'])
         self.assertEqual(output, b'hello!\nhello!\n')
-        output = self._run_example(short, ['-c', '2'])
+        output = self._run_example(short, ['-C', '2'])
         self.assertEqual(output, b'hello!\nhello!\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')

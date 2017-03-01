@@ -46,8 +46,10 @@ The command line usage will indicate this. ::
 Flags
 -----
 
-Any keyword arguments are converted to flags, with all underscores in the name
-replaced by hyphens. Names of positional arguments are used unmodified::
+Any keyword arguments are converted to flags, with all underscores in
+the name replaced by hyphens. Names of positional arguments are used
+unmodified.  By default, short flags are generated for keyword arguments
+that do not share their initial with other keyword arguments::
 
     usage: test.py [-h] [--keyword-arg KEYWORD_ARG] positional_arg
 
@@ -56,20 +58,23 @@ replaced by hyphens. Names of positional arguments are used unmodified::
 
     optional arguments:
       -h, --help            show this help message and exit
-      --keyword-arg KEYWORD_ARG
+      -k KEYWORD_ARG, --keyword-arg KEYWORD_ARG
 
 In Python 3, any keyword-only arguments without defaults are marked as required.
 
-If you wish to specify that a particular flag should also have an associated
-short version, you can pass a mapping to `defopt.run`::
+You can override these generated short flags by passing a dictionary to
+`defopt.run` which maps flag names to single letters::
 
-    defopt.run(main, short={'keyword-arg': 'k'})
+    defopt.run(main, short={'keyword-arg': 'a'})
 
-Now, ``-k`` is exactly equivalent to ``--keyword-arg``::
+Now, ``-a`` is exactly equivalent to ``--keyword-arg``::
 
-      -k KEYWORD_ARG, --keyword-arg KEYWORD_ARG
+      -a KEYWORD_ARG, --keyword-arg KEYWORD_ARG
 
 A runnable example is available at `examples/short.py`_.
+
+Passing an empty dictionary suppresses automatic short flag generation, without
+adding new flags.
 
 Booleans
 --------

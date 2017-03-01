@@ -9,7 +9,7 @@ Code usage::
 
 Command line usage::
 
-    $ python short.py -c 2
+    $ python short.py -C 2
     $ python short.py --count 2
 """
 import defopt
@@ -25,4 +25,4 @@ def main(count=1):
 
 
 if __name__ == '__main__':
-    defopt.run(main, short={'count': 'c'})
+    defopt.run(main, short={'count': 'C'})
