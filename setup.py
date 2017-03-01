@@ -16,14 +16,16 @@ setup(
     license='GNU General Public License v3',
     py_modules=['defopt'],
     test_suite='test_defopt',
-    install_requires=['docutils', 'sphinxcontrib-napoleon>=0.5.1'],
-    extras_require={
-        ':python_version=="2.7"': ['enum34', 'funcsigs', 'typing'],
-        ':python_version=="3.3"': ['enum34', 'typing'],
-        ':python_version=="3.4"': ['typing'],
-    },
-    tests_require=['coverage', 'mock'],
-    setup_requires=['nose'],
+    install_requires=[
+        'docutils',
+        'sphinxcontrib-napoleon>=0.5.1',
+        'funcsigs;python_version<"3"',
+        'enum34;python_version<"3.4"',
+        'typing;python_version<"3.5"',
+    ],
+    tests_require=[
+        'mock;python_version<"3"',
+    ],
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
@@ -32,6 +34,7 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
         'Development Status :: 5 - Production/Stable',
