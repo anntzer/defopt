@@ -10,7 +10,8 @@ matrix:
   allow_failures:
     - python: 3.7-dev
 install:
-  - pip install --upgrade setuptools
+  - pip install --upgrade pip setuptools coverage
   - pip install .
 script:
-  - python setup.py nosetests
+  - python -mcoverage run setup.py test
+  - python -mcoverage report

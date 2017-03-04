@@ -63,3 +63,6 @@ target/
 
 # PyCharm files
 .idea/
+
+# Editor files
+.*.swp

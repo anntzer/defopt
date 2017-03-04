@@ -6,7 +6,10 @@ import textwrap
 import typing
 import unittest
 
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 import defopt
 from examples import booleans, choices, lists, parsers, short, starargs, styles
@@ -30,8 +33,10 @@ class TestDefopt(unittest.TestCase):
         def sub2(baz=None):
             """:type baz: int"""
             return baz
-        self.assertEqual(defopt.run(sub1, sub2, argv=['sub1', '1.1']), (1.1,))
-        self.assertEqual(defopt.run(sub1, sub2, argv=['sub2', '--baz', '1']), 1)
+        self.assertEqual(
+            defopt.run(sub1, sub2, argv=['sub1', '1.1']), (1.1,))
+        self.assertEqual(
+            defopt.run(sub1, sub2, argv=['sub2', '--baz', '1']), 1)
 
     def test_var_positional(self):
         def main(*foo):
@@ -118,7 +123,8 @@ class TestDefopt(unittest.TestCase):
             :type d_e_f: int
             """
             return a_b_c, d_e_f
-        self.assertEqual(defopt.run(main, argv=['1', '--d-e-f', '2']), (1, 2))
+        self.assertEqual(
+            defopt.run(main, argv=['1', '--d-e-f', '2']), (1, 2))
 
 
 class TestParsers(unittest.TestCase):
@@ -135,7 +141,8 @@ class TestParsers(unittest.TestCase):
         def main(value):
             """:type value: int"""
             return value
-        self.assertEqual(defopt.run(main, parsers={int: parser}, argv=['1']), 2)
+        self.assertEqual(
+            defopt.run(main, parsers={int: parser}, argv=['1']), 2)
 
     def test_parse_bool(self):
         parser = defopt._get_parser(bool)
@@ -153,7 +160,8 @@ class TestParsers(unittest.TestCase):
         def main(foo):
             """:type foo: list[float]"""
             return foo
-        self.assertEqual(defopt.run(main, argv=['--foo', '1.1', '2.2']), [1.1, 2.2])
+        self.assertEqual(
+            defopt.run(main, argv=['--foo', '1.1', '2.2']), [1.1, 2.2])
 
     def test_list_kwarg(self):
         def main(foo=None):
@@ -162,7 +170,8 @@ class TestParsers(unittest.TestCase):
             :type foo: list[float]
             """
             return foo
-        self.assertEqual(defopt.run(main, argv=['--foo', '1.1', '2.2']), [1.1, 2.2])
+        self.assertEqual(
+            defopt.run(main, argv=['--foo', '1.1', '2.2']), [1.1, 2.2])
 
     def test_list_bare(self):
         with self.assertRaises(ValueError):
@@ -206,22 +215,27 @@ class TestParsers(unittest.TestCase):
         def main(foo):
             """:type foo: list[bool]"""
             return foo
-        self.assertEqual(defopt.run(main, argv=['--foo', '1', '0']), [True, False])
+        self.assertEqual(
+            defopt.run(main, argv=['--foo', '1', '0']), [True, False])
 
     def test_bool_var_positional(self):
         def main(*foo):
             """:type foo: bool"""
             return foo
-        self.assertEqual(defopt.run(main, argv=['1', '1', '0']), (True, True, False))
-        self.assertEqual(defopt.run(main, argv=[]), ())
+        self.assertEqual(
+            defopt.run(main, argv=['1', '1', '0']), (True, True, False))
+        self.assertEqual(
+            defopt.run(main, argv=[]), ())
 
     def test_bool_list_var_positional(self):
         def main(*foo):
             """:type foo: list[bool]"""
             return foo
         argv = ['--foo', '1', '--foo', '0', '0']
-        self.assertEqual(defopt.run(main, argv=argv), ([True], [False, False]))
-        self.assertEqual(defopt.run(main, argv=[]), ())
+        self.assertEqual(
+            defopt.run(main, argv=argv), ([True], [False, False]))
+        self.assertEqual(
+            defopt.run(main, argv=[]), ())
 
     def test_bool_kwarg(self):
         default = object()
@@ -233,7 +247,8 @@ class TestParsers(unittest.TestCase):
         self.assertIs(defopt.run(main, argv=['--no-foo']), False)
         self.assertIs(defopt.run(main, argv=[]), default)
 
-    @unittest.skipIf(sys.version_info < (3, 4), 'expectedFailure ignores SystemExit')
+    @unittest.skipIf(sys.version_info < (3, 4),
+                     'expectedFailure ignores SystemExit')
     @unittest.expectedFailure
     def test_bool_kwarg_override(self):
         def main(foo=True):
@@ -300,8 +315,10 @@ class TestEnums(unittest.TestCase):
             """:type bar: Choice"""
             return bar
 
-        self.assertEqual(defopt.run(sub1, sub2, argv=['sub1', 'one']), Choice.one)
-        self.assertEqual(defopt.run(sub1, sub2, argv=['sub2', 'two']), Choice.two)
+        self.assertEqual(
+            defopt.run(sub1, sub2, argv=['sub1', 'one']), Choice.one)
+        self.assertEqual(
+            defopt.run(sub1, sub2, argv=['sub2', 'two']), Choice.two)
 
     def test_valuedict(self):
         valuedict = defopt._ValueOrderedDict({'a': 1})
@@ -476,7 +493,8 @@ class TestDoc(unittest.TestCase):
         self._check_doc(doc)
 
     def _check_doc(self, doc):
-        self.assertEqual(doc.text, 'One line summary.\n\nExtended description.')
+        self.assertEqual(
+            doc.text, 'One line summary.\n\nExtended description.')
         self.assertEqual(len(doc.params), 3)
         self.assertEqual(doc.params['arg1'].text, 'Description of arg1')
         self.assertEqual(doc.params['arg1'].type, 'int')
@@ -653,9 +671,11 @@ class TestExamples(unittest.TestCase):
         print_.assert_called_with('TEST')
 
     def test_booleans_cli(self):
-        output = self._run_example(booleans, ['test', '--no-upper', '--repeat'])
+        output = self._run_example(
+            booleans, ['test', '--no-upper', '--repeat'])
         self.assertEqual(output, b'test\ntest\n')
-        output = self._run_example(booleans, ['test'])
+        output = self._run_example(
+            booleans, ['test'])
         self.assertEqual(output, b'TEST\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
@@ -687,9 +707,11 @@ class TestExamples(unittest.TestCase):
         print_.assert_called_with([2, 4, 6])
 
     def test_lists_cli(self):
-        output = self._run_example(lists, ['2', '--numbers', '1.2', '3.4'])
+        output = self._run_example(
+            lists, ['2', '--numbers', '1.2', '3.4'])
         self.assertEqual(output, b'[2.4, 6.8]\n')
-        output = self._run_example(lists, ['--numbers', '1.2', '3.4', '--', '2'])
+        output = self._run_example(
+            lists, ['--numbers', '1.2', '3.4', '--', '2'])
         self.assertEqual(output, b'[2.4, 6.8]\n')
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
@@ -757,3 +779,7 @@ class TestExamples(unittest.TestCase):
         argv = [sys.executable, '-m', example.__name__] + argv
         output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
         return output.replace(b'\r\n', b'\n')
+
+
+if __name__ == "__main__":
+    unittest.main()
