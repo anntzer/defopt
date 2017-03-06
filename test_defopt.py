@@ -417,7 +417,7 @@ class TestDoc(unittest.TestCase):
         def test():
             """start `int` end"""
         doc = defopt._parse_doc(test)
-        self.assertEqual(doc.text, 'start int end')
+        self.assertEqual(doc.text, 'start \033[4mint\033[0m end')
 
     @unittest.expectedFailure
     def test_explicit_role_desired(self):
@@ -440,9 +440,9 @@ class TestDoc(unittest.TestCase):
 
             Extended description.
 
-            :param int arg1: Description of `arg1`
-            :param str arg2: Description of `arg2`
-            :keyword float arg3: Description of `arg3`
+            :param int arg1: Description of arg1
+            :param str arg2: Description of arg2
+            :keyword float arg3: Description of arg3
             :returns: Description of return value.
             :rtype: str
             """
@@ -457,10 +457,10 @@ class TestDoc(unittest.TestCase):
             Extended description.
 
             Args:
-              arg1(int): Description of `arg1`
-              arg2(str): Description of `arg2`
+              arg1(int): Description of arg1
+              arg2(str): Description of arg2
             Keyword Arguments:
-              arg3(float): Description of `arg3`
+              arg3(float): Description of arg3
             Returns:
               str: Description of return value.
             """
@@ -477,13 +477,13 @@ class TestDoc(unittest.TestCase):
             Parameters
             ----------
             arg1 : int
-                Description of `arg1`
+                Description of arg1
             arg2 : str
-                Description of `arg2`
+                Description of arg2
             Keyword Arguments
             -----------------
             arg3 : float
-                Description of `arg3`
+                Description of arg3
             Returns
             -------
             str
@@ -640,9 +640,11 @@ class TestHelp(unittest.TestCase):
 
     def test_rst_ansi(self):
         def foo():
-            """*italic* **bold**"""
+            """**bold** *italic* `underlined`"""
             return bar
-        self.assertIn('\033[3mitalic\033[0m \033[1mbold\033[0m',
+        self.assertIn('\033[1mbold\033[0m '
+                      '\033[3mitalic\033[0m '
+                      '\033[4munderlined\033[0m',
                       self._get_help(foo))
 
     def _get_help(self, func):
