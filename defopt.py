@@ -5,6 +5,7 @@ Run Python functions from the command line with ``run(func)``.
 from __future__ import (
     absolute_import, division, unicode_literals, print_function)
 
+import contextlib
 import inspect
 import logging
 import re
@@ -25,9 +26,19 @@ try:
 except ImportError:  # pragma: no cover
     from funcsigs import signature as _inspect_signature
 
+try:
+    from colorama import colorama_text as _colorama_text
+except ImportError:
+    @contextlib.contextmanager
+    def _colorama_text(*args):
+        yield
+
 if sys.version_info.major == 2:  # pragma: no cover
     def _get_type_hints(*args, **kwargs):
         return {}
+    _basestring = basestring
+else:
+    _basestring = str
 
 __version__ = '3.0.0'
 
@@ -85,7 +96,8 @@ def run(*funcs, **kwargs):
                 func.__name__, formatter_class=_Formatter)
             _populate_parser(func, subparser, parsers, short)
             subparser.set_defaults(_func=func)
-    args = parser.parse_args(argv)
+    with _colorama_text():
+        args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
     if not main and not hasattr(args, '_func'):
         parser.error('too few arguments')
@@ -312,8 +324,28 @@ def _parse_doc(func):
     return _Doc(doctext, tuples)
 
 
+def _itertext_ansi(node):
+    # Implementation modified from `ElementTree.Element.itertext`.
+    tag = node.tag
+    if not isinstance(tag, _basestring) and tag is not None:
+        return
+    ansi_code = {"strong": "\033[1m", "emphasis": "\033[3m"}.get(tag, "")
+    t = node.text
+    if t:
+        yield ansi_code
+        yield t
+        if ansi_code:
+            yield "\033[0m"  # Reset.
+    for e in node:
+        for t in _itertext_ansi(e):
+            yield t
+        t = e.tail
+        if t:
+            yield t
+
+
 def _get_text(node):
-    return ''.join(node.itertext())
+    return ''.join(_itertext_ansi(node))
 
 
 def _indent(text):

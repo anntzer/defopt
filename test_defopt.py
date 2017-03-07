@@ -638,6 +638,13 @@ class TestHelp(unittest.TestCase):
         self.assertIn('%(prog)s', self._get_help(foo))
         self.assertNotIn('%%', self._get_help(foo))
 
+    def test_rst_ansi(self):
+        def foo():
+            """*italic* **bold**"""
+            return bar
+        self.assertIn('\033[3mitalic\033[0m \033[1mbold\033[0m',
+                      self._get_help(foo))
+
     def _get_help(self, func):
         parser = ArgumentParser(formatter_class=defopt._Formatter)
         defopt._populate_parser(func, parser, {}, {})
