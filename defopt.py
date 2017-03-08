@@ -329,7 +329,10 @@ def _itertext_ansi(node):
     tag = node.tag
     if not isinstance(tag, _basestring) and tag is not None:
         return
-    ansi_code = {"strong": "\033[1m", "emphasis": "\033[3m"}.get(tag, "")
+    ansi_code = {"emphasis": "\033[3m",  # *foo*: italic.
+                 "strong": "\033[1m",  # **foo**: bold.
+                 "title_reference": "\033[4m",  # `foo`: underlined.
+                 }.get(tag, "")
     t = node.text
     if t:
         yield ansi_code
