@@ -12,7 +12,7 @@ import re
 import sys
 from argparse import (SUPPRESS, ArgumentParser, RawTextHelpFormatter,
                       ArgumentDefaultsHelpFormatter)
-from collections import defaultdict, namedtuple, OrderedDict
+from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
 from typing import get_type_hints as _get_type_hints
@@ -68,13 +68,15 @@ def run(*funcs, **kwargs):
     :type parsers: Dict[type, Callable[[str], type]]
     :param short: Dictionary mapping parameter names (after conversion of
         underscores to dashes) to letters, to use as alternative short flags.
+        Defaults to ``None``, which means to generate short flags for any
+        non-ambiguous option.  Set to ``{}`` to completely disable short flags.
     :type short: Dict[str, str]
     :param List[str] argv: Command line arguments to parse (default:
         sys.argv[1:])
     :return: The value returned by the function that was run
     """
     parsers = kwargs.pop('parsers', None)
-    short = kwargs.pop('short', {})
+    short = kwargs.pop('short', None)
     argv = kwargs.pop('argv', None)
     if kwargs:
         raise TypeError(
@@ -116,20 +118,33 @@ def _populate_parser(func, parser, parsers, short):
     doc = _parse_doc(func)
     hints = _get_type_hints(func)
     parser.description = doc.text
+
+    types = dict((name, _get_type(func, name, doc, hints))
+                 for name, param in sig.parameters.items())
+    positionals = set(name for name, param in sig.parameters.items()
+                      if (param.default == param.empty
+                          and not types[name].container
+                          and param.kind != param.KEYWORD_ONLY))
+    if short is None:
+        count_initials = Counter(name[0] for name in sig.parameters
+                                 if name not in positionals)
+        short = dict(
+            (name.replace('_', '-'), name[0]) for name in sig.parameters
+            if name not in positionals and count_initials[name[0]] == 1)
+
     for name, param in sig.parameters.items():
         kwargs = {}
         if name in doc.params:
             help_ = doc.params[name].text
             if help_ is not None:
                 kwargs['help'] = help_.replace('%', '%%')
-        type_ = _get_type(func, name, doc, hints)
+        type_ = types[name]
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         hasdefault = param.default != param.empty
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
-        positional = (not hasdefault and not type_.container
-                      and param.kind != param.KEYWORD_ONLY)
+        positional = name in positionals
         if type_.type == bool and not positional and not type_.container:
             # Special case: just add parameterless --name and --no-name flags.
             group = parser.add_mutually_exclusive_group(required=required)
