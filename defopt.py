@@ -48,7 +48,11 @@ _TYPE_NAMES = ['type', 'kwtype']
 
 log = logging.getLogger(__name__)
 
-_Doc = namedtuple('_Doc', ('text', 'params'))
+class _Doc(namedtuple('_Doc', ('paragraphs', 'params'))):
+    @property
+    def text(self):
+        return '\n\n'.join(self.paragraphs)
+
 _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
 
@@ -75,29 +79,10 @@ def run(*funcs, **kwargs):
         sys.argv[1:])
     :return: The value returned by the function that was run
     """
-    parsers = kwargs.pop('parsers', None)
-    short = kwargs.pop('short', None)
     argv = kwargs.pop('argv', None)
-    if kwargs:
-        raise TypeError(
-            'unexpected keyword argument: {}'.format(list(kwargs)[0]))
-    if not funcs:
-        raise ValueError('need at least one function to run')
     if argv is None:
         argv = sys.argv[1:]
-    main = None
-    if len(funcs) == 1:
-        [main] = funcs
-    parser = ArgumentParser(formatter_class=_Formatter)
-    if main:
-        _populate_parser(main, parser, parsers, short)
-    else:
-        subparsers = parser.add_subparsers()
-        for func in funcs:
-            subparser = subparsers.add_parser(
-                func.__name__, formatter_class=_Formatter)
-            _populate_parser(func, subparser, parsers, short)
-            subparser.set_defaults(_func=func)
+    parser, main = _create_parser_and_main(*funcs, **kwargs)
     with _colorama_text():
         args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
@@ -109,13 +94,38 @@ def run(*funcs, **kwargs):
         return _call_function(args._func, args)
 
 
+def _create_parser_and_main(*funcs, **kwargs):
+    parsers = kwargs.pop('parsers', None)
+    short = kwargs.pop('short', None)
+    if kwargs:
+        raise TypeError(
+            'unexpected keyword argument: {}'.format(list(kwargs)[0]))
+    if not funcs:
+        raise ValueError('need at least one function to run')
+    main = None
+    if len(funcs) == 1:
+        [main] = funcs
+    parser = ArgumentParser(formatter_class=_Formatter)
+    if main:
+        _populate_parser(main, parser, parsers, short)
+    else:
+        subparsers = parser.add_subparsers()
+        for func in funcs:
+            subparser = subparsers.add_parser(
+                func.__name__, formatter_class=_Formatter,
+                help=_parse_function_docstring(func).paragraphs[0])
+            _populate_parser(func, subparser, parsers, short)
+            subparser.set_defaults(_func=func)
+    return parser, main
+
+
 class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):
     pass
 
 
 def _populate_parser(func, parser, parsers, short):
     sig = _inspect_signature(func)
-    doc = _parse_doc(func)
+    doc = _parse_function_docstring(func)
     hints = _get_type_hints(func)
     parser.description = doc.text
 
@@ -282,11 +292,21 @@ def _call_function(func, args):
     return func(*positionals, **keywords)
 
 
-def _parse_doc(func):
+def _parse_function_docstring(func):
+    return _parse_docstring(inspect.getdoc(func))
+
+
+_parse_docstring_cache = {}
+def _parse_docstring(doc):
     """Extract documentation from a function's docstring."""
-    doc = inspect.getdoc(func)
+    _cache_key = doc
+    try:
+        return _parse_docstring_cache[_cache_key]
+    except KeyError:
+        pass
+
     if doc is None:
-        return _Doc('', {})
+        return _Doc([''], {})
 
     # Convert Google- or Numpy-style docstrings to RST.
     # (Should do nothing if not in either style.)
@@ -301,7 +321,6 @@ def _parse_doc(func):
             doctext.append(_get_text(element))
         elif element.tag == 'literal_block':
             doctext.append(_indent(_get_text(element)))
-    doctext = '\n\n'.join(doctext)
     fields = etree.findall('.//field')
 
     params = defaultdict(dict)
@@ -336,7 +355,9 @@ def _parse_doc(func):
     tuples = {}
     for name, values in params.items():
         tuples[name] = _Param(values.get('param'), values.get('type'))
-    return _Doc(doctext, tuples)
+
+    parsed = _parse_docstring_cache[_cache_key] = _Doc(doctext or [''], tuples)
+    return parsed
 
 
 def _itertext_ansi(node):

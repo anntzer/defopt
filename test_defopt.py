@@ -353,7 +353,7 @@ class Choice(Enum):
 
 
 class TestDoc(unittest.TestCase):
-    def test_parse_doc(self):
+    def test_parse_function_docstring(self):
         def test(one, two):
             """Test function
 
@@ -363,7 +363,7 @@ class TestDoc(unittest.TestCase):
             :returns: str
             :junk one two: nothing
             """
-        doc = defopt._parse_doc(test)
+        doc = defopt._parse_function_docstring(test)
         self.assertEqual(doc.text, 'Test function')
         one = doc.params['one']
         self.assertEqual(one.text, 'first param')
@@ -383,7 +383,7 @@ class TestDoc(unittest.TestCase):
             :key fifth: fifth param
             :keyword str sixth: sixth param
             """
-        doc = defopt._parse_doc(test)
+        doc = defopt._parse_function_docstring(test)
         self.assertEqual(doc.params['first'].text, 'first param')
         self.assertEqual(doc.params['second'].text, 'second param')
         self.assertEqual(doc.params['third'].text, 'third param')
@@ -399,7 +399,7 @@ class TestDoc(unittest.TestCase):
             :type param: int
             """
         with self.assertRaises(ValueError):
-            defopt._parse_doc(test)
+            defopt._parse_function_docstring(test)
 
         def test(param):
             """Test function
@@ -408,19 +408,19 @@ class TestDoc(unittest.TestCase):
             :param int param: the parameter
             """
         with self.assertRaises(ValueError):
-            defopt._parse_doc(test)
+            defopt._parse_function_docstring(test)
 
     def test_no_doc(self):
         def test(param):
             pass
-        doc = defopt._parse_doc(test)
+        doc = defopt._parse_function_docstring(test)
         self.assertEqual(doc.text, '')
         self.assertEqual(doc.params, {})
 
     def test_param_only(self):
         def test(param):
             """:param int param: test"""
-        doc = defopt._parse_doc(test)
+        doc = defopt._parse_function_docstring(test)
         self.assertEqual(doc.text, '')
         param = doc.params['param']
         self.assertEqual(param.text, 'test')
@@ -429,7 +429,7 @@ class TestDoc(unittest.TestCase):
     def test_implicit_role(self):
         def test():
             """start `int` end"""
-        doc = defopt._parse_doc(test)
+        doc = defopt._parse_function_docstring(test)
         self.assertEqual(doc.text, 'start \033[4mint\033[0m end')
 
     @unittest.expectedFailure
@@ -437,14 +437,14 @@ class TestDoc(unittest.TestCase):
         """Desired output for issue #1."""
         def test():
             """start :py:class:`int` end"""
-        doc = defopt._parse_doc(test)
+        doc = defopt._parse_function_docstring(test)
         self.assertEqual(doc.text, 'start int end')
 
     def test_explicit_role_actual(self):
         """Workaround output for issue #1."""
         def test():
             """start :py:class:`int` end"""
-        doc = defopt._parse_doc(test)
+        doc = defopt._parse_function_docstring(test)
         self.assertEqual(doc.text, 'start :py:class:`int` end')
 
     def test_sphinx(self):
@@ -459,7 +459,7 @@ class TestDoc(unittest.TestCase):
             :returns: Description of return value.
             :rtype: str
             """
-        doc = defopt._parse_doc(func)
+        doc = defopt._parse_function_docstring(func)
         self._check_doc(doc)
 
     def test_google(self):
@@ -477,7 +477,7 @@ class TestDoc(unittest.TestCase):
             Returns:
               str: Description of return value.
             """
-        doc = defopt._parse_doc(func)
+        doc = defopt._parse_function_docstring(func)
         self._check_doc(doc)
 
     def test_numpy(self):
@@ -502,7 +502,7 @@ class TestDoc(unittest.TestCase):
             str
                 Description of return value.
             """
-        doc = defopt._parse_doc(func)
+        doc = defopt._parse_function_docstring(func)
         self._check_doc(doc)
 
     def _check_doc(self, doc):
@@ -540,7 +540,7 @@ class TestDoc(unittest.TestCase):
                 Literal block
                     Multiple lines
             """
-        doc = defopt._parse_doc(func)
+        doc = defopt._parse_function_docstring(func)
         self.assertEqual(doc.text, '    Literal block\n        Multiple lines')
 
 
@@ -660,9 +660,22 @@ class TestHelp(unittest.TestCase):
                       '\033[4munderlined\033[0m',
                       self._get_help(foo))
 
-    def _get_help(self, func):
-        parser = ArgumentParser(formatter_class=defopt._Formatter)
-        defopt._populate_parser(func, parser, {}, {})
+    def test_multiple(self):
+        def foo():
+            """foo
+
+            Implements FOO.
+            """
+
+        def bar():
+            """bar
+
+            Implements BAR."""
+        self.assertIn('foo', self._get_help(foo, bar))
+        self.assertNotIn('FOO', self._get_help(foo, bar))
+
+    def _get_help(self, *funcs):
+        parser, _ = defopt._create_parser_and_main(*funcs)
         return parser.format_help()
 
 
