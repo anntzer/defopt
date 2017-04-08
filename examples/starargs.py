@@ -42,4 +42,4 @@ def iterable(*groups):
 
 
 if __name__ == '__main__':
-    defopt.run(plain, iterable)
+    defopt.run([plain, iterable])

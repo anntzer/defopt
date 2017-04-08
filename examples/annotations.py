@@ -40,4 +40,4 @@ def undocumented(numbers: Iterable[float], exponent: int) -> None:
 
 
 if __name__ == '__main__':
-    defopt.run(documented, undocumented)
+    defopt.run([documented, undocumented])
