@@ -98,4 +98,4 @@ def numpy(integer, farewell=None):
 
 
 if __name__ == '__main__':
-    defopt.run(sphinx, google, numpy)
+    defopt.run([sphinx, google, numpy])

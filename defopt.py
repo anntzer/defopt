@@ -10,6 +10,7 @@ import inspect
 import logging
 import re
 import sys
+import warnings
 from argparse import (SUPPRESS, ArgumentParser, RawTextHelpFormatter,
                       ArgumentDefaultsHelpFormatter)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
@@ -57,14 +58,14 @@ _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
 
 
-def run(*funcs, **kwargs):
-    """run(*funcs, parsers=None, short=None, argv=None)
+def run(funcs, *args, **kwargs):
+    """run(funcs, *, parsers=None, short=None, argv=None)
 
     Process command line arguments and run the given functions.
 
-    If ``funcs`` is a single function, it is parsed and run.
-    If ``funcs`` is multiple functions, each one is given a subparser with its
-    name, and only the chosen function is run.
+    ``funcs`` can be a single callable, which is parsed and run; or it can be
+    a list of callables, in which case each one is given a subparser with its
+    name, and only the chosen callable is run.
 
     :param Callable funcs: Function or functions to process and run
     :param parsers: Dictionary mapping types to parsers to use for parsing
@@ -82,32 +83,30 @@ def run(*funcs, **kwargs):
     argv = kwargs.pop('argv', None)
     if argv is None:
         argv = sys.argv[1:]
-    parser, main = _create_parser_and_main(*funcs, **kwargs)
+    parser = _create_parser(funcs, *args, **kwargs)
     with _colorama_text():
         args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
-    if not main and not hasattr(args, '_func'):
+    if not hasattr(args, '_func'):
         parser.error('too few arguments')
-    if main:
-        return _call_function(main, args)
-    else:
-        return _call_function(args._func, args)
+    return _call_function(args._func, args)
 
 
-def _create_parser_and_main(*funcs, **kwargs):
+def _create_parser(funcs, *args, **kwargs):
     parsers = kwargs.pop('parsers', None)
     short = kwargs.pop('short', None)
     if kwargs:
         raise TypeError(
             'unexpected keyword argument: {}'.format(list(kwargs)[0]))
-    if not funcs:
-        raise ValueError('need at least one function to run')
-    main = None
-    if len(funcs) == 1:
-        [main] = funcs
+    if args:
+        warnings.warn(
+            'Passing multiple functions as separate arguments is deprecated; '
+            'pass a list of functions instead', DeprecationWarning)
+        funcs = [funcs] + list(args)
     parser = ArgumentParser(formatter_class=_Formatter)
-    if main:
-        _populate_parser(main, parser, parsers, short)
+    if callable(funcs):
+        _populate_parser(funcs, parser, parsers, short)
+        parser.set_defaults(_func=funcs)
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
@@ -116,7 +115,7 @@ def _create_parser_and_main(*funcs, **kwargs):
                 help=_parse_function_docstring(func).paragraphs[0])
             _populate_parser(func, subparser, parsers, short)
             subparser.set_defaults(_func=func)
-    return parser, main
+    return parser
 
 
 class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):

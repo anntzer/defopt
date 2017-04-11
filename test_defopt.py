@@ -34,6 +34,10 @@ class TestDefopt(unittest.TestCase):
             """:type baz: int"""
             return baz
         self.assertEqual(
+            defopt.run([sub1, sub2], argv=['sub1', '1.1']), (1.1,))
+        self.assertEqual(
+            defopt.run([sub1, sub2], argv=['sub2', '--baz', '1']), 1)
+        self.assertEqual(
             defopt.run(sub1, sub2, argv=['sub1', '1.1']), (1.1,))
         self.assertEqual(
             defopt.run(sub1, sub2, argv=['sub2', '--baz', '1']), 1)
@@ -76,10 +80,6 @@ class TestDefopt(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             defopt.run(bad)
-
-    def test_no_function(self):
-        with self.assertRaisesRegex(ValueError, 'at least one'):
-            defopt.run()
 
     def test_bad_arg(self):
         with self.assertRaises(TypeError):
@@ -323,11 +323,13 @@ class TestEnums(unittest.TestCase):
         def sub1(foo):
             """:type foo: Choice"""
             return foo
-
         def sub2(bar):
             """:type bar: Choice"""
             return bar
-
+        self.assertEqual(
+            defopt.run([sub1, sub2], argv=['sub1', 'one']), Choice.one)
+        self.assertEqual(
+            defopt.run([sub1, sub2], argv=['sub2', 'two']), Choice.two)
         self.assertEqual(
             defopt.run(sub1, sub2, argv=['sub1', 'one']), Choice.one)
         self.assertEqual(
@@ -675,7 +677,7 @@ class TestHelp(unittest.TestCase):
         self.assertNotIn('FOO', self._get_help(foo, bar))
 
     def _get_help(self, *funcs):
-        parser, _ = defopt._create_parser_and_main(*funcs)
+        parser = defopt._create_parser(*funcs)
         return parser.format_help()
 
 

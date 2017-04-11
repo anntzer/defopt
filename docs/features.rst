@@ -31,10 +31,10 @@ specific types.
 Subcommands
 -----------
 
-If multiple commands are passed to `defopt.run`, they are treated as
+If a list of commands are passed to `defopt.run`, they are treated as
 subcommands which are run by name. ::
 
-    defopt.run(func1, func2)
+    defopt.run([func1, func2])
 
 The command line usage will indicate this. ::
 
