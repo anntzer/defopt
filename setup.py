@@ -19,11 +19,13 @@ setup(
     install_requires=[
         'docutils',
         'sphinxcontrib-napoleon>=0.5.1',
-        'funcsigs;python_version<"3.3"',
-        'enum34;python_version<"3.4"',
-        'typing;python_version<"3.5"',
-        'colorama>=0.3.4;sys.platform=="win32"',
     ],
+    extras_require={
+        ':python_version=="2.7"': ['enum34', 'funcsigs', 'typing'],
+        ':python_version=="3.3"': ['enum34', 'typing'],
+        ':python_version=="3.4"': ['typing'],
+        ':sys.platform=="win32"': ['colorama>=0.3.4'],
+    },
     tests_require=[
         'mock;python_version<"3.3"',
     ],
