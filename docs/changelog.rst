@@ -1,6 +1,19 @@
 Changelog
 =========
 
+3.1.0 (2017-04-12)
+------------------
+
+Thanks to @anntzer for contributing the features in this release.
+
+* Changed ``defopt.run`` to take multiple functions as a single list
+* Deprecated passing multiple functions positionally
+* Added subcommand summaries to the help message for multiple functions
+* Added automatic short flags where they are unambiguous
+* Added rendering of italic, bold and underlined text from docstrings
+* Added Python 3.6 classifier to setup.py
+* Dropped nose as a test runner
+
 3.0.0 (2016-12-16)
 ------------------
 
