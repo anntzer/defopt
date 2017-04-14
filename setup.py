@@ -21,9 +21,9 @@ setup(
         'sphinxcontrib-napoleon>=0.5.1',
     ],
     extras_require={
-        ':python_version=="2.7"': ['enum34', 'funcsigs', 'typing'],
-        ':python_version=="3.3"': ['enum34', 'typing'],
-        ':python_version=="3.4"': ['typing'],
+        ':python_version<"3.3"': ['funcsigs'],
+        ':python_version<"3.4"': ['enum34'],
+        ':python_version<"3.5"': ['typing'],
         ':sys.platform=="win32"': ['colorama>=0.3.4'],
     },
     tests_require=[
