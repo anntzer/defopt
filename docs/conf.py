@@ -24,7 +24,12 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+# If building using Python 3.4, need the fix for Sphinx issue #3255
+# (though RTD now appears to be using Python 3.5 anyway).
+needs_sphinx = '1.5.2'
+
+if sys.version_info.major < 3:
+    raise Exception('examples.annotations requires Python 3 to build')
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
