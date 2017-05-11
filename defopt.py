@@ -28,6 +28,13 @@ except ImportError:  # pragma: no cover
     from funcsigs import signature as _inspect_signature
 
 try:
+    from pathlib import Path
+except ImportError:
+    class Path(object):
+        """Dummy type, such that no user input is ever of that type.
+        """
+
+try:
     from colorama import colorama_text as _colorama_text
 except ImportError:
     @contextlib.contextmanager
@@ -407,7 +414,7 @@ def _find_parser(type_, parsers):
         return parsers[type_]
     except KeyError:
         pass
-    if type_ in [int, str, float]:
+    if type_ in [int, str, float, Path]:
         return type_
     elif type_ == bool:
         return _parse_bool

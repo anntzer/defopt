@@ -7,6 +7,11 @@ import typing
 import unittest
 
 try:
+    from pathlib import Path
+except ImportError:
+    Path = None
+
+try:
     from unittest import mock
 except ImportError:
     import mock
@@ -151,6 +156,13 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(parser('1'), True)
         with self.assertRaises(ValueError):
             parser('foo')
+
+    @unittest.skipIf(Path is None, 'pathlib not installed')
+    def test_parse_path(self):
+        def main(value):
+            """:type value: Path"""
+            return value
+        self.assertEqual(defopt.run(main, argv=['foo']), Path('foo'))
 
     def test_no_parser(self):
         with self.assertRaisesRegex(Exception, 'no parser'):
