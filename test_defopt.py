@@ -604,7 +604,7 @@ class TestHelp(unittest.TestCase):
         def foo(bar):
             """:param int bar: baz"""
             return bar
-        self.assertIn('(int)', self._get_help(foo))
+        self.assertIn('(type: int)', self._get_help(foo))
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):

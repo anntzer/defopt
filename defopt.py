@@ -120,16 +120,17 @@ def _create_parser(funcs, *args, **kwargs):
 
 class _Formatter(RawTextHelpFormatter):
 
-    # modified from ArgumentDefaultsHelpFormatter to add type information, and
-    # remove defaults for varargs (`ZERO_OR_MORE`).
+    # Modified from ArgumentDefaultsHelpFormatter to add type information,
+    # and remove defaults for varargs (which use _AppendAction instead of
+    # _StoreAction).
     def _get_help_string(self, action):
         info = []
         if action.type is not None and '%(type)' not in action.help:
-            info.append('%(type)s')
-        if (action.default != argparse.SUPPRESS
+            info.append('type: %(type)s')
+        if (type(action).__name__ is '_StoreAction'
                 and '%(default)' not in action.help
-                and action.option_strings
-                and action.nargs != argparse.ZERO_OR_MORE):
+                and action.default is not argparse.SUPPRESS
+                and action.option_strings):
             info.append('default: %(default)s')
         if info:
             return action.help + ' ({})'.format(', '.join(info))
@@ -458,4 +459,5 @@ def _enum_getter(enum):
             return enum[name]
         except KeyError:
             return name
+    getter.__name__ = enum.__name__
     return getter
