@@ -5,14 +5,14 @@ Run Python functions from the command line with ``run(func)``.
 from __future__ import (
     absolute_import, division, unicode_literals, print_function)
 
+import argparse
 import contextlib
 import inspect
 import logging
 import re
 import sys
 import warnings
-from argparse import (SUPPRESS, ArgumentParser, RawTextHelpFormatter,
-                      ArgumentDefaultsHelpFormatter)
+from argparse import ArgumentParser, RawTextHelpFormatter
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
@@ -118,8 +118,23 @@ def _create_parser(funcs, *args, **kwargs):
     return parser
 
 
-class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):
-    pass
+class _Formatter(RawTextHelpFormatter):
+
+    # modified from ArgumentDefaultsHelpFormatter to add type information, and
+    # remove defaults for varargs (`ZERO_OR_MORE`).
+    def _get_help_string(self, action):
+        info = []
+        if action.type is not None and '%(type)' not in action.help:
+            info.append('%(type)s')
+        if (action.default != argparse.SUPPRESS
+                and '%(default)' not in action.help
+                and action.option_strings
+                and action.nargs != argparse.ZERO_OR_MORE):
+            info.append('default: %(default)s')
+        if info:
+            return action.help + ' ({})'.format(', '.join(info))
+        else:
+            return action.help
 
 
 def _populate_parser(func, parser, parsers, short):
@@ -151,7 +166,7 @@ def _populate_parser(func, parser, parsers, short):
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         hasdefault = param.default != param.empty
-        default = param.default if hasdefault else SUPPRESS
+        default = param.default if hasdefault else argparse.SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
         if type_.type == bool and not positional and not type_.container:
