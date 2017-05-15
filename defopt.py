@@ -5,14 +5,14 @@ Run Python functions from the command line with ``run(func)``.
 from __future__ import (
     absolute_import, division, unicode_literals, print_function)
 
-import argparse
 import contextlib
 import inspect
 import logging
 import re
 import sys
 import warnings
-from argparse import ArgumentParser, RawTextHelpFormatter, _StoreAction
+from argparse import (
+    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _StoreAction)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
@@ -129,7 +129,7 @@ class _Formatter(RawTextHelpFormatter):
             info.append('type: %(type)s')
         if (isinstance(action, _StoreAction)
                 and '%(default)' not in action.help
-                and action.default is not argparse.SUPPRESS
+                and action.default is not SUPPRESS
                 and action.option_strings):
             info.append('default: %(default)s')
         if info:
@@ -167,7 +167,7 @@ def _populate_parser(func, parser, parsers, short):
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         hasdefault = param.default != param.empty
-        default = param.default if hasdefault else argparse.SUPPRESS
+        default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
         if type_.type == bool and not positional and not type_.container:
