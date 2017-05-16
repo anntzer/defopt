@@ -11,8 +11,8 @@ import logging
 import re
 import sys
 import warnings
-from argparse import (SUPPRESS, ArgumentParser, RawTextHelpFormatter,
-                      ArgumentDefaultsHelpFormatter)
+from argparse import (
+    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _StoreAction)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
@@ -125,8 +125,24 @@ def _create_parser(funcs, *args, **kwargs):
     return parser
 
 
-class _Formatter(RawTextHelpFormatter, ArgumentDefaultsHelpFormatter):
-    pass
+class _Formatter(RawTextHelpFormatter):
+
+    # Modified from ArgumentDefaultsHelpFormatter to add type information,
+    # and remove defaults for varargs (which use _AppendAction instead of
+    # _StoreAction).
+    def _get_help_string(self, action):
+        info = []
+        if action.type is not None and '%(type)' not in action.help:
+            info.append('type: %(type)s')
+        if (isinstance(action, _StoreAction)
+                and '%(default)' not in action.help
+                and action.default is not SUPPRESS
+                and action.option_strings):
+            info.append('default: %(default)s')
+        if info:
+            return action.help + ' ({})'.format(', '.join(info))
+        else:
+            return action.help
 
 
 def _populate_parser(func, parser, parsers, short):
@@ -450,4 +466,5 @@ def _enum_getter(enum):
             return enum[name]
         except KeyError:
             return name
+    getter.__name__ = enum.__name__
     return getter
