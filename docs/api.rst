@@ -1,9 +1,7 @@
 API Reference
 =============
 
-.. Listing `run` because we don't want to show the `parsers` stub.
-
 .. automodule:: defopt
-    :members: run
+    :members:
     :undoc-members:
     :show-inheritance:

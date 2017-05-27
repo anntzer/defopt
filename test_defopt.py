@@ -636,6 +636,12 @@ class TestHelp(unittest.TestCase):
             return bar
         self.assertIn('(type: int, default: [])', self._get_help(foo))
 
+    def test_default_bool(self):
+        def foo(bar=False):
+            """:param bool bar: baz"""
+            return bar
+        self.assertIn('(default: False)', self._get_help(foo))
+
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
         globals_ = {}

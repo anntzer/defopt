@@ -12,7 +12,7 @@ import re
 import sys
 import warnings
 from argparse import (
-    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _StoreAction)
+    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _AppendAction)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
@@ -134,13 +134,13 @@ class _Formatter(RawTextHelpFormatter):
         info = []
         if action.type is not None and '%(type)' not in action.help:
             info.append('type: %(type)s')
-        if (isinstance(action, _StoreAction)
+        if (not isinstance(action, _AppendAction)
                 and '%(default)' not in action.help
                 and action.default is not SUPPRESS
                 and action.option_strings):
             info.append('default: %(default)s')
         if info:
-            return action.help + ' ({})'.format(', '.join(info))
+            return action.help + '\n({})'.format(', '.join(info))
         else:
             return action.help
 
