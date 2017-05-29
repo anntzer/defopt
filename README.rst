@@ -52,13 +52,12 @@ informative help message.
 
     positional arguments:
       greeting              Greeting to display
-                            (type: str)
 
     optional arguments:
       -h, --help            show this help message and exit
       -c COUNT, --count COUNT
                             Number of times to display the greeting
-                            (type: int, default: 1)
+                            (default: 1)
 
 Your function can now be called identically from Python and the command line.
 

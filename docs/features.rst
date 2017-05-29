@@ -28,6 +28,9 @@ Argument types are read from your function's docstring. Both
 called. See Booleans_, Lists_, Choices_ and Parsers_ for more information on
 specific types.
 
+Type information can be automatically added to the help text by passing
+``show_types=True`` to `defopt.run`.
+
 Subcommands
 -----------
 
@@ -117,7 +120,6 @@ handled specially on the command line to produce more helpful output. ::
 
     positional arguments:
       {red,blue,yellow}  Your favorite color
-                         (type: Color)
 
 This also produces a more helpful message when you choose an invalid option. ::
 
