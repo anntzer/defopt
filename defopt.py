@@ -48,7 +48,7 @@ if sys.version_info.major == 2:  # pragma: no cover
 else:
     _basestring = str
 
-__version__ = '3.1.1'
+__version__ = '3.2.0'
 
 _LIST_TYPES = [List, Iterable, Sequence]
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
