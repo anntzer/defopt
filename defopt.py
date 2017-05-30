@@ -12,7 +12,7 @@ import re
 import sys
 import warnings
 from argparse import (
-    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _StoreAction)
+    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _AppendAction)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import List, Iterable, Sequence, Union, Callable, Dict
@@ -66,7 +66,7 @@ _Type = namedtuple('_Type', ('type', 'container'))
 
 
 def run(funcs, *args, **kwargs):
-    """run(funcs, *, parsers=None, short=None, argv=None)
+    """run(funcs, *, parsers=None, short=None, show_types=False, argv=None)
 
     Process command line arguments and run the given functions.
 
@@ -83,6 +83,8 @@ def run(funcs, *args, **kwargs):
         Defaults to ``None``, which means to generate short flags for any
         non-ambiguous option.  Set to ``{}`` to completely disable short flags.
     :type short: Dict[str, str]
+    :param bool show_types: If `True`, display type names after parameter
+        descriptions in the the help text.
     :param List[str] argv: Command line arguments to parse (default:
         sys.argv[1:])
     :return: The value returned by the function that was run
@@ -102,6 +104,7 @@ def run(funcs, *args, **kwargs):
 def _create_parser(funcs, *args, **kwargs):
     parsers = kwargs.pop('parsers', None)
     short = kwargs.pop('short', None)
+    show_types = kwargs.pop('show_types', False)
     if kwargs:
         raise TypeError(
             'unexpected keyword argument: {}'.format(list(kwargs)[0]))
@@ -110,7 +113,10 @@ def _create_parser(funcs, *args, **kwargs):
             'Passing multiple functions as separate arguments is deprecated; '
             'pass a list of functions instead', DeprecationWarning)
         funcs = [funcs] + list(args)
-    parser = ArgumentParser(formatter_class=_Formatter)
+    formatter_class = _NoTypeFormatter
+    if show_types:
+        formatter_class = _Formatter
+    parser = ArgumentParser(formatter_class=formatter_class)
     if callable(funcs):
         _populate_parser(funcs, parser, parsers, short)
         parser.set_defaults(_func=funcs)
@@ -118,7 +124,7 @@ def _create_parser(funcs, *args, **kwargs):
         subparsers = parser.add_subparsers()
         for func in funcs:
             subparser = subparsers.add_parser(
-                func.__name__, formatter_class=_Formatter,
+                func.__name__, formatter_class=formatter_class,
                 help=_parse_function_docstring(func).paragraphs[0])
             _populate_parser(func, subparser, parsers, short)
             subparser.set_defaults(_func=func)
@@ -126,23 +132,29 @@ def _create_parser(funcs, *args, **kwargs):
 
 
 class _Formatter(RawTextHelpFormatter):
+    show_types = True
 
     # Modified from ArgumentDefaultsHelpFormatter to add type information,
     # and remove defaults for varargs (which use _AppendAction instead of
     # _StoreAction).
     def _get_help_string(self, action):
         info = []
-        if action.type is not None and '%(type)' not in action.help:
-            info.append('type: %(type)s')
-        if (isinstance(action, _StoreAction)
+        if self.show_types:
+            if action.type is not None and '%(type)' not in action.help:
+                info.append('type: %(type)s')
+        if (not isinstance(action, _AppendAction)
                 and '%(default)' not in action.help
                 and action.default is not SUPPRESS
                 and action.option_strings):
             info.append('default: %(default)s')
         if info:
-            return action.help + ' ({})'.format(', '.join(info))
+            return action.help + '\n({})'.format(', '.join(info))
         else:
             return action.help
+
+
+class _NoTypeFormatter(_Formatter):
+    show_types = False
 
 
 def _populate_parser(func, parser, parsers, short):

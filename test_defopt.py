@@ -636,6 +636,12 @@ class TestHelp(unittest.TestCase):
             return bar
         self.assertIn('(type: int, default: [])', self._get_help(foo))
 
+    def test_default_bool(self):
+        def foo(bar=False):
+            """:param bool bar: baz"""
+            return bar
+        self.assertIn('(default: False)', self._get_help(foo))
+
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
         globals_ = {}
@@ -698,8 +704,16 @@ class TestHelp(unittest.TestCase):
         self.assertIn('foo', self._get_help(foo, bar))
         self.assertNotIn('FOO', self._get_help(foo, bar))
 
-    def _get_help(self, *funcs):
-        parser = defopt._create_parser(*funcs)
+    def test_hide_types(self):
+        def foo(bar):
+            """:param int bar: baz"""
+            return bar
+        self.assertNotIn('type', self._get_help(foo, show_types=False))
+
+    def _get_help(self, *funcs, **kwargs):
+        show_types = kwargs.pop('show_types', True)
+        assert not kwargs
+        parser = defopt._create_parser(*funcs, show_types=show_types)
         return parser.format_help()
 
 

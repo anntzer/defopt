@@ -46,16 +46,18 @@ informative help message.
 ::
 
     $ python test.py -h
-    usage: test.py [-h] [--count COUNT] greeting
+    usage: test.py [-h] [-c COUNT] greeting
 
     Display a friendly greeting.
 
     positional arguments:
-      greeting       Greeting to display
+      greeting              Greeting to display
 
     optional arguments:
-      -h, --help     show this help message and exit
-      --count COUNT  Number of times to display the greeting (default: 1)
+      -h, --help            show this help message and exit
+      -c COUNT, --count COUNT
+                            Number of times to display the greeting
+                            (default: 1)
 
 Your function can now be called identically from Python and the command line.
 

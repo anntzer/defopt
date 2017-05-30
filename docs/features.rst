@@ -28,6 +28,9 @@ Argument types are read from your function's docstring. Both
 called. See Booleans_, Lists_, Choices_ and Parsers_ for more information on
 specific types.
 
+Type information can be automatically added to the help text by passing
+``show_types=True`` to `defopt.run`.
+
 Subcommands
 -----------
 
@@ -83,7 +86,8 @@ Boolean keyword arguments are automatically converted to two separate flags:
 ``--name`` which stores `True` and ``--no-name`` which stores `False`. Your
 help text and the default will be displayed next to the ``--name`` flag::
 
-    --flag      Set "flag" to True (default: False)
+    --flag      Set "flag" to True
+                (default: False)
     --no-flag
 
 Note that this does not apply to mandatory boolean arguments; these must be
