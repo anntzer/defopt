@@ -1,6 +1,15 @@
 Changelog
 =========
 
+3.2.0 (2017-05-30)
+------------------
+
+* Added ``show_types`` option to automatically display variable types
+  (Thanks to @anntzer)
+* Added default parser for ``pathlib.Path`` when it is available
+  (Thanks to @anntzer)
+* Added annotations example to the generated documentation
+
 3.1.1 (2017-04-12)
 ------------------
 
