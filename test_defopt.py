@@ -674,6 +674,11 @@ class TestHelp(unittest.TestCase):
             return bar
         self.assertNotIn('default', self._get_help(foo))
 
+    def test_private(self):
+        def foo(bar, _baz=None):
+            """:param int bar: bar help"""
+        self.assertNotIn('baz', self._get_help(foo))
+
     def test_no_interpolation(self):
         def foo(bar):
             """:param int bar: %(prog)s"""
