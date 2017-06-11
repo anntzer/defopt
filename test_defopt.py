@@ -50,11 +50,13 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(
             defopt.run([sub1, sub2], argv=['sub1', '1.1']), (1.1,))
         self.assertEqual(
-            defopt.run([sub1, sub2], argv=['sub2', '--baz', '1']), 1)
+            defopt.run([sub1, sub2], strict_kwonly=False,
+                       argv=['sub2', '--baz', '1']), 1)
         self.assertEqual(
             defopt.run(sub1, sub2, argv=['sub1', '1.1']), (1.1,))
         self.assertEqual(
-            defopt.run(sub1, sub2, argv=['sub2', '--baz', '1']), 1)
+            defopt.run(sub1, sub2, strict_kwonly=False,
+                       argv=['sub2', '--baz', '1']), 1)
 
     def test_var_positional(self):
         def main(*foo):
@@ -67,13 +69,17 @@ class TestDefopt(unittest.TestCase):
     def test_keyword_only(self):
         globals_ = {}
         exec(textwrap.dedent('''\
-            def main(*, foo='bar'):
-                """:type foo: str"""
-                return foo
+            def main(foo='bar', *, baz='quux'):
+                """
+                :type foo: str
+                :type baz: str
+                """
+                return foo, baz
         '''), globals_)
         main = globals_['main']
-        self.assertEqual(defopt.run(main, argv=['--foo', 'baz']), 'baz')
-        self.assertEqual(defopt.run(main, argv=[]), 'bar')
+        self.assertEqual(defopt.run(main, argv=['FOO', '--baz', 'BAZ']),
+                         ('FOO', 'BAZ'))
+        self.assertEqual(defopt.run(main, argv=[]), ('bar', 'quux'))
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only_no_default(self):
@@ -138,7 +144,8 @@ class TestDefopt(unittest.TestCase):
             """
             return a_b_c, d_e_f
         self.assertEqual(
-            defopt.run(main, argv=['1', '--d-e-f', '2']), (1, 2))
+            defopt.run(main, strict_kwonly=False,
+                       argv=['1', '--d-e-f', '2']), (1, 2))
 
 
 class TestParsers(unittest.TestCase):
@@ -264,9 +271,12 @@ class TestParsers(unittest.TestCase):
         def main(foo=default):
             """:type foo: bool"""
             return foo
-        self.assertIs(defopt.run(main, argv=['--foo']), True)
-        self.assertIs(defopt.run(main, argv=['--no-foo']), False)
-        self.assertIs(defopt.run(main, argv=[]), default)
+        self.assertIs(defopt.run(main, strict_kwonly=False,
+                                 argv=['--foo']), True)
+        self.assertIs(defopt.run(main, strict_kwonly=False,
+                                 argv=['--no-foo']), False)
+        self.assertIs(defopt.run(main, strict_kwonly=False,
+                                 argv=[]), default)
 
     @unittest.skipIf(sys.version_info < (3, 4),
                      'expectedFailure ignores SystemExit')
@@ -275,7 +285,8 @@ class TestParsers(unittest.TestCase):
         def main(foo=True):
             """:type foo: bool"""
             return foo
-        self.assertIs(defopt.run(main, argv=['--foo', '--no-foo']), False)
+        self.assertIs(defopt.run(main, strict_kwonly=False,
+                                 argv=['--foo', '--no-foo']), False)
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_bool_keyword_only(self):
@@ -297,16 +308,19 @@ class TestFlags(unittest.TestCase):
         def func(foo=1):
             """:type foo: int"""
             return foo
-        out = defopt.run(func, short={'foo': 'f'}, argv=['-f', '2'])
+        out = defopt.run(func, short={'foo': 'f'}, strict_kwonly=False,
+                         argv=['-f', '2'])
         self.assertEqual(out, 2)
 
     def test_short_negation(self):
         def func(foo=False):
             """:type foo: bool"""
             return foo
-        out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'}, argv=['-f'])
+        out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'},
+                         strict_kwonly=False, argv=['-f'])
         self.assertIs(out, True)
-        out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'}, argv=['-F'])
+        out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'},
+                         strict_kwonly=False, argv=['-F'])
         self.assertIs(out, False)
 
     def test_auto_short(self):
@@ -317,10 +331,10 @@ class TestFlags(unittest.TestCase):
             :type baz: int
             """
             return foo
-        out = defopt.run(func, argv=['-f', '2'])
+        out = defopt.run(func, strict_kwonly=False, argv=['-f', '2'])
         self.assertEqual(out, 2)
         with self.assertRaises(SystemExit):
-            defopt.run(func, argv=['-b', '2'])
+            defopt.run(func, strict_kwonly=False, argv=['-b', '2'])
 
 
 class TestEnums(unittest.TestCase):
@@ -337,7 +351,8 @@ class TestEnums(unittest.TestCase):
         def main(foo=None):
             """:type foo: Choice"""
             return foo
-        self.assertEqual(defopt.run(main, argv=['--foo', 'one']), Choice.one)
+        self.assertEqual(defopt.run(main, strict_kwonly=False,
+                                    argv=['--foo', 'one']), Choice.one)
         self.assertIs(defopt.run(main, argv=[]), None)
 
     def test_subcommand(self):
@@ -753,7 +768,8 @@ class TestHelp(unittest.TestCase):
     def _get_help(self, *funcs, **kwargs):
         show_types = kwargs.pop('show_types', True)
         assert not kwargs
-        parser = defopt._create_parser(*funcs, show_types=show_types)
+        parser = defopt._create_parser(
+            *funcs, show_types=show_types, strict_kwonly=False)
         return parser.format_help()
 
 

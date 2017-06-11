@@ -34,4 +34,4 @@ class Choice(Enum):
 
 
 if __name__ == '__main__':
-    defopt.run(main)
+    defopt.run(main, strict_kwonly=False)

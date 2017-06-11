@@ -49,21 +49,25 @@ The command line usage will indicate this. ::
 Flags
 -----
 
-Any keyword arguments are converted to flags, with all underscores in
-the name replaced by hyphens. Names of positional arguments are used
-unmodified.  By default, short flags are generated for keyword arguments
-that do not share their initial with other keyword arguments::
+Keyword-only arguments are converted to flags, with all underscores in the name
+replaced by hyphens. Names of positional arguments are used unmodified.  By
+default, short flags are generated for keyword-only arguments that do not share
+their initial with other keyword arguments.  Positional-or-keyword arguments
+are converted to positional arguments, whether they have a default or not.
 
-    usage: test.py [-h] [--keyword-arg KEYWORD_ARG] positional_arg
+    usage: test.py [-h] [-k KWONLY] positional_no_default [positional_with_default]
 
     positional arguments:
-      positional_arg
+      positional_no_default
+      positional_with_default
 
     optional arguments:
       -h, --help            show this help message and exit
-      -k KEYWORD_ARG, --keyword-arg KEYWORD_ARG
+      -k KWONLY, --kwonly KWONLY
 
-In Python 3, any keyword-only arguments without defaults are marked as required.
+In order to generate flags for parameter-or-keyword arguments that
+have a default (which may be necessary, e.g., on Python 2), pass
+``strict_kwonly=False`` to `defopt.run`.
 
 You can override these generated short flags by passing a dictionary to
 `defopt.run` which maps flag names to single letters::
@@ -178,6 +182,8 @@ list.
 Variable keyword arguments (``**kwargs``) are not supported.
 
 A runnable example is available at `examples/starargs.py`_.
+
+.. _private argument:
 
 Private Arguments
 -----------------

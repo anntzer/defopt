@@ -67,7 +67,8 @@ _Type = namedtuple('_Type', ('type', 'container'))
 
 
 def run(funcs, *args, **kwargs):
-    """run(funcs, *, parsers=None, short=None, show_types=False, argv=None)
+    """run(funcs, *, parsers=None, short=None, strict_kwonly=True,
+           show_types=False, argv=None)
 
     Process command line arguments and run the given functions.
 
@@ -84,6 +85,11 @@ def run(funcs, *args, **kwargs):
         Defaults to ``None``, which means to generate short flags for any
         non-ambiguous option.  Set to ``{}`` to completely disable short flags.
     :type short: Dict[str, str]
+    :param bool strict_kwonly: If `True` (the default), only keyword-only
+        arguments are converted into command line flags; non-keyword-only
+        arguments become optional positional command line parameters.  Note
+        that on Python 2, setting this to False is the only way to obtain
+        command line flags.
     :param bool show_types: If `True`, display type names after parameter
         descriptions in the the help text.
     :param List[str] argv: Command line arguments to parse (default:
@@ -104,9 +110,11 @@ def run(funcs, *args, **kwargs):
 
 def _create_parser(funcs, *args, **kwargs):
     parsers = kwargs.pop('parsers', None)
-    short = kwargs.pop('short', None)
     show_types = kwargs.pop('show_types', False)
-    if kwargs:
+    kwargs, rest = ({'short': kwargs.pop('short', None),
+                     'strict_kwonly': kwargs.pop('strict_kwonly', True)},
+                    kwargs)
+    if rest:
         raise TypeError(
             'unexpected keyword argument: {}'.format(list(kwargs)[0]))
     if args:
@@ -119,7 +127,7 @@ def _create_parser(funcs, *args, **kwargs):
         formatter_class = _Formatter
     parser = ArgumentParser(formatter_class=formatter_class)
     if callable(funcs):
-        _populate_parser(funcs, parser, parsers, short)
+        _populate_parser(funcs, parser, parsers, **kwargs)
         parser.set_defaults(_func=funcs)
     else:
         subparsers = parser.add_subparsers()
@@ -127,7 +135,7 @@ def _create_parser(funcs, *args, **kwargs):
             subparser = subparsers.add_parser(
                 func.__name__, formatter_class=formatter_class,
                 help=_parse_function_docstring(func).paragraphs[0])
-            _populate_parser(func, subparser, parsers, short)
+            _populate_parser(func, subparser, parsers, **kwargs)
             subparser.set_defaults(_func=func)
     return parser
 
@@ -158,7 +166,9 @@ class _NoTypeFormatter(_Formatter):
     show_types = False
 
 
-def _populate_parser(func, parser, parsers, short):
+def _populate_parser(func, parser, parsers, **kwargs):
+    short = kwargs['short']
+    strict_kwonly = kwargs['strict_kwonly']
     full_sig = _inspect_signature(func)
     sig = full_sig.replace(
         parameters=list(param for param in full_sig.parameters.values()
@@ -170,7 +180,7 @@ def _populate_parser(func, parser, parsers, short):
     types = dict((name, _get_type(func, name, doc, hints))
                  for name, param in sig.parameters.items())
     positionals = set(name for name, param in sig.parameters.items()
-                      if (param.default == param.empty
+                      if ((param.default == param.empty or strict_kwonly)
                           and not types[name].container
                           and param.kind != param.KEYWORD_ONLY))
     if short is None:
@@ -208,6 +218,9 @@ def _populate_parser(func, parser, parsers, short):
             continue
         if positional:
             kwargs['_positional'] = True
+            if default != param.empty:
+                kwargs['nargs'] = '?'
+                kwargs['default'] = default
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['nargs'] = '*'
                 # This is purely to override the displayed default of None.
