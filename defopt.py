@@ -12,10 +12,11 @@ import re
 import sys
 import warnings
 from argparse import (
-    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _AppendAction)
+    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _AppendAction,
+    _StoreAction)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
-from typing import List, Iterable, Sequence, Union, Callable, Dict
+from typing import Callable, Dict, Iterable, List, Sequence, Tuple, Union
 from typing import get_type_hints as _get_type_hints
 from xml.etree import ElementTree
 
@@ -42,8 +43,8 @@ except ImportError:
         yield
 
 if sys.version_info.major == 2:  # pragma: no cover
-    def _get_type_hints(*args, **kwargs):
-        return {}
+    def _get_type_hints(obj, globalns=None, localns=None):
+        return getattr(obj, '__annotations__', {})
     _basestring = basestring
 else:
     _basestring = str
@@ -221,7 +222,26 @@ def _populate_parser(func, parser, parsers, short):
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['action'] = 'append'
                 kwargs['default'] = []
-        if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
+        make_tuple = member_types = None
+        if _is_generic_type(type_.type, Tuple):
+            make_tuple = tuple
+            member_types = type_.type.__args__
+            kwargs['nargs'] = len(member_types)
+            kwargs['action'] = _make_store_tuple_action_class(
+                tuple, member_types, parsers)
+        elif (inspect.isclass(type_.type) and issubclass(type_.type, tuple)
+              and hasattr(type_.type, '_fields')
+              and hasattr(type_.type, '_field_types')):
+            # Before Py3.6, `_field_types` does not preserve order, so retrieve
+            # the order from `_fields`.
+            member_types = tuple(type_.type._field_types[field]
+                                 for field in type_.type._fields)
+            kwargs['nargs'] = len(member_types)
+            kwargs['action'] = _make_store_tuple_action_class(
+                lambda args: type_.type(*args), member_types, parsers)
+            if not positional:  # http://bugs.python.org/issue14074
+                kwargs['metavar'] = type_.type._fields
+        elif inspect.isclass(type_.type) and issubclass(type_.type, Enum):
             # Want these to behave like argparse choices.
             kwargs['choices'] = _ValueOrderedDict(
                 (x.name, x) for x in type_.type)
@@ -483,3 +503,13 @@ def _enum_getter(enum):
             return name
     getter.__name__ = enum.__name__
     return getter
+
+
+def _make_store_tuple_action_class(make_tuple, member_types, parsers):
+    class _StoreTupleAction(_StoreAction):
+        def __call__(self, parser, namespace, values, option_string=None):
+            value = make_tuple(_get_parser(arg, parsers)(value)
+                               for arg, value in zip(member_types, values))
+            return super(_StoreTupleAction, self).__call__(
+                parser, namespace, value, option_string)
+    return _StoreTupleAction

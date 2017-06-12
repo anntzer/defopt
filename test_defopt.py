@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from collections import namedtuple
 from enum import Enum
 import subprocess
 import sys
@@ -22,6 +23,14 @@ from examples import booleans, choices, lists, parsers, short, starargs, styles
 
 if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
     unittest.TestCase.assertRaisesRegex = unittest.TestCase.assertRaisesRegexp
+
+
+class Choice(Enum):
+    one = 1
+    two = 2
+
+
+Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
 
 
 class TestDefopt(unittest.TestCase):
@@ -361,9 +370,21 @@ class TestEnums(unittest.TestCase):
                          msg='argparse needs to report this value')
 
 
-class Choice(Enum):
-    one = 1
-    two = 2
+class TestTuple(unittest.TestCase):
+    def test_tuple(self):
+        def main(foo):
+            """:param typing.Tuple[int,str] foo: foo"""
+            return foo
+        self.assertEqual(defopt.run(main, argv=['1', '2']), (1, '2'))
+
+    def test_namedtuple(self):
+        def main(foo):
+            """:param Pair foo: foo"""
+            return foo
+        # Instances of the Pair class compare equal to tuples, so we compare
+        # their __str__ instead to make sure that the type is correct too.
+        self.assertEqual(str(defopt.run(main, argv=['1', '2'])),
+                         str(Pair(1, '2')))
 
 
 class TestDoc(unittest.TestCase):
@@ -661,6 +682,20 @@ class TestHelp(unittest.TestCase):
                 return bar
         '''), globals_)
         self.assertNotIn('default', self._get_help(globals_['foo']))
+
+    def test_tuple(self):
+        def main(foo=None):
+            """
+            :param typing.Tuple[int,str] foo: help
+            """
+        self.assertIn('--foo FOO FOO', self._get_help(main))
+
+    def test_namedtuple(self):
+        def main(foo=None):
+            """
+            :param Pair foo: help
+            """
+        self.assertIn('--foo first second', self._get_help(main))
 
     def test_var_positional(self):
         def foo(*bar):

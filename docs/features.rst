@@ -24,9 +24,9 @@ Argument types are read from your function's docstring. Both
     :param <name>: <description>
     :type <name>: <type>
 
-``<type>`` is evaluated in the function's global namespace when `defopt.run` is
-called. See Booleans_, Lists_, Choices_ and Parsers_ for more information on
-specific types.
+``<type>`` is evaluated in the function's global namespace when `defopt.run`
+is called. See Booleans_, Lists_, Choices_, Tuples_ and Parsers_ for more
+information on specific types.
 
 Type information can be automatically added to the help text by passing
 ``show_types=True`` to `defopt.run`.
@@ -127,6 +127,15 @@ This also produces a more helpful message when you choose an invalid option. ::
                                     (choose from 'red', 'blue', 'yellow')
 
 A runnable example is available at `examples/choices.py`_.
+
+Tuples
+------
+
+Typed tuples and typed namedtuples (as defined using `typing.Tuple` and
+`typing.NamedTuple`) consume as many command-line arguments as the tuple
+has fields, convert each argument to the correct type, and wrap them into the
+annotation class.  When a `typing.NamedTuple` is used for an optional argument,
+the names of the fields are used in the help.
 
 Parsers
 -------
