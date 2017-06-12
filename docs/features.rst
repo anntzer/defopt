@@ -170,6 +170,11 @@ Variable keyword arguments (``**kwargs``) are not supported.
 
 A runnable example is available at `examples/starargs.py`_.
 
+Private Arguments
+-----------------
+
+Arguments whose name start with an underscore will not be added to the parser.
+
 Entry Points
 ------------
 
