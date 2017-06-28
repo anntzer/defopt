@@ -65,6 +65,13 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['1', '2']), (1, 2))
         self.assertEqual(defopt.run(main, argv=[]), ())
 
+    def test_no_default(self):
+        def main(a):
+            """:type a: str"""
+            return a
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=[])
+
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
         globals_ = {}
