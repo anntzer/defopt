@@ -180,7 +180,7 @@ def _populate_parser(func, parser, parsers, **kwargs):
     types = dict((name, _get_type(func, name, doc, hints))
                  for name, param in sig.parameters.items())
     positionals = set(name for name, param in sig.parameters.items()
-                      if ((param.default == param.empty or strict_kwonly)
+                      if ((param.default is param.empty or strict_kwonly)
                           and not types[name].container
                           and param.kind != param.KEYWORD_ONLY))
     if short is None:
@@ -199,7 +199,7 @@ def _populate_parser(func, parser, parsers, **kwargs):
         type_ = types[name]
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
-        hasdefault = param.default != param.empty
+        hasdefault = param.default is not param.empty
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
@@ -218,7 +218,7 @@ def _populate_parser(func, parser, parsers, **kwargs):
             continue
         if positional:
             kwargs['_positional'] = True
-            if default != param.empty:
+            if param.default is not param.empty:
                 kwargs['nargs'] = '?'
                 kwargs['default'] = default
             if param.kind == param.VAR_POSITIONAL:
