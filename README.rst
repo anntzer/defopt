@@ -28,7 +28,7 @@ Once you have written and documented_ your function, simply pass it to
 
     import defopt
 
-    def main(greeting, count=1):
+    def main(greeting, *, count=1):
         """Display a friendly greeting.
 
         :param str greeting: Greeting to display
@@ -39,6 +39,11 @@ Once you have written and documented_ your function, simply pass it to
 
     if __name__ == '__main__':
         defopt.run(main)
+
+.. note::
+   On Python 2, where there are no keyword-only arguments, you should pass
+   ``strict_kwonly=True`` to `defopt.run`.  Otherwise, ``count`` is converted
+   into an optional positional argument.
 
 Descriptions of the parameters and the function itself are used to build an
 informative help message.

@@ -110,11 +110,10 @@ def run(funcs, *args, **kwargs):
 
 def _create_parser(funcs, *args, **kwargs):
     parsers = kwargs.pop('parsers', None)
+    short = kwargs.pop('short', None)
+    strict_kwonly = kwargs.pop('strict_kwonly', True)
     show_types = kwargs.pop('show_types', False)
-    kwargs, rest = ({'short': kwargs.pop('short', None),
-                     'strict_kwonly': kwargs.pop('strict_kwonly', True)},
-                    kwargs)
-    if rest:
+    if kwargs:
         raise TypeError(
             'unexpected keyword argument: {}'.format(list(kwargs)[0]))
     if args:
@@ -127,7 +126,7 @@ def _create_parser(funcs, *args, **kwargs):
         formatter_class = _Formatter
     parser = ArgumentParser(formatter_class=formatter_class)
     if callable(funcs):
-        _populate_parser(funcs, parser, parsers, **kwargs)
+        _populate_parser(funcs, parser, parsers, short, strict_kwonly)
         parser.set_defaults(_func=funcs)
     else:
         subparsers = parser.add_subparsers()
@@ -135,7 +134,7 @@ def _create_parser(funcs, *args, **kwargs):
             subparser = subparsers.add_parser(
                 func.__name__, formatter_class=formatter_class,
                 help=_parse_function_docstring(func).paragraphs[0])
-            _populate_parser(func, subparser, parsers, **kwargs)
+            _populate_parser(func, subparser, parsers, short, strict_kwonly)
             subparser.set_defaults(_func=func)
     return parser
 
@@ -166,9 +165,7 @@ class _NoTypeFormatter(_Formatter):
     show_types = False
 
 
-def _populate_parser(func, parser, parsers, **kwargs):
-    short = kwargs['short']
-    strict_kwonly = kwargs['strict_kwonly']
+def _populate_parser(func, parser, parsers, short, strict_kwonly):
     full_sig = _inspect_signature(func)
     sig = full_sig.replace(
         parameters=list(param for param in full_sig.parameters.values()
