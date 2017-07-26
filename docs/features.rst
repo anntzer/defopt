@@ -54,7 +54,7 @@ the name replaced by hyphens. Names of positional arguments are used
 unmodified.  By default, short flags are generated for keyword arguments
 that do not share their initial with other keyword arguments::
 
-    usage: test.py [-h] [--keyword-arg KEYWORD_ARG] positional_arg
+    usage: test.py [-h] [-k KEYWORD_ARG] positional_arg
 
     positional arguments:
       positional_arg
@@ -63,7 +63,27 @@ that do not share their initial with other keyword arguments::
       -h, --help            show this help message and exit
       -k KEYWORD_ARG, --keyword-arg KEYWORD_ARG
 
-In Python 3, any keyword-only arguments without defaults are marked as required.
+In Python 3, any keyword-only arguments without defaults are marked as
+required.  Additionally, if at least one keyword-only argument is present,
+then only such arguments will be converted to a flag; positional-or-keyword
+arguments that have a default will be treated as positional but optional on the
+command line::
+
+    usage: test.py [-h] [-k KEYWORD_ONLY] [positional_with_default]
+
+    positional arguments:
+      positional_with_default
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -k KEYWORD_ONLY, --keyword-only KEYWORD_ONLY
+
+To force an argument to be treated as positional but optional in the absence of
+flags, a dummy `private argument`_ can be used, e.g.::
+
+    @defopt.run
+    def main(positional_with_default="foo", *, _=None):
+        """:type positional_with_default: str"""
 
 You can override these generated short flags by passing a dictionary to
 `defopt.run` which maps flag names to single letters::
@@ -178,6 +198,8 @@ list.
 Variable keyword arguments (``**kwargs``) are not supported.
 
 A runnable example is available at `examples/starargs.py`_.
+
+.. _private argument:
 
 Private Arguments
 -----------------

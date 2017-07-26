@@ -161,6 +161,8 @@ class _NoTypeFormatter(_Formatter):
 
 def _populate_parser(func, parser, parsers, short):
     full_sig = _inspect_signature(func)
+    has_kwonly = any(param.kind == param.KEYWORD_ONLY
+                     for param in full_sig.parameters.values())
     sig = full_sig.replace(
         parameters=list(param for param in full_sig.parameters.values()
                         if not param.name.startswith('_')))
@@ -171,7 +173,7 @@ def _populate_parser(func, parser, parsers, short):
     types = dict((name, _get_type(func, name, doc, hints))
                  for name, param in sig.parameters.items())
     positionals = set(name for name, param in sig.parameters.items()
-                      if (param.default == param.empty
+                      if ((param.default == param.empty or has_kwonly)
                           and not types[name].container
                           and param.kind != param.KEYWORD_ONLY))
     if short is None:
@@ -209,6 +211,9 @@ def _populate_parser(func, parser, parsers, short):
             continue
         if positional:
             kwargs['_positional'] = True
+            if default != param.empty:
+                kwargs['nargs'] = '?'
+                kwargs['default'] = default
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['nargs'] = '*'
                 # This is purely to override the displayed default of None.

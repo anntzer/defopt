@@ -67,13 +67,17 @@ class TestDefopt(unittest.TestCase):
     def test_keyword_only(self):
         globals_ = {}
         exec(textwrap.dedent('''\
-            def main(*, foo='bar'):
-                """:type foo: str"""
-                return foo
+            def main(foo='bar', *, baz='quux'):
+                """
+                :type foo: str
+                :type baz: str
+                """
+                return foo, baz
         '''), globals_)
         main = globals_['main']
-        self.assertEqual(defopt.run(main, argv=['--foo', 'baz']), 'baz')
-        self.assertEqual(defopt.run(main, argv=[]), 'bar')
+        self.assertEqual(defopt.run(main, argv=['FOO', '--baz', 'BAZ']),
+                         ('FOO', 'BAZ'))
+        self.assertEqual(defopt.run(main, argv=[]), ('bar', 'quux'))
 
     @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only_no_default(self):
