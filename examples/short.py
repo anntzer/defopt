@@ -25,4 +25,4 @@ def main(count=1):
 
 
 if __name__ == '__main__':
-    defopt.run(main, short={'count': 'C'})
+    defopt.run(main, short={'count': 'C'}, strict_kwonly=False)

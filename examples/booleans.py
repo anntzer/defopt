@@ -29,4 +29,4 @@ def main(message, upper=True, repeat=False):
 
 
 if __name__ == '__main__':
-    defopt.run(main)
+    defopt.run(main, strict_kwonly=False)

@@ -49,23 +49,34 @@ The command line usage will indicate this. ::
 Flags
 -----
 
-Any keyword arguments are converted to flags, with all underscores in
-the name replaced by hyphens. Names of positional arguments are used
-unmodified.  By default, short flags are generated for keyword arguments
-that do not share their initial with other keyword arguments::
+Python positional-or-keyword parameters are converted to CLI positional
+parameters, with their name unmodified.  Python keyword-only parameters are
+converted to CLI flags, with underscores replaced by hyphens.  Additionally,
+one-letter short flags are generated for all flags that do not share their
+initial with other flags.
 
-    usage: test.py [-h] [--keyword-arg KEYWORD_ARG] positional_arg
+Parameters that have a default (regardless of whether they are
+positional-or-keyword or keyword-only) are optional; those that do not have a
+default are required.
+
+    usage: test.py [-h] [-k KWONLY] positional_no_default [positional_with_default]
 
     positional arguments:
-      positional_arg
+      positional_no_default
+      positional_with_default
 
     optional arguments:
       -h, --help            show this help message and exit
-      -k KEYWORD_ARG, --keyword-arg KEYWORD_ARG
+      -k KWONLY, --kwonly KWONLY
 
-In Python 3, any keyword-only arguments without defaults are marked as required.
+Python 2 does not have keyword-only parameters; the standard way to
+suggest that a parameter should be used with its keyword is to use a
+positional-or-keyword parameter with a default.  It is possible (on both Python
+2 and Python 3) to use this interpretation (Python parameters with a default
+become CLI flags, and keyword-only ones do too; others become CLI positional
+parameters) by passing ``strick_kwonly=False`` to `defopt.run`.
 
-You can override these generated short flags by passing a dictionary to
+Auto-generated short flags can be overridden by passing a dictionary to
 `defopt.run` which maps flag names to single letters::
 
     defopt.run(main, short={'keyword-arg': 'a'})
@@ -82,18 +93,22 @@ adding new flags.
 Booleans
 --------
 
-Boolean keyword arguments are automatically converted to two separate flags:
-``--name`` which stores `True` and ``--no-name`` which stores `False`. Your
-help text and the default will be displayed next to the ``--name`` flag::
+Boolean keyword-only parameters are automatically converted to two separate
+flags: ``--name`` which stores `True` and ``--no-name`` which stores
+`False`. Your help text and the default will be displayed next to the
+``--name`` flag::
 
     --flag      Set "flag" to True
                 (default: False)
     --no-flag
 
-Note that this does not apply to mandatory boolean arguments; these must be
+Note that this does not apply to mandatory boolean parameters; these must be
 specified as one of ``1/t/true`` or ``0/f/false`` (case insensitive).
 
 A runnable example is available at `examples/booleans.py`_.
+
+If ``strict_kwonly`` is unset, then all boolean parameters with a default or
+that are keyword-only are converted in such a way.
 
 Lists
 -----
