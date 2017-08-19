@@ -41,22 +41,22 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['foo']), 'foo')
 
     def test_subcommands(self):
-        def sub1(*bar):
+        def sub(*bar):
             """:type bar: float"""
             return bar
-        def sub2(baz=None):
+        def sub_with_dash(baz=None):
             """:type baz: int"""
             return baz
         self.assertEqual(
-            defopt.run([sub1, sub2], argv=['sub1', '1.1']), (1.1,))
+            defopt.run([sub, sub_with_dash], argv=['sub', '1.1']), (1.1,))
         self.assertEqual(
-            defopt.run([sub1, sub2], strict_kwonly=False,
-                       argv=['sub2', '--baz', '1']), 1)
+            defopt.run([sub, sub_with_dash], strict_kwonly=False,
+                       argv=['sub-with-dash', '--baz', '1']), 1)
         self.assertEqual(
-            defopt.run(sub1, sub2, argv=['sub1', '1.1']), (1.1,))
+            defopt.run(sub, sub_with_dash, argv=['sub', '1.1']), (1.1,))
         self.assertEqual(
-            defopt.run(sub1, sub2, strict_kwonly=False,
-                       argv=['sub2', '--baz', '1']), 1)
+            defopt.run(sub, sub_with_dash, strict_kwonly=False,
+                       argv=['sub-with-dash', '--baz', '1']), 1)
 
     def test_var_positional(self):
         def main(*foo):

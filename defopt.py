@@ -133,7 +133,8 @@ def _create_parser(funcs, *args, **kwargs):
         subparsers = parser.add_subparsers()
         for func in funcs:
             subparser = subparsers.add_parser(
-                func.__name__, formatter_class=formatter_class,
+                func.__name__.replace("_", "-"),
+                formatter_class=formatter_class,
                 help=_parse_function_docstring(func).paragraphs[0])
             _populate_parser(func, subparser, parsers, short, strict_kwonly)
             subparser.set_defaults(_func=func)
