@@ -46,6 +46,8 @@ The command line usage will indicate this. ::
     positional arguments:
       {func1,func2}
 
+Underscores in function names are replaced by hyphens.
+
 Flags
 -----
 
