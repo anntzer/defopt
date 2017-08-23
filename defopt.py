@@ -18,9 +18,9 @@ from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import Callable, Dict, Iterable, List, Sequence, Tuple, Union
 from typing import get_type_hints as _get_type_hints
-from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
+from docutils.nodes import NodeVisitor, SkipNode
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 
 try:
@@ -382,83 +382,99 @@ def _parse_docstring(doc):
     doc = str(GoogleDocstring(doc))
     doc = str(NumpyDocstring(doc))
 
-    dom = publish_doctree(doc).asdom()
-    etree = ElementTree.fromstring(dom.toxml())
-    doctext = []
-    for element in etree:
-        if element.tag == 'paragraph':
-            doctext.append(_get_text(element))
-        elif element.tag == 'literal_block':
-            doctext.append(_indent(_get_text(element)))
-    fields = etree.findall('.//field')
+    tree = publish_doctree(doc)
 
-    params = defaultdict(dict)
-    for field in fields:
-        field_name = field.find('field_name')
-        field_body = field.find('field_body')
-        parts = field_name.text.split()
-        if len(parts) == 2:
-            doctype, name = parts
-        elif len(parts) == 3:
-            doctype, type_, name = parts
-            if doctype not in _PARAM_TYPES:
-                log.debug('ignoring field %s', field_name.text)
-                continue
-            log.debug('inline param type %s', type_)
-            if 'type' in params[name]:
-                raise ValueError('type defined twice for {}'.format(name))
-            params[name]['type'] = type_
-        else:
-            log.debug('ignoring field %s', field_name.text)
-            continue
-        if doctype in _PARAM_TYPES:
-            doctype = 'param'
-        if doctype in _TYPE_NAMES:
-            doctype = 'type'
-        text = _get_text(field_body)
-        log.debug('%s %s: %s', doctype, name, text)
-        if doctype in params[name]:
-            raise ValueError('{} defined twice for {}'.format(doctype, name))
-        params[name][doctype] = text
+    class Visitor(NodeVisitor):
+        optional = [
+            'document', 'docinfo',
+            'field_list', 'field_body',
+            'literal', 'problematic']
+
+        def __init__(self, document):
+            NodeVisitor.__init__(self, document)
+            self.paragraphs = []
+            self.params = defaultdict(dict)
+            self._current_paragraph = None
+
+        def _do_nothing(self, node):
+            pass
+
+        def visit_paragraph(self, node):
+            self._current_paragraph = []
+
+        def depart_paragraph(self, node):
+            self.paragraphs.append(''.join(self._current_paragraph))
+            self._current_paragraph = None
+
+        def visit_Text(self, node):
+            self._current_paragraph.append(node)
+
+        depart_Text = _do_nothing
+
+        def visit_emphasis(self, node):
+            self._current_paragraph.append('\033[3m')  # *foo*: italic
+
+        def visit_strong(self, node):
+            self._current_paragraph.append('\033[1m')  # **foo**: bold
+
+        def visit_title_reference(self, node):
+            self._current_paragraph.append('\033[4m')  # `foo`: underlined
+
+        def _depart_markup(self, node):
+            self._current_paragraph.append('\033[0m')
+
+        depart_emphasis = depart_strong = depart_title_reference = \
+            _depart_markup
+
+        def visit_literal_block(self, node):
+            text, = node
+            self.paragraphs.append(re.sub('^|\n', r'\g<0>    ', text))  # indent
+            raise SkipNode
+
+        def visit_field(self, node):
+            field_name_node, field_body_node = node
+            field_name, = field_name_node
+            parts = field_name.split()
+            if len(parts) == 2:
+                doctype, name = parts
+            elif len(parts) == 3:
+                doctype, type_, name = parts
+                if doctype not in _PARAM_TYPES:
+                    raise SkipNode
+                if 'type' in self.params[name]:
+                    raise ValueError('type defined twice for {}'.format(name))
+                self.params[name]['type'] = type_
+            else:
+                raise SkipNode
+            if doctype in _PARAM_TYPES:
+                doctype = 'param'
+            if doctype in _TYPE_NAMES:
+                doctype = 'type'
+            if doctype in self.params[name]:
+                raise ValueError('{} defined twice for {}'.format(doctype, name))
+            visitor = Visitor(self.document)
+            field_body_node.walkabout(visitor)
+            self.params[name][doctype] = ''.join(visitor.paragraphs)
+            raise SkipNode
+
+        def visit_comment(self, node):
+            raise SkipNode
+
+        def visit_system_message(self, node):
+            raise SkipNode
+
+    visitor = Visitor(tree)
+    tree.walkabout(visitor)
+    paragraphs = visitor.paragraphs
+    params = visitor.params
 
     tuples = {}
     for name, values in params.items():
         tuples[name] = _Param(values.get('param'), values.get('type'))
 
-    parsed = _parse_docstring_cache[_cache_key] = _Doc(doctext or [''], tuples)
+    parsed = _parse_docstring_cache[_cache_key] = \
+        _Doc(paragraphs or [''], tuples)
     return parsed
-
-
-def _itertext_ansi(node):
-    # Implementation modified from `ElementTree.Element.itertext`.
-    tag = node.tag
-    if not isinstance(tag, _basestring) and tag is not None:
-        return
-    ansi_code = {"emphasis": "\033[3m",  # *foo*: italic.
-                 "strong": "\033[1m",  # **foo**: bold.
-                 "title_reference": "\033[4m",  # `foo`: underlined.
-                 }.get(tag, "")
-    t = node.text
-    if t:
-        yield ansi_code
-        yield t
-        if ansi_code:
-            yield "\033[0m"  # Reset.
-    for e in node:
-        for t in _itertext_ansi(e):
-            yield t
-        t = e.tail
-        if t:
-            yield t
-
-
-def _get_text(node):
-    return ''.join(_itertext_ansi(node))
-
-
-def _indent(text):
-    tab = '    '
-    return tab + text.replace('\n', '\n' + tab)
 
 
 def _get_parser(type_, parsers=None):
