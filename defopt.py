@@ -21,6 +21,8 @@ from typing import get_type_hints as _get_type_hints
 
 from docutils.core import publish_doctree
 from docutils.nodes import NodeVisitor, SkipNode
+from docutils.parsers.rst.states import Body
+from docutils.utils import roman
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 
 try:
@@ -395,8 +397,8 @@ def _parse_docstring(doc):
             self.paragraphs = []
             self.params = defaultdict(dict)
             self._current_paragraph = None
-            self._current_bullet_stack = []
-            self._current_indent_stack = []
+            self._indent_iterator_stack = []
+            self._indent_stack = []
 
         def _do_nothing(self, node):
             pass
@@ -406,11 +408,10 @@ def _parse_docstring(doc):
 
         def depart_paragraph(self, node):
             text = ''.join(self._current_paragraph)
-            text = ''.join(self._current_indent_stack) + text
-            self._current_indent_stack = [
-                ' ' * len(item) for item in self._current_indent_stack]
-            text = text.replace(
-                '\n', '\n' + ''.join(self._current_indent_stack))
+            text = ''.join(self._indent_stack) + text
+            self._indent_stack = [
+                ' ' * len(item) for item in self._indent_stack]
+            text = text.replace('\n', '\n' + ''.join(self._indent_stack))
             self.paragraphs.append(text)
             self._current_paragraph = None
 
@@ -440,17 +441,43 @@ def _parse_docstring(doc):
             raise SkipNode
 
         def visit_bullet_list(self, node):
-            self._current_bullet_stack.append(node['bullet'])
+            self._indent_iterator_stack.append(
+                (node['bullet'] + ' ' for _ in range(len(node))))
 
         def depart_bullet_list(self, node):
-            self._current_bullet_stack.pop()
+            self._indent_iterator_stack.pop()
+
+        def visit_enumerated_list(self, node):
+            enumtype = node['enumtype']
+            fmt = {('(', ')'): 'parens',
+                   ('', ')'): 'rparen',
+                   ('', '.'): 'period'}[node['prefix'], node['suffix']]
+            try:
+                start = node['start']
+            except KeyError:
+                start = 1
+            else:
+                start = {
+                    'arabic': int,
+                    'loweralpha': lambda s: ord(s) - ord('a') + 1,
+                    'upperalpha': lambda s: ord(s) - ord('A') + 1,
+                    'lowerroman': lambda s: roman.fromRoman(s.upper()),
+                    'upperroman': lambda s: roman.fromRoman(s),
+                }[enumtype](start)
+            enumerators = [Body(None).make_enumerator(i, enumtype, fmt)[0]
+                           for i in range(start, start + len(node))]
+            width = max(map(len, enumerators))
+            enumerators = [enum.ljust(width) for enum in enumerators]
+            self._indent_iterator_stack.append(iter(enumerators))
+
+        def depart_enumerated_list(self, node):
+            self._indent_iterator_stack.pop()
 
         def visit_list_item(self, node):
-            self._current_indent_stack.append(
-                self._current_bullet_stack[-1] + ' ')
+            self._indent_stack.append(next(self._indent_iterator_stack[-1]))
 
         def depart_list_item(self, node):
-            self._current_indent_stack.pop()
+            self._indent_stack.pop()
 
         def visit_field(self, node):
             field_name_node, field_body_node = node

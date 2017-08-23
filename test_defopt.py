@@ -605,11 +605,11 @@ class TestDoc(unittest.TestCase):
             """
             - foo
             - bar
-            - * quux
-              * blah
+            - i.  quux
+              ii. blah
             """
         doc = defopt._parse_function_docstring(func)
-        self.assertEqual(doc.text, '- foo\n\n- bar\n\n- * quux\n\n  * blah')
+        self.assertEqual(doc.text, '- foo\n\n- bar\n\n- i.  quux\n\n  ii. blah')
 
 
 class TestAnnotations(unittest.TestCase):
