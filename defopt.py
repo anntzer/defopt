@@ -395,6 +395,8 @@ def _parse_docstring(doc):
             self.paragraphs = []
             self.params = defaultdict(dict)
             self._current_paragraph = None
+            self._current_bullet_stack = []
+            self._current_indent_stack = []
 
         def _do_nothing(self, node):
             pass
@@ -403,7 +405,13 @@ def _parse_docstring(doc):
             self._current_paragraph = []
 
         def depart_paragraph(self, node):
-            self.paragraphs.append(''.join(self._current_paragraph))
+            text = ''.join(self._current_paragraph)
+            text = ''.join(self._current_indent_stack) + text
+            self._current_indent_stack = [
+                ' ' * len(item) for item in self._current_indent_stack]
+            text = text.replace(
+                '\n', '\n' + ''.join(self._current_indent_stack))
+            self.paragraphs.append(text)
             self._current_paragraph = None
 
         def visit_Text(self, node):
@@ -430,6 +438,19 @@ def _parse_docstring(doc):
             text, = node
             self.paragraphs.append(re.sub('^|\n', r'\g<0>    ', text))  # indent
             raise SkipNode
+
+        def visit_bullet_list(self, node):
+            self._current_bullet_stack.append(node['bullet'])
+
+        def depart_bullet_list(self, node):
+            self._current_bullet_stack.pop()
+
+        def visit_list_item(self, node):
+            self._current_indent_stack.append(
+                self._current_bullet_stack[-1] + ' ')
+
+        def depart_list_item(self, node):
+            self._current_indent_stack.pop()
 
         def visit_field(self, node):
             field_name_node, field_body_node = node
