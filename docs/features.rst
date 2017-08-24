@@ -1,3 +1,5 @@
+.. highlight:: none
+
 Features
 ========
 
@@ -35,7 +37,9 @@ Subcommands
 -----------
 
 If a list of commands are passed to `defopt.run`, they are treated as
-subcommands which are run by name. ::
+subcommands which are run by name.
+
+.. code-block:: python
 
     defopt.run([func1, func2])
 
@@ -59,7 +63,7 @@ initial with other flags.
 
 Parameters that have a default (regardless of whether they are
 positional-or-keyword or keyword-only) are optional; those that do not have a
-default are required.
+default are required. ::
 
     usage: test.py [-h] [-k KWONLY] positional_no_default [positional_with_default]
 
@@ -79,7 +83,9 @@ become CLI flags, and keyword-only ones do too; others become CLI positional
 parameters) by passing ``strick_kwonly=False`` to `defopt.run`.
 
 Auto-generated short flags can be overridden by passing a dictionary to
-`defopt.run` which maps flag names to single letters::
+`defopt.run` which maps flag names to single letters:
+
+.. code-block:: python
 
     defopt.run(main, short={'keyword-arg': 'a'})
 
@@ -158,7 +164,9 @@ Parsers
 -------
 
 You can use arbitrary argument types as long as you provide functions to parse
-them from strings. ::
+them from strings.
+
+.. code-block:: python
 
     def parse_person(string):
         last, first = string.split(',')
@@ -177,7 +185,9 @@ Variable Positional Arguments
 
 If your function definition contains ``*args``, the parser will accept zero or
 more positional arguments. When specifying a type, specify the type of the
-elements, not the container. ::
+elements, not the container.
+
+.. code-block:: python
 
     def main(*numbers):
         """:param int numbers: Positional numeric arguments"""
@@ -205,12 +215,16 @@ Entry Points
 ------------
 
 To use your script as a console entry point with setuptools, you need to create
-a function that can be called without arguments. ::
+a function that can be called without arguments.
+
+.. code-block:: python
 
     def entry_point():
         defopt.run(main)
 
-You can then reference this entry point in your ``setup.py`` file. ::
+You can then reference this entry point in your ``setup.py`` file.
+
+.. code-block:: python
 
     setup(
         ...,
@@ -225,7 +239,9 @@ use for type hints.
 
 When passed to `defopt.run`, any function annotations are assumed to be type
 hints. `~typing.List`, `~typing.Sequence` and `~typing.Iterable` from the
-`typing` module [#]_ are all treated in the same way as `list` (see Lists_). ::
+`typing` module [#]_ are all treated in the same way as `list` (see Lists_).
+
+.. code-block:: python
 
     from typing import Iterable
     def func(arg1: int, arg2: Iterable[float]):
