@@ -600,16 +600,38 @@ class TestDoc(unittest.TestCase):
         doc = defopt._parse_function_docstring(func)
         self.assertEqual(doc.text, '    Literal block\n        Multiple lines')
 
-    def test_bullet_list(self):
+    def test_newlines(self):
         def func():
             """
-            - foo
+            Bar
+            Baz
+
             - bar
-            - i.  quux
-              ii. blah
+            - baz
+
+            quux::
+
+                hello
+
+            1. bar
+
+            2. baz
             """
         doc = defopt._parse_function_docstring(func)
-        self.assertEqual(doc.text, '- foo\n\n- bar\n\n- i.  quux\n\n  ii. blah')
+        self.assertEqual(doc.text, """\
+Bar
+Baz
+
+- bar
+- baz
+
+quux:
+
+    hello
+
+1. bar
+
+2. baz""")
 
 
 class TestAnnotations(unittest.TestCase):

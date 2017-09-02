@@ -60,11 +60,7 @@ _TYPE_NAMES = ['type', 'kwtype']
 
 log = logging.getLogger(__name__)
 
-class _Doc(namedtuple('_Doc', ('paragraphs', 'params'))):
-    @property
-    def text(self):
-        return '\n\n'.join(self.paragraphs)
-
+_Doc = namedtuple('_Doc', ('first_line', 'text', 'params'))
 _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
 
@@ -135,9 +131,9 @@ def _create_parser(funcs, *args, **kwargs):
         subparsers = parser.add_subparsers()
         for func in funcs:
             subparser = subparsers.add_parser(
-                func.__name__.replace("_", "-"),
+                func.__name__.replace('_', '-'),
                 formatter_class=formatter_class,
-                help=_parse_function_docstring(func).paragraphs[0])
+                help=_parse_function_docstring(func).first_line)
             _populate_parser(func, subparser, parsers, short, strict_kwonly)
             subparser.set_defaults(_func=func)
     return parser
@@ -377,7 +373,7 @@ def _parse_docstring(doc):
         pass
 
     if doc is None:
-        return _Doc([''], {})
+        return _Doc('', '', {})
 
     # Convert Google- or Numpy-style docstrings to RST.
     # (Should do nothing if not in either style.)
@@ -395,6 +391,7 @@ def _parse_docstring(doc):
         def __init__(self, document):
             NodeVisitor.__init__(self, document)
             self.paragraphs = []
+            self.start_lines = []
             self.params = defaultdict(dict)
             self._current_paragraph = None
             self._indent_iterator_stack = []
@@ -404,6 +401,7 @@ def _parse_docstring(doc):
             pass
 
         def visit_paragraph(self, node):
+            self.start_lines.append(node.line)
             self._current_paragraph = []
 
         def depart_paragraph(self, node):
@@ -437,6 +435,7 @@ def _parse_docstring(doc):
 
         def visit_literal_block(self, node):
             text, = node
+            self.start_lines.append(node.line)
             self.paragraphs.append(re.sub('^|\n', r'\g<0>    ', text))  # indent
             raise SkipNode
 
@@ -513,15 +512,21 @@ def _parse_docstring(doc):
 
     visitor = Visitor(tree)
     tree.walkabout(visitor)
-    paragraphs = visitor.paragraphs
-    params = visitor.params
 
-    tuples = {}
-    for name, values in params.items():
-        tuples[name] = _Param(values.get('param'), values.get('type'))
-
-    parsed = _parse_docstring_cache[_cache_key] = \
-        _Doc(paragraphs or [''], tuples)
+    tuples = {name: _Param(values.get('param'), values.get('type'))
+              for name, values in visitor.params.items()}
+    if visitor.paragraphs:
+        text = []
+        for start, paragraph, next_start in zip(
+                visitor.start_lines,
+                visitor.paragraphs,
+                visitor.start_lines[1:] + [0]):
+            text.append(paragraph)
+            text.append('\n' * (next_start - start - paragraph.count('\n')))
+        parsed = _Doc('', ''.join(text), tuples)
+    else:
+        parsed = _Doc('', '', tuples)
+    _parse_docstring_cache[_cache_key] = parsed
     return parsed
 
 
