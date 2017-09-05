@@ -522,7 +522,10 @@ def _parse_docstring(doc):
                 visitor.paragraphs,
                 visitor.start_lines[1:] + [0]):
             text.append(paragraph)
-            text.append('\n' * (next_start - start - paragraph.count('\n')))
+            # We insert a space before each newline to prevent argparse
+            # from stripping consecutive newlines down to just two
+            # (http://bugs.python.org/issue31330).
+            text.append(' \n' * (next_start - start - paragraph.count('\n')))
         parsed = _Doc('', ''.join(text), tuples)
     else:
         parsed = _Doc('', '', tuples)
