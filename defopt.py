@@ -66,8 +66,7 @@ _Type = namedtuple('_Type', ('type', 'container'))
 
 
 def run(funcs, *args, **kwargs):
-    """run(funcs, *, parsers=None, short=None, strict_kwonly=True,
-           show_types=False, argv=None)
+    """run(funcs, *, parsers=None, short=None, strict_kwonly=True, show_types=False, argv=None)
 
     Process command line arguments and run the given functions.
 
