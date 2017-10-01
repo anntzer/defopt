@@ -18,9 +18,11 @@ from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import Callable, Dict, Iterable, List, Sequence, Tuple, Union
 from typing import get_type_hints as _get_type_hints
-from xml.etree import ElementTree
 
 from docutils.core import publish_doctree
+from docutils.nodes import NodeVisitor, SkipNode
+from docutils.parsers.rst.states import Body
+from docutils.utils import roman
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 
 try:
@@ -58,11 +60,7 @@ _TYPE_NAMES = ['type', 'kwtype']
 
 log = logging.getLogger(__name__)
 
-class _Doc(namedtuple('_Doc', ('paragraphs', 'params'))):
-    @property
-    def text(self):
-        return '\n\n'.join(self.paragraphs)
-
+_Doc = namedtuple('_Doc', ('first_line', 'text', 'params'))
 _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
 
@@ -133,9 +131,9 @@ def _create_parser(funcs, *args, **kwargs):
         subparsers = parser.add_subparsers()
         for func in funcs:
             subparser = subparsers.add_parser(
-                func.__name__.replace("_", "-"),
+                func.__name__.replace('_', '-'),
                 formatter_class=formatter_class,
-                help=_parse_function_docstring(func).paragraphs[0])
+                help=_parse_function_docstring(func).first_line)
             _populate_parser(func, subparser, parsers, short, strict_kwonly)
             subparser.set_defaults(_func=func)
     return parser
@@ -375,90 +373,164 @@ def _parse_docstring(doc):
         pass
 
     if doc is None:
-        return _Doc([''], {})
+        return _Doc('', '', {})
 
     # Convert Google- or Numpy-style docstrings to RST.
     # (Should do nothing if not in either style.)
     doc = str(GoogleDocstring(doc))
     doc = str(NumpyDocstring(doc))
 
-    dom = publish_doctree(doc).asdom()
-    etree = ElementTree.fromstring(dom.toxml())
-    doctext = []
-    for element in etree:
-        if element.tag == 'paragraph':
-            doctext.append(_get_text(element))
-        elif element.tag == 'literal_block':
-            doctext.append(_indent(_get_text(element)))
-    fields = etree.findall('.//field')
+    tree = publish_doctree(doc)
 
-    params = defaultdict(dict)
-    for field in fields:
-        field_name = field.find('field_name')
-        field_body = field.find('field_body')
-        parts = field_name.text.split()
-        if len(parts) == 2:
-            doctype, name = parts
-        elif len(parts) == 3:
-            doctype, type_, name = parts
-            if doctype not in _PARAM_TYPES:
-                log.debug('ignoring field %s', field_name.text)
-                continue
-            log.debug('inline param type %s', type_)
-            if 'type' in params[name]:
-                raise ValueError('type defined twice for {}'.format(name))
-            params[name]['type'] = type_
-        else:
-            log.debug('ignoring field %s', field_name.text)
-            continue
-        if doctype in _PARAM_TYPES:
-            doctype = 'param'
-        if doctype in _TYPE_NAMES:
-            doctype = 'type'
-        text = _get_text(field_body)
-        log.debug('%s %s: %s', doctype, name, text)
-        if doctype in params[name]:
-            raise ValueError('{} defined twice for {}'.format(doctype, name))
-        params[name][doctype] = text
+    class Visitor(NodeVisitor):
+        optional = [
+            'document', 'docinfo',
+            'field_list', 'field_body',
+            'literal', 'problematic']
 
-    tuples = {}
-    for name, values in params.items():
-        tuples[name] = _Param(values.get('param'), values.get('type'))
+        def __init__(self, document):
+            NodeVisitor.__init__(self, document)
+            self.paragraphs = []
+            self.start_lines = []
+            self.params = defaultdict(dict)
+            self._current_paragraph = None
+            self._indent_iterator_stack = []
+            self._indent_stack = []
 
-    parsed = _parse_docstring_cache[_cache_key] = _Doc(doctext or [''], tuples)
+        def _do_nothing(self, node):
+            pass
+
+        def visit_paragraph(self, node):
+            self.start_lines.append(node.line)
+            self._current_paragraph = []
+
+        def depart_paragraph(self, node):
+            text = ''.join(self._current_paragraph)
+            text = ''.join(self._indent_stack) + text
+            self._indent_stack = [
+                ' ' * len(item) for item in self._indent_stack]
+            text = text.replace('\n', '\n' + ''.join(self._indent_stack))
+            self.paragraphs.append(text)
+            self._current_paragraph = None
+
+        def visit_Text(self, node):
+            self._current_paragraph.append(node)
+
+        depart_Text = _do_nothing
+
+        def visit_emphasis(self, node):
+            self._current_paragraph.append('\033[3m')  # *foo*: italic
+
+        def visit_strong(self, node):
+            self._current_paragraph.append('\033[1m')  # **foo**: bold
+
+        def visit_title_reference(self, node):
+            self._current_paragraph.append('\033[4m')  # `foo`: underlined
+
+        def _depart_markup(self, node):
+            self._current_paragraph.append('\033[0m')
+
+        depart_emphasis = depart_strong = depart_title_reference = \
+            _depart_markup
+
+        def visit_literal_block(self, node):
+            text, = node
+            self.start_lines.append(node.line)
+            self.paragraphs.append(re.sub('^|\n', r'\g<0>    ', text))  # indent
+            raise SkipNode
+
+        def visit_bullet_list(self, node):
+            self._indent_iterator_stack.append(
+                (node['bullet'] + ' ' for _ in range(len(node))))
+
+        def depart_bullet_list(self, node):
+            self._indent_iterator_stack.pop()
+
+        def visit_enumerated_list(self, node):
+            enumtype = node['enumtype']
+            fmt = {('(', ')'): 'parens',
+                   ('', ')'): 'rparen',
+                   ('', '.'): 'period'}[node['prefix'], node['suffix']]
+            try:
+                start = node['start']
+            except KeyError:
+                start = 1
+            else:
+                start = {
+                    'arabic': int,
+                    'loweralpha': lambda s: ord(s) - ord('a') + 1,
+                    'upperalpha': lambda s: ord(s) - ord('A') + 1,
+                    'lowerroman': lambda s: roman.fromRoman(s.upper()),
+                    'upperroman': lambda s: roman.fromRoman(s),
+                }[enumtype](start)
+            enumerators = [Body(None).make_enumerator(i, enumtype, fmt)[0]
+                           for i in range(start, start + len(node))]
+            width = max(map(len, enumerators))
+            enumerators = [enum.ljust(width) for enum in enumerators]
+            self._indent_iterator_stack.append(iter(enumerators))
+
+        def depart_enumerated_list(self, node):
+            self._indent_iterator_stack.pop()
+
+        def visit_list_item(self, node):
+            self._indent_stack.append(next(self._indent_iterator_stack[-1]))
+
+        def depart_list_item(self, node):
+            self._indent_stack.pop()
+
+        def visit_field(self, node):
+            field_name_node, field_body_node = node
+            field_name, = field_name_node
+            parts = field_name.split()
+            if len(parts) == 2:
+                doctype, name = parts
+            elif len(parts) == 3:
+                doctype, type_, name = parts
+                if doctype not in _PARAM_TYPES:
+                    raise SkipNode
+                if 'type' in self.params[name]:
+                    raise ValueError('type defined twice for {}'.format(name))
+                self.params[name]['type'] = type_
+            else:
+                raise SkipNode
+            if doctype in _PARAM_TYPES:
+                doctype = 'param'
+            if doctype in _TYPE_NAMES:
+                doctype = 'type'
+            if doctype in self.params[name]:
+                raise ValueError('{} defined twice for {}'.format(doctype, name))
+            visitor = Visitor(self.document)
+            field_body_node.walkabout(visitor)
+            self.params[name][doctype] = ''.join(visitor.paragraphs)
+            raise SkipNode
+
+        def visit_comment(self, node):
+            raise SkipNode
+
+        def visit_system_message(self, node):
+            raise SkipNode
+
+    visitor = Visitor(tree)
+    tree.walkabout(visitor)
+
+    tuples = {name: _Param(values.get('param'), values.get('type'))
+              for name, values in visitor.params.items()}
+    if visitor.paragraphs:
+        text = []
+        for start, paragraph, next_start in zip(
+                visitor.start_lines,
+                visitor.paragraphs,
+                visitor.start_lines[1:] + [0]):
+            text.append(paragraph)
+            # We insert a space before each newline to prevent argparse
+            # from stripping consecutive newlines down to just two
+            # (http://bugs.python.org/issue31330).
+            text.append(' \n' * (next_start - start - paragraph.count('\n')))
+        parsed = _Doc('', ''.join(text), tuples)
+    else:
+        parsed = _Doc('', '', tuples)
+    _parse_docstring_cache[_cache_key] = parsed
     return parsed
-
-
-def _itertext_ansi(node):
-    # Implementation modified from `ElementTree.Element.itertext`.
-    tag = node.tag
-    if not isinstance(tag, _basestring) and tag is not None:
-        return
-    ansi_code = {"emphasis": "\033[3m",  # *foo*: italic.
-                 "strong": "\033[1m",  # **foo**: bold.
-                 "title_reference": "\033[4m",  # `foo`: underlined.
-                 }.get(tag, "")
-    t = node.text
-    if t:
-        yield ansi_code
-        yield t
-        if ansi_code:
-            yield "\033[0m"  # Reset.
-    for e in node:
-        for t in _itertext_ansi(e):
-            yield t
-        t = e.tail
-        if t:
-            yield t
-
-
-def _get_text(node):
-    return ''.join(_itertext_ansi(node))
-
-
-def _indent(text):
-    tab = '    '
-    return tab + text.replace('\n', '\n' + tab)
 
 
 def _get_parser(type_, parsers=None):

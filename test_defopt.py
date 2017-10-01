@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from collections import namedtuple
 from enum import Enum
+import inspect
 import subprocess
 import sys
 import textwrap
@@ -564,7 +565,7 @@ class TestDoc(unittest.TestCase):
 
     def _check_doc(self, doc):
         self.assertEqual(
-            doc.text, 'One line summary.\n\nExtended description.')
+            doc.text, 'One line summary. \n \nExtended description.')
         self.assertEqual(len(doc.params), 3)
         self.assertEqual(doc.params['arg1'].text, 'Description of arg1')
         self.assertEqual(doc.params['arg1'].type, 'int')
@@ -599,6 +600,44 @@ class TestDoc(unittest.TestCase):
             """
         doc = defopt._parse_function_docstring(func)
         self.assertEqual(doc.text, '    Literal block\n        Multiple lines')
+
+    def test_newlines(self):
+        def func():
+            """
+            Bar
+            Baz
+
+            - bar
+            - baz
+
+            quux::
+
+                hello
+
+
+            1. bar
+
+            2. baz
+            """
+        doc = defopt._parse_function_docstring(func)
+        # Use inspect.cleandoc and not textwrap.dedent, as we want to keep
+        # whitespace in lines that contain more than the common leading
+        # whitespace.
+        self.assertEqual(doc.text, inspect.cleandoc("""\
+            Bar
+            Baz 
+             
+            - bar 
+            - baz 
+             
+            quux: 
+             
+                hello 
+             
+             
+            1. bar 
+             
+            2. baz"""))
 
 
 class TestAnnotations(unittest.TestCase):
