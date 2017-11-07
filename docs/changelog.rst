@@ -1,6 +1,16 @@
 Changelog
 =========
 
+4.0.0 (2017-11-07)
+------------------
+* Changed parser generation to only make flags from keyword-only arguments,
+  treating arguments with defaults as optional positionals
+* Changed subparser generation to replace dashes in names with underscores
+* Added support for RST lists
+* Added support for typed Tuple and NamedTuple arguments
+* Added __all__
+* Ignored arguments whose names start with underscores
+
 3.2.0 (2017-05-30)
 ------------------
 
