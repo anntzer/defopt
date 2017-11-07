@@ -52,7 +52,7 @@ else:
     _basestring = str
 
 __all__ = ['run']
-__version__ = '3.2.0'
+__version__ = '4.0.0'
 
 _LIST_TYPES = [List, Iterable, Sequence]
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
