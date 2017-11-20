@@ -401,12 +401,17 @@ class TestTuple(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['1', '2']), (1, '2'))
 
     def test_namedtuple(self):
-        def main(foo):
-            """:param Pair foo: foo"""
+        # Add a second argument after the tuple to ensure that the converter
+        # closes over the correct type.
+        def main(foo, bar):
+            """
+            :param Pair foo: foo
+            :param int bar: bar
+            """
             return foo
         # Instances of the Pair class compare equal to tuples, so we compare
         # their __str__ instead to make sure that the type is correct too.
-        self.assertEqual(str(defopt.run(main, argv=['1', '2'])),
+        self.assertEqual(str(defopt.run(main, argv=['1', '2', '3'])),
                          str(Pair(1, '2')))
 
 
