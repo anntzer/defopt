@@ -247,7 +247,8 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
                                  for field in type_.type._fields)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
-                lambda args: type_.type(*args), member_types, parsers)
+                lambda args, type_=type_: type_.type(*args),
+                member_types, parsers)
             if not positional:  # http://bugs.python.org/issue14074
                 kwargs['metavar'] = type_.type._fields
         elif inspect.isclass(type_.type) and issubclass(type_.type, Enum):
