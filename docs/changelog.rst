@@ -1,6 +1,10 @@
 Changelog
 =========
 
+4.0.1 (2017-11-26)
+------------------
+* Fixed crash when handing a NamedTuple followed by other arguments
+
 4.0.0 (2017-11-07)
 ------------------
 * Changed parser generation to only make flags from keyword-only arguments,
