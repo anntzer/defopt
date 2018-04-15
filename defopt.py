@@ -64,6 +64,8 @@ _Doc = namedtuple('_Doc', ('first_line', 'text', 'params'))
 _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
 
+_SUPPRESS_BOOL_DEFAULT = object()
+
 
 def run(funcs, *args, **kwargs):
     """run(funcs, *, parsers=None, short=None, strict_kwonly=True, show_types=False, argv=None)
@@ -103,7 +105,7 @@ def run(funcs, *args, **kwargs):
     # Workaround for http://bugs.python.org/issue9253#msg186387
     if not hasattr(args, '_func'):
         parser.error('too few arguments')
-    return _call_function(args._func, args)
+    return _call_function(parser, args._func, args)
 
 
 def _create_parser(funcs, *args, **kwargs):
@@ -152,6 +154,7 @@ class _Formatter(RawTextHelpFormatter):
         if (not isinstance(action, _AppendAction)
                 and '%(default)' not in action.help
                 and action.default is not SUPPRESS
+                and action.default is not _SUPPRESS_BOOL_DEFAULT
                 and action.option_strings):
             info.append('default: %(default)s')
         if info:
@@ -201,15 +204,17 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
         positional = name in positionals
         if type_.type == bool and not positional and not type_.container:
             # Special case: just add parameterless --name and --no-name flags.
-            group = parser.add_mutually_exclusive_group(required=required)
-            _add_argument(group, name, short,
+            if default == SUPPRESS:
+                # Work around lack of "required non-exclusive group" in
+                # argparse by checking for that case ourselves.
+                default = _SUPPRESS_BOOL_DEFAULT
+            _add_argument(parser, name, short,
                           action='store_true',
                           default=default,
                           # Add help if available.
                           **kwargs)
-            _add_argument(group, 'no-' + name, short,
+            _add_argument(parser, 'no-' + name, short,
                           action='store_false',
-                          default=default,
                           dest=name)
             continue
         if positional:
@@ -344,12 +349,15 @@ def _get_union_args(union):
         return union.__union_params__
 
 
-def _call_function(func, args):
+def _call_function(parser, func, args):
     positionals = []
     keywords = {}
     sig = _inspect_signature(func)
     for name, param in sig.parameters.items():
         arg = getattr(args, name)
+        if arg is _SUPPRESS_BOOL_DEFAULT:
+            parser.error('one of the arguments --{0} --no-{0} is required'
+                         .format(name))
         if param.kind in [param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD]:
             positionals.append(arg)
         elif param.kind == param.VAR_POSITIONAL:
