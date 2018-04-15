@@ -164,11 +164,15 @@ class _NoTypeFormatter(_Formatter):
     show_types = False
 
 
-def _populate_parser(func, parser, parsers, short, strict_kwonly):
+def _public_signature(func):
     full_sig = _inspect_signature(func)
-    sig = full_sig.replace(
+    return full_sig.replace(
         parameters=list(param for param in full_sig.parameters.values()
                         if not param.name.startswith('_')))
+
+
+def _populate_parser(func, parser, parsers, short, strict_kwonly):
+    sig = _public_signature(func)
     doc = _parse_function_docstring(func)
     hints = _get_type_hints(func)
     parser.description = doc.text
@@ -347,7 +351,7 @@ def _get_union_args(union):
 def _call_function(func, args):
     positionals = []
     keywords = {}
-    sig = _inspect_signature(func)
+    sig = _public_signature(func)
     for name, param in sig.parameters.items():
         arg = getattr(args, name)
         if param.kind in [param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD]:
