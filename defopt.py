@@ -353,7 +353,7 @@ def _call_function(func, args):
     keywords = {}
     sig = _public_signature(func)
     for name, param in sig.parameters.items():
-        arg = getattr(args, name)
+        arg = getattr(args, name) if param.default == param.empty else getattr(args, name, param.default)
         if param.kind in [param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD]:
             positionals.append(arg)
         elif param.kind == param.VAR_POSITIONAL:
