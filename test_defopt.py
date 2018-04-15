@@ -155,6 +155,11 @@ class TestDefopt(unittest.TestCase):
             defopt.run(main, strict_kwonly=False,
                        argv=['1', '--d-e-f', '2']), (1, 2))
 
+    def test_private_with_default(self):
+        def main(_a=None):
+            pass
+        defopt.run(main, argv=[])
+
 
 class TestParsers(unittest.TestCase):
     def test_parser(self):
