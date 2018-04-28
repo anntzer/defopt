@@ -8,10 +8,8 @@ from __future__ import (
 import ast
 import contextlib
 import inspect
-import logging
 import re
 import sys
-import warnings
 from argparse import (
     SUPPRESS, ArgumentParser, RawTextHelpFormatter, _AppendAction,
     _StoreAction)
@@ -54,8 +52,6 @@ __version__ = '4.0.1'
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
 _TYPE_NAMES = ['type', 'kwtype']
 
-log = logging.getLogger(__name__)
-
 _Doc = namedtuple('_Doc', ('first_line', 'text', 'params'))
 _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
@@ -63,7 +59,7 @@ _Type = namedtuple('_Type', ('type', 'container'))
 _SUPPRESS_BOOL_DEFAULT = object()
 
 
-def run(funcs, *args, **kwargs):
+def run(funcs, **kwargs):
     """run(funcs, *, parsers=None, short=None, strict_kwonly=True, show_types=False, argv=None)
 
     Process command line arguments and run the given functions.
@@ -95,7 +91,7 @@ def run(funcs, *args, **kwargs):
     argv = kwargs.pop('argv', None)
     if argv is None:
         argv = sys.argv[1:]
-    parser = _create_parser(funcs, *args, **kwargs)
+    parser = _create_parser(funcs, **kwargs)
     with _colorama_text():
         args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
@@ -104,7 +100,7 @@ def run(funcs, *args, **kwargs):
     return _call_function(parser, args._func, args)
 
 
-def _create_parser(funcs, *args, **kwargs):
+def _create_parser(funcs, **kwargs):
     parsers = kwargs.pop('parsers', None)
     short = kwargs.pop('short', None)
     strict_kwonly = kwargs.pop('strict_kwonly', True)
@@ -112,11 +108,6 @@ def _create_parser(funcs, *args, **kwargs):
     if kwargs:
         raise TypeError(
             'unexpected keyword argument: {}'.format(list(kwargs)[0]))
-    if args:
-        warnings.warn(
-            'Passing multiple functions as separate arguments is deprecated; '
-            'pass a list of functions instead', DeprecationWarning)
-        funcs = [funcs] + list(args)
     formatter_class = _NoTypeFormatter
     if show_types:
         formatter_class = _Formatter
@@ -490,7 +481,8 @@ def _parse_docstring(doc):
             if doctype in _TYPE_NAMES:
                 doctype = 'type'
             if doctype in self.params[name]:
-                raise ValueError('{} defined twice for {}'.format(doctype, name))
+                raise ValueError(
+                    '{} defined twice for {}'.format(doctype, name))
             visitor = Visitor(self.document)
             field_body_node.walkabout(visitor)
             self.params[name][doctype] = ''.join(visitor.paragraphs)
