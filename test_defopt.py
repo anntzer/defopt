@@ -285,19 +285,11 @@ class TestParsers(unittest.TestCase):
             """:type foo: bool"""
             return foo
         self.assertIs(defopt.run(main, strict_kwonly=False,
+                                 argv=[]), default)
+        self.assertIs(defopt.run(main, strict_kwonly=False,
                                  argv=['--foo']), True)
         self.assertIs(defopt.run(main, strict_kwonly=False,
                                  argv=['--no-foo']), False)
-        self.assertIs(defopt.run(main, strict_kwonly=False,
-                                 argv=[]), default)
-
-    @unittest.skipIf(sys.version_info < (3, 4),
-                     'expectedFailure ignores SystemExit')
-    @unittest.expectedFailure
-    def test_bool_kwarg_override(self):
-        def main(foo=True):
-            """:type foo: bool"""
-            return foo
         self.assertIs(defopt.run(main, strict_kwonly=False,
                                  argv=['--foo', '--no-foo']), False)
 
