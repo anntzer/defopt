@@ -27,8 +27,8 @@ Argument types are read from your function's docstring. Both
     :type <name>: <type>
 
 ``<type>`` is evaluated in the function's global namespace when `defopt.run`
-is called. See Booleans_, Lists_, Choices_, Tuples_ and Parsers_ for more
-information on specific types.
+is called. See `Standard types`_, Booleans_, Lists_, Choices_, Tuples_ and
+Parsers_ for more information on specific types.
 
 Type information can be automatically added to the help text by passing
 ``show_types=True`` to `defopt.run`.
@@ -51,6 +51,18 @@ The command line usage will indicate this. ::
       {func1,func2}
 
 Underscores in function names are replaced by hyphens.
+
+Standard types
+--------------
+
+For parameters annotated as `str`, `int`, `float`, and `pathlib.Path`, the type
+constructor is directly called on the argument passed in.
+
+For parameters annotated as `slice`, the argument passed in is split at
+``":"``, the resulting fragments evaluated with `ast.literal_eval` (with empty
+fragments being converted to None), and the results passed to the `slice`
+constructor.  For example, ``1::2`` results in ``slice(1, None, 2)``, which
+corresponds to the normal indexing syntax.
 
 Flags
 -----
@@ -101,10 +113,10 @@ adding new flags.
 Booleans
 --------
 
-Boolean keyword-only parameters are automatically converted to two separate
-flags: ``--name`` which stores `True` and ``--no-name`` which stores
-`False`. Your help text and the default will be displayed next to the
-``--name`` flag::
+Boolean keyword-only parameters (or, as above, parameters with defaults, if
+``strict_kwonly=False``) are automatically converted to two separate flags:
+``--name`` which stores `True` and ``--no-name`` which stores `False`. Your
+help text and the default will be displayed next to the ``--name`` flag::
 
     --flag      Set "flag" to True
                 (default: False)

@@ -1,6 +1,10 @@
 Changelog
 =========
 
+next
+----
+* Added default parser for ``slice``.
+
 4.0.1 (2017-11-26)
 ------------------
 * Fixed crash when handing a NamedTuple followed by other arguments

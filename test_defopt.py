@@ -193,6 +193,14 @@ class TestParsers(unittest.TestCase):
             return value
         self.assertEqual(defopt.run(main, argv=['foo']), Path('foo'))
 
+    def test_parse_slice(self):
+        parser = defopt._get_parser(slice)
+        self.assertEqual(parser(':'), slice(None))
+        self.assertEqual(parser(':1'), slice(None, 1))
+        self.assertEqual(parser('"a":"b":"c"'), slice("a", "b", "c"))
+        with self.assertRaises(ValueError):
+            parser('1')
+
     def test_no_parser(self):
         with self.assertRaisesRegex(Exception, 'no parser'):
             defopt._get_parser(object, parsers={type: type})

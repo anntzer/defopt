@@ -5,6 +5,7 @@ Run Python functions from the command line with ``run(func)``.
 from __future__ import (
     absolute_import, division, unicode_literals, print_function)
 
+import ast
 import contextlib
 import inspect
 import logging
@@ -540,10 +541,12 @@ def _find_parser(type_, parsers):
         return parsers[type_]
     except KeyError:
         pass
-    if type_ in [int, str, float, Path]:
+    if type_ in [str, int, float, Path]:
         return type_
     elif type_ == bool:
         return _parse_bool
+    elif type_ == slice:
+        return _parse_slice
     elif type_ == list:
         raise ValueError('unable to parse list (try list[type])')
     else:
@@ -559,6 +562,23 @@ def _parse_bool(string):
         return False
     else:
         raise ValueError('{} is not a valid boolean string'.format(string))
+
+
+def _parse_slice(string):
+    exc = ValueError('{} is not a valid slice string'.format(string))
+    try:
+        mod = ast.parse("_[{}]".format(string))
+    except SyntaxError:
+        raise exc
+    if not len(mod.body) == 1:
+        raise exc
+    sl = mod.body[0].value.slice
+    if not isinstance(sl, ast.Slice):
+        raise exc
+    start = ast.literal_eval(sl.lower) if sl.lower else None
+    stop = ast.literal_eval(sl.upper) if sl.upper else None
+    step = ast.literal_eval(sl.step) if sl.step else None
+    return slice(start, stop, step)
 
 
 class _ValueOrderedDict(OrderedDict):
