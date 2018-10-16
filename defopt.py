@@ -16,18 +16,21 @@ from argparse import (
     _StoreAction)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
-from typing import Callable, Dict, Iterable, List, Sequence, Tuple, Union
-from typing import get_type_hints as _get_type_hints
+import typing
+from typing import Callable, Dict, Tuple, Union
 
 from docutils.core import publish_doctree
 from docutils.nodes import NodeVisitor, SkipNode
 from docutils.parsers.rst.states import Body
 from docutils.utils import roman
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
+import typing_inspect as ti
 
 try:
+    import collections.abc as collections_abc
     from inspect import signature as _inspect_signature
 except ImportError:  # pragma: no cover
+    import collections as collections_abc
     from funcsigs import signature as _inspect_signature
 
 try:
@@ -44,17 +47,9 @@ except ImportError:
     def _colorama_text(*args):
         yield
 
-if sys.version_info.major == 2:  # pragma: no cover
-    def _get_type_hints(obj, globalns=None, localns=None):
-        return getattr(obj, '__annotations__', {})
-    _basestring = basestring
-else:
-    _basestring = str
-
 __all__ = ['run']
 __version__ = '4.0.1'
 
-_LIST_TYPES = [List, Iterable, Sequence]
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
 _TYPE_NAMES = ['type', 'kwtype']
 
@@ -177,7 +172,7 @@ def _public_signature(func):
 def _populate_parser(func, parser, parsers, short, strict_kwonly):
     sig = _public_signature(func)
     doc = _parse_function_docstring(func)
-    hints = _get_type_hints(func)
+    hints = typing.get_type_hints(func) or {}  # Py2 backport returns None.
     parser.description = doc.text
 
     types = dict((name, _get_type(func, name, doc, hints))
@@ -241,9 +236,9 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
                 kwargs['action'] = 'append'
                 kwargs['default'] = []
         make_tuple = member_types = None
-        if _is_generic_type(type_.type, Tuple):
+        if ti.is_tuple_type(type_.type):
             make_tuple = tuple
-            member_types = type_.type.__args__
+            member_types = ti.get_args(type_.type)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
                 tuple, member_types, parsers)
@@ -320,37 +315,21 @@ def _get_type_from_doc(name, globalns):
 
 
 def _get_type_from_hint(hint):
-    if any(_is_generic_type(hint, x) for x in _LIST_TYPES):
-        # In Python 3.5.2, typing.GenericMeta distinguishes between
-        # parameters (which are unfilled) and args (which are filled).
-        [type_] = getattr(hint, '__args__', hint.__parameters__)
+    if ti.get_origin(hint) in [
+            # Py<3.7.
+            typing.List, typing.Iterable, typing.Sequence,
+            # Py>=3.7
+            list, collections_abc.Iterable, collections_abc.Sequence]:
+        [type_] = ti.get_args(hint)
         return _Type(type_, list)
-    elif _is_generic_type(hint, Union):
+    elif ti.is_union_type(hint):
         # For Union[type, NoneType], just use type.
-        args = _get_union_args(hint)
+        args = ti.get_args(hint)
         if len(args) == 2:
             type_, none = args
             if none == type(None):
                 return _Type(type_, None)
     return _Type(hint, None)
-
-
-def _is_generic_type(thing, generic_type):
-    if hasattr(thing, '__origin__'):
-        return thing.__origin__ is generic_type
-    # Unions from older versions of typing don't have a __origin__,
-    # so we have to find some other way to identify them.
-    # (see https://github.com/python/typing/pull/283).
-    if generic_type is Union:
-        return getattr(thing, '__union_params__', [])
-    return False
-
-
-def _get_union_args(union):
-    try:
-        return union.__args__
-    except AttributeError:
-        return union.__union_params__
 
 
 def _call_function(parser, func, args):
@@ -568,7 +547,9 @@ def _find_parser(type_, parsers):
     elif type_ == list:
         raise ValueError('unable to parse list (try list[type])')
     else:
-        raise Exception('no parser found for type {}'.format(type_.__name__))
+        raise Exception('no parser found for type {}'.format(
+            # typing types have no __name__.
+            getattr(type_, '__name__', repr(type_))))
 
 
 def _parse_bool(string):

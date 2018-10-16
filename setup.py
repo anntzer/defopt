@@ -20,6 +20,7 @@ setup(
     install_requires=[
         'docutils',
         'sphinxcontrib-napoleon>=0.5.1',
+        'typing_inspect>=0.3.1',
     ],
     extras_require={
         ':python_version<"3.3"': ['funcsigs'],
@@ -38,6 +39,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
         'Development Status :: 5 - Production/Stable',

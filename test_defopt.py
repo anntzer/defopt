@@ -685,16 +685,6 @@ class TestAnnotations(unittest.TestCase):
         self.assertEqual(defopt.run(globals_['foo'], argv=['1']), 1)
 
 
-class TestTyping(unittest.TestCase):
-    def test_old_union(self):
-        union = mock.Mock()
-        self.assertFalse(defopt._is_generic_type(union, typing.Union))
-        union.__union_params__ = []
-        self.assertFalse(defopt._is_generic_type(union, typing.Union))
-        union.__union_params__ = [int]
-        self.assertTrue(defopt._is_generic_type(union, typing.Union))
-
-
 class TestHelp(unittest.TestCase):
     def test_type(self):
         def foo(bar):
