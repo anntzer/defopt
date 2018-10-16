@@ -16,6 +16,7 @@ setup(
     license='GNU General Public License v3',
     py_modules=['defopt'],
     test_suite='test_defopt',
+    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
     install_requires=[
         'docutils',
         'sphinxcontrib-napoleon>=0.5.1',
@@ -34,7 +35,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
