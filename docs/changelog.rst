@@ -1,10 +1,12 @@
 Changelog
 =========
 
-next
-----
+5.0.0 (2018-10-18)
+------------------
 * Added default parser for ``slice``.
 * Removed support for passing multiple functions positionally.
+* Added support for Python 3.7.
+* Removed support for Python 3.3.
 
 4.0.1 (2017-11-26)
 ------------------
