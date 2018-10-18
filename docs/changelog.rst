@@ -4,6 +4,7 @@ Changelog
 next
 ----
 * Added default parser for ``slice``.
+* Removed support for passing multiple functions positionally.
 
 4.0.1 (2017-11-26)
 ------------------

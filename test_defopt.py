@@ -53,11 +53,6 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(
             defopt.run([sub, sub_with_dash], strict_kwonly=False,
                        argv=['sub-with-dash', '--baz', '1']), 1)
-        self.assertEqual(
-            defopt.run(sub, sub_with_dash, argv=['sub', '1.1']), (1.1,))
-        self.assertEqual(
-            defopt.run(sub, sub_with_dash, strict_kwonly=False,
-                       argv=['sub-with-dash', '--baz', '1']), 1)
 
     def test_var_positional(self):
         def main(*foo):
@@ -119,7 +114,7 @@ class TestDefopt(unittest.TestCase):
         def sub2():
             pass
         with self.assertRaises(SystemExit):
-            defopt.run(sub1, sub2, argv=[])
+            defopt.run([sub1, sub2], argv=[])
 
     def test_no_param_doc(self):
         def bad(foo):
@@ -140,8 +135,8 @@ class TestDefopt(unittest.TestCase):
         def none():
             pass
 
-        self.assertEqual(defopt.run(one, none, argv=['one']), 1)
-        self.assertEqual(defopt.run(one, none, argv=['none']), None)
+        self.assertEqual(defopt.run([one, none], argv=['one']), 1)
+        self.assertEqual(defopt.run([one, none], argv=['none']), None)
 
     def test_underscores(self):
         def main(a_b_c, d_e_f=None):
@@ -379,10 +374,6 @@ class TestEnums(unittest.TestCase):
             defopt.run([sub1, sub2], argv=['sub1', 'one']), Choice.one)
         self.assertEqual(
             defopt.run([sub1, sub2], argv=['sub2', 'two']), Choice.two)
-        self.assertEqual(
-            defopt.run(sub1, sub2, argv=['sub1', 'one']), Choice.one)
-        self.assertEqual(
-            defopt.run(sub1, sub2, argv=['sub2', 'two']), Choice.two)
 
     def test_valuedict(self):
         valuedict = defopt._ValueOrderedDict({'a': 1})
@@ -802,8 +793,8 @@ class TestHelp(unittest.TestCase):
             """bar
 
             Implements BAR."""
-        self.assertIn('foo', self._get_help(foo, bar))
-        self.assertNotIn('FOO', self._get_help(foo, bar))
+        self.assertIn('foo', self._get_help([foo, bar]))
+        self.assertNotIn('FOO', self._get_help([foo, bar]))
 
     def test_hide_types(self):
         def foo(bar):
@@ -811,11 +802,11 @@ class TestHelp(unittest.TestCase):
             return bar
         self.assertNotIn('type', self._get_help(foo, show_types=False))
 
-    def _get_help(self, *funcs, **kwargs):
+    def _get_help(self, funcs, **kwargs):
         show_types = kwargs.pop('show_types', True)
         assert not kwargs
         parser = defopt._create_parser(
-            *funcs, show_types=show_types, strict_kwonly=False)
+            funcs, show_types=show_types, strict_kwonly=False)
         return parser.format_help()
 
 
