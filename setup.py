@@ -14,6 +14,7 @@ setup(
     author_email='evanunderscore@gmail.com',
     url='https://pypi.python.org/pypi/defopt',
     license='GNU General Public License v3',
+    package_dir={'': 'src'},
     py_modules=['defopt'],
     test_suite='test_defopt',
     python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
