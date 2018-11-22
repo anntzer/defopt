@@ -147,13 +147,22 @@ class TestDefopt(unittest.TestCase):
             """
             return a_b_c, d_e_f
         self.assertEqual(
-            defopt.run(main, strict_kwonly=False,
-                       argv=['1', '--d-e-f', '2']), (1, 2))
+            defopt.run(main, strict_kwonly=False, argv=['1', '--d-e-f', '2']),
+            (1, 2))
 
     def test_private_with_default(self):
         def main(_a=None):
             pass
         defopt.run(main, argv=[])
+
+    def test_argparse_kwargs(self):
+        def main(a=None):
+            """:type a: str"""
+            return a
+        self.assertEqual(
+            defopt.run(main, strict_kwonly=False,
+                       argparse_kwargs={'prefix_chars': '+'}, argv=['+a', 'foo']),
+            'foo')
 
 
 class TestParsers(unittest.TestCase):

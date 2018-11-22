@@ -27,10 +27,10 @@ import typing_inspect as ti
 
 try:
     import collections.abc as collections_abc
-    from inspect import signature as _inspect_signature
+    from inspect import Parameter, Signature, signature as _inspect_signature
 except ImportError:  # pragma: no cover
     import collections as collections_abc
-    from funcsigs import signature as _inspect_signature
+    from funcsigs import Parameter, Signature, signature as _inspect_signature
 
 try:
     from pathlib import Path
@@ -60,8 +60,7 @@ _SUPPRESS_BOOL_DEFAULT = object()
 
 
 def run(funcs, **kwargs):
-    """run(funcs, *, parsers=None, short=None, strict_kwonly=True, show_types=False, argv=None)
-
+    """
     Process command line arguments and run the given functions.
 
     ``funcs`` can be a single callable, which is parsed and run; or it can be
@@ -84,6 +83,9 @@ def run(funcs, **kwargs):
         command line flags.
     :param bool show_types: If `True`, display type names after parameter
         descriptions in the the help text.
+    :param dict argparse_kwargs: A mapping of keyword arguments that will be
+        passed to the ArgumentParser constructor.  (If the ``formatter_class``
+        key is set, it will override the formatter implied by ``show_types``.)
     :param List[str] argv: Command line arguments to parse (default:
         sys.argv[1:])
     :return: The value returned by the function that was run
@@ -100,18 +102,29 @@ def run(funcs, **kwargs):
     return _call_function(parser, args._func, args)
 
 
+run.__signature__ = Signature([
+    Parameter("funcs", Parameter.POSITIONAL_OR_KEYWORD),
+    Parameter("parsers", Parameter.KEYWORD_ONLY, default=None),
+    Parameter("short", Parameter.KEYWORD_ONLY, default=None),
+    Parameter("strict_kwonly", Parameter.KEYWORD_ONLY, default=True),
+    Parameter("show_types", Parameter.KEYWORD_ONLY, default=False),
+    Parameter("argparse_kwargs", Parameter.KEYWORD_ONLY, default={}),
+    Parameter("argv", Parameter.KEYWORD_ONLY, default=None),
+])
+
+
 def _create_parser(funcs, **kwargs):
     parsers = kwargs.pop('parsers', None)
     short = kwargs.pop('short', None)
     strict_kwonly = kwargs.pop('strict_kwonly', True)
     show_types = kwargs.pop('show_types', False)
+    argparse_kwargs = kwargs.pop('argparse_kwargs', {}).copy()
     if kwargs:
         raise TypeError(
             'unexpected keyword argument: {}'.format(list(kwargs)[0]))
-    formatter_class = _NoTypeFormatter
-    if show_types:
-        formatter_class = _Formatter
-    parser = ArgumentParser(formatter_class=formatter_class)
+    formatter_class = _Formatter if show_types else _NoTypeFormatter
+    argparse_kwargs.setdefault("formatter_class", formatter_class)
+    parser = ArgumentParser(**argparse_kwargs)
     if callable(funcs):
         _populate_parser(funcs, parser, parsers, short, strict_kwonly)
         parser.set_defaults(_func=funcs)
@@ -261,10 +274,11 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
     if _positional:
         args = [name]
     else:
+        prefix_char = parser.prefix_chars[0]
         name = name.replace('_', '-')
-        args = ['--' + name]
+        args = [prefix_char * 2 + name]
         if name in short:
-            args.insert(0, '-' + short[name])
+            args.insert(0, prefix_char + short[name])
     return parser.add_argument(*args, **kwargs)
 
 
