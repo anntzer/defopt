@@ -1,6 +1,10 @@
 Changelog
 =========
 
+next
+----
+* Added ``argparse_kwargs``.
+
 5.0.0 (2018-10-18)
 ------------------
 * Added default parser for ``slice``.
