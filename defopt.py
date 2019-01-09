@@ -189,6 +189,8 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
     if short is None:
         count_initials = Counter(name[0] for name in sig.parameters
                                  if name not in positionals)
+        if parser.add_help:
+            count_initials['h'] += 1
         short = dict(
             (name.replace('_', '-'), name[0]) for name in sig.parameters
             if name not in positionals and count_initials[name[0]] == 1)

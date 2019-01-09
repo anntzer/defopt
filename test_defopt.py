@@ -354,6 +354,12 @@ class TestFlags(unittest.TestCase):
             defopt.run(func, strict_kwonly=False, argv=['-b', '2'])
 
 
+    def test_auto_short_help(self):
+        def func(hello="world"):
+            """:type hello: str"""
+        defopt.run(func, strict_kwonly=False, argv=[])
+
+
 class TestEnums(unittest.TestCase):
     def test_enum(self):
         def main(foo):
