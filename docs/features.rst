@@ -52,6 +52,23 @@ The command line usage will indicate this. ::
 
 Underscores in function names are replaced by hyphens.
 
+Friendlier names can be provided by calling `defopt.run` with a dict of
+`{"func":function_with_long_name}` pairs. The keys replace the corresponding
+function names at the command line. As when called with a list, underscores in
+keys are replaced by hyphens.
+
+.. code-block:: python
+
+   defopt.run({"friendly_func":function_with_a_long_name, "func2":another_function})
+
+Command line usage will use the new names ::
+
+    usage: test.py [-h] {friendly-func,func2} ...
+
+    positional arguments:
+      {friendly-func,func2}
+
+
 Standard types
 --------------
 

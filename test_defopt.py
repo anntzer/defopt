@@ -53,6 +53,12 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(
             defopt.run([sub, sub_with_dash], strict_kwonly=False,
                        argv=['sub-with-dash', '--baz', '1']), 1)
+        self.assertEqual(
+            defopt.run({"sub1":sub, "sub_2":sub_with_dash}, strict_kwonly=False,
+                       argv=['sub1', '1.2']), (1.2,))
+        self.assertEqual(
+            defopt.run({"sub1":sub, "sub_2":sub_with_dash}, strict_kwonly=False,
+                       argv=['sub-2', '--baz', '1']), 1)
 
     def test_var_positional(self):
         def main(*foo):

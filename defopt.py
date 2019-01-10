@@ -131,6 +131,9 @@ def _create_parser(funcs, **kwargs):
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
+            if isinstance(funcs, dict):
+                name, func = func, funcs[func]
+                func.__name__ = name.replace("_", "-")
             subparser = subparsers.add_parser(
                 func.__name__.replace('_', '-'),
                 formatter_class=formatter_class,
