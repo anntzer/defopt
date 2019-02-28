@@ -47,7 +47,7 @@ except ImportError:
         yield
 
 __all__ = ['run']
-__version__ = '5.0.0'
+__version__ = '5.1.0'
 
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
 _TYPE_NAMES = ['type', 'kwtype']
