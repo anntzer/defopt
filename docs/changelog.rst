@@ -1,9 +1,10 @@
 Changelog
 =========
 
-next
-----
+5.1.0 (2019-03-01)
+------------------
 * Added ``argparse_kwargs``.
+* Fixed short flag generation to avoid collision with ``-h``.
 
 5.0.0 (2018-10-18)
 ------------------
