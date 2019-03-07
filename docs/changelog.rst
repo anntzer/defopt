@@ -1,6 +1,10 @@
 Changelog
 =========
 
+next
+----
+* Added support for Union types.
+
 5.1.0 (2019-03-01)
 ------------------
 * Added ``argparse_kwargs``.

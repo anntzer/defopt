@@ -172,6 +172,19 @@ has fields, convert each argument to the correct type, and wrap them into the
 annotation class.  When a `typing.NamedTuple` is used for an optional argument,
 the names of the fields are used in the help.
 
+Unions
+------
+
+Union types can be specified with ``typing.Union[type1, type2]``, or, when
+using docstring annotations, as ``type1 or type2``.  When an argument is
+annotated with a union type, an attempt is made to convert the command-line
+argument with the parser for each of the members of the union, in the order
+they are given; the value returned by the first parser that does not raise a
+`ValueError` is used.
+
+Collection types are not supported in unions; e.g. ``Union[type1, List[type2]]``
+is not supported.
+
 Parsers
 -------
 

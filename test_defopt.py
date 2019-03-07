@@ -426,6 +426,39 @@ class TestTuple(unittest.TestCase):
                          str(Pair(1, '2')))
 
 
+class TestUnion(unittest.TestCase):
+    def test_union(self):
+        def main(foo, bar):
+            """
+            :param typing.Union[int,str] foo: foo
+            :param bar: bar
+            :type bar: float or str
+            """
+            return type(foo), type(bar)
+        self.assertEqual(defopt.run(main, argv=['1', '2']), (int, float))
+        self.assertEqual(defopt.run(main, argv=['1', 'b']), (int, str))
+        self.assertEqual(defopt.run(main, argv=['a', '2']), (str, float))
+
+    def test_bad_parse(self):
+        def main(foo):
+            """:param typing.Union[int,float] foo: foo"""
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=['bar'])
+
+    def test_bad_union(self):
+        def main(foo):
+            """:param typing.Union[int,typing.List[str]] foo: foo"""
+        with self.assertRaises(ValueError):
+            defopt.run(main, argv=['1'])
+        def main(foo):
+            """
+            :param foo: foo
+            :type foo: int or list[str]
+            """
+        with self.assertRaises(ValueError):
+            defopt.run(main, argv=['1'])
+
+
 class TestDoc(unittest.TestCase):
     def test_parse_function_docstring(self):
         def test(one, two):
