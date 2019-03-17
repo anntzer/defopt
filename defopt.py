@@ -310,6 +310,13 @@ def _get_type(func, name, doc, hints):
 
 
 def _get_type_from_doc(name, globalns):
+    if ' or ' in name:
+        subtypes = [_get_type_from_doc(part, globalns)
+                    for part in name.split(' or ')]
+        if any(subtype.container is not None for subtype in subtypes):
+            raise ValueError(
+                'unsupported union including container type: {}'.format(name))
+        return _Type(Union[tuple(subtype.type for subtype in subtypes)], None)
     # Support for legacy list syntax "list[type]".
     # (This intentionally won't catch `List` or `typing.List`)
     match = re.match(r'([a-z]\w+)\[([\w\.]+)\]', name)
@@ -323,20 +330,23 @@ def _get_type_from_doc(name, globalns):
 
 
 def _get_type_from_hint(hint):
-    if ti.get_origin(hint) in [
-            # Py<3.7.
-            typing.List, typing.Iterable, typing.Sequence,
-            # Py>=3.7
-            list, collections_abc.Iterable, collections_abc.Sequence]:
+    container_types = [
+        typing.List, typing.Iterable, typing.Sequence,  # Py<3.7.
+        list, collections_abc.Iterable, collections_abc.Sequence,  # Py>=3.7
+    ]
+    if ti.get_origin(hint) in container_types:
         [type_] = ti.get_args(hint)
         return _Type(type_, list)
     elif ti.is_union_type(hint):
         # For Union[type, NoneType], just use type.
-        args = ti.get_args(hint)
+        args = ti.get_args(hint, evaluate=True)  # evaluate needed on Py<3.7.
         if len(args) == 2:
             type_, none = args
             if none == type(None):
                 return _Type(type_, None)
+        if any(ti.get_origin(subtype) in container_types for subtype in args):
+            raise ValueError(
+                'unsupported union including container type: {}'.format(hint))
     return _Type(hint, None)
 
 
@@ -540,7 +550,8 @@ def _get_parser(type_, parsers=None):
     def named_parser(string):
         return parser(string)
 
-    named_parser.__name__ = type_.__name__
+    # Union types don't have a __name__, but their str is fine.
+    named_parser.__name__ = getattr(type_, '__name__', str(type_))
     return named_parser
 
 
@@ -557,6 +568,10 @@ def _find_parser(type_, parsers):
         return _parse_slice
     elif type_ == list:
         raise ValueError('unable to parse list (try list[type])')
+    elif ti.is_union_type(type_):
+        return _make_union_parser(
+            type_,
+            [_find_parser(subtype, parsers) for subtype in ti.get_args(type_)])
     else:
         raise Exception('no parser found for type {}'.format(
             # typing types have no __name__.
@@ -587,6 +602,18 @@ def _parse_slice(string):
     stop = ast.literal_eval(sl.upper) if sl.upper else None
     step = ast.literal_eval(sl.step) if sl.step else None
     return slice(start, stop, step)
+
+
+def _make_union_parser(union, parsers):
+    def parser(value):
+        for p in parsers:
+            try:
+                return p(value)
+            except ValueError:
+                pass
+        raise ValueError(
+            '{} could not be parsed as any of {}'.format(value, union))
+    return parser
 
 
 class _ValueOrderedDict(OrderedDict):
