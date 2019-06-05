@@ -832,16 +832,16 @@ class TestHelp(unittest.TestCase):
 
     def test_multiple(self):
         def foo():
-            """foo
+            """summary-of-foo
 
             Implements FOO.
             """
 
         def bar():
-            """bar
+            """summary-of-bar
 
             Implements BAR."""
-        self.assertIn('foo', self._get_help([foo, bar]))
+        self.assertIn('summary-of-foo', self._get_help([foo, bar]))
         self.assertNotIn('FOO', self._get_help([foo, bar]))
 
     def test_hide_types(self):
