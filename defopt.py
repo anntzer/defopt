@@ -536,7 +536,7 @@ def _parse_docstring(doc):
             # from stripping consecutive newlines down to just two
             # (http://bugs.python.org/issue31330).
             text.append(' \n' * (next_start - start - paragraph.count('\n')))
-        parsed = _Doc('', ''.join(text), tuples)
+        parsed = _Doc(text[0], ''.join(text), tuples)
     else:
         parsed = _Doc('', '', tuples)
     _parse_docstring_cache[_cache_key] = parsed
