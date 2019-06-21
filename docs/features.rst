@@ -296,6 +296,19 @@ for a parameter is given in both, they must be the same.
 
 A runnable example is available at `examples/annotations.py`_.
 
+Exceptions
+----------
+
+Exception types can also be listed in the function's docstring, with ::
+
+    :raises <type>: <description>
+
+If the function call raises an exception whose type is mentioned in such a
+``:raises:`` clause, the exception message is printed and the program exits
+with status code 1, but the traceback is suppressed.
+
+A runnable example is available at `examples/exceptions.py`_.
+
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _Google: http://google.github.io/styleguide/pyguide.html
 .. _Numpy: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt

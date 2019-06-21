@@ -4,6 +4,7 @@ Changelog
 next
 ----
 * Added support for Union types.
+* Added support for catching exceptions.
 
 5.1.0 (2019-03-01)
 ------------------

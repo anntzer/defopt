@@ -53,7 +53,7 @@ __version__ = '5.1.0'
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
 _TYPE_NAMES = ['type', 'kwtype']
 
-_Doc = namedtuple('_Doc', ('first_line', 'text', 'params'))
+_Doc = namedtuple('_Doc', ('first_line', 'text', 'params', 'raises'))
 _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
 
@@ -103,7 +103,10 @@ def run(funcs, **kwargs):
     # Workaround for http://bugs.python.org/issue9253#msg186387
     if not hasattr(args, '_func'):
         parser.error('too few arguments')
-    return _call_function(parser, args._func, args)
+    try:
+        return _call_function(parser, args._func, args)
+    except args._exc_types as e:
+        sys.exit(e)
 
 
 run.__signature__ = Signature([
@@ -131,7 +134,6 @@ def _create_parser(funcs, **kwargs):
     parser = ArgumentParser(**argparse_kwargs)
     if callable(funcs):
         _populate_parser(funcs, parser, parsers, short, strict_kwonly)
-        parser.set_defaults(_func=funcs)
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
@@ -140,7 +142,6 @@ def _create_parser(funcs, **kwargs):
                 formatter_class=formatter_class,
                 help=_parse_function_docstring(func).first_line)
             _populate_parser(func, subparser, parsers, short, strict_kwonly)
-            subparser.set_defaults(_func=func)
     return parser
 
 
@@ -185,6 +186,8 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
 
     types = {name: _get_type(func, name)
              for name, param in sig.parameters.items()}
+    exc_types = tuple(_get_type_from_doc(name, func.__globals__).type
+                      for name in doc.raises)
     positionals = set(name for name, param in sig.parameters.items()
                       if ((param.default is param.empty or strict_kwonly)
                           and not types[name].container
@@ -273,6 +276,8 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
         else:
             kwargs['type'] = _get_parser(type_.type, parsers)
         _add_argument(parser, name, short, **kwargs)
+
+    parser.set_defaults(_func=func, _exc_types=exc_types)
 
 
 def _add_argument(parser, name, short, _positional=False, **kwargs):
@@ -387,7 +392,7 @@ def _parse_docstring(doc):
         pass
 
     if doc is None:
-        return _Doc('', '', {})
+        return _Doc('', '', {}, [])
 
     # Convert Google- or Numpy-style docstrings to RST.
     # (Should do nothing if not in either style.)
@@ -407,6 +412,7 @@ def _parse_docstring(doc):
             self.paragraphs = []
             self.start_lines = []
             self.params = defaultdict(dict)
+            self.raises = []
             self._current_paragraph = None
             self._indent_iterator_stack = []
             self._indent_stack = []
@@ -511,12 +517,15 @@ def _parse_docstring(doc):
                 doctype = 'param'
             if doctype in _TYPE_NAMES:
                 doctype = 'type'
-            if doctype in self.params[name]:
+            if doctype in ['param', 'type'] and doctype in self.params[name]:
                 raise ValueError(
                     '{} defined twice for {}'.format(doctype, name))
             visitor = Visitor(self.document)
             field_body_node.walkabout(visitor)
-            self.params[name][doctype] = ''.join(visitor.paragraphs)
+            if doctype in ['param', 'type']:
+                self.params[name][doctype] = ''.join(visitor.paragraphs)
+            elif doctype in ['raises']:
+                self.raises.append(name)
             raise SkipNode
 
         def visit_comment(self, node):
@@ -541,9 +550,9 @@ def _parse_docstring(doc):
             # from stripping consecutive newlines down to just two
             # (http://bugs.python.org/issue31330).
             text.append(' \n' * (next_start - start - paragraph.count('\n')))
-        parsed = _Doc(text[0], ''.join(text), tuples)
+        parsed = _Doc(text[0], ''.join(text), tuples, visitor.raises)
     else:
-        parsed = _Doc('', '', tuples)
+        parsed = _Doc('', '', tuples, visitor.raises)
     _parse_docstring_cache[_cache_key] = parsed
     return parsed
 
