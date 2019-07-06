@@ -25,10 +25,10 @@ from docutils.utils import roman
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 import typing_inspect as ti
 
-try:
+try:  # pragma: no cover
     import collections.abc as collections_abc
     from inspect import Parameter, Signature, signature as _inspect_signature
-except ImportError:  # pragma: no cover
+except ImportError:
     import collections as collections_abc
     from funcsigs import Parameter, Signature, signature as _inspect_signature
 
@@ -177,11 +177,10 @@ def _public_signature(func):
 def _populate_parser(func, parser, parsers, short, strict_kwonly):
     sig = _public_signature(func)
     doc = _parse_function_docstring(func)
-    hints = typing.get_type_hints(func) or {}  # Py2 backport returns None.
     parser.description = doc.text
 
-    types = dict((name, _get_type(func, name, doc, hints))
-                 for name, param in sig.parameters.items())
+    types = {name: _get_type(func, name)
+             for name, param in sig.parameters.items()}
     positionals = set(name for name, param in sig.parameters.items()
                       if ((param.default is param.empty or strict_kwonly)
                           and not types[name].container
@@ -284,15 +283,17 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
     return parser.add_argument(*args, **kwargs)
 
 
-def _get_type(func, name, doc, hints):
+def _get_type(func, name):
     """Retrieve a type from either documentation or annotations.
 
     If both are specified, they must agree exactly.
     """
+    doc = _parse_function_docstring(func)
     doc_type = doc.params.get(name, _Param(None, None)).type
     if doc_type is not None:
         doc_type = _get_type_from_doc(doc_type, func.__globals__)
 
+    hints = typing.get_type_hints(func) or {}  # Py2 backport returns None.
     try:
         hint = hints[name]
     except KeyError:
@@ -568,6 +569,8 @@ def _find_parser(type_, parsers):
         return _parse_slice
     elif type_ == list:
         raise ValueError('unable to parse list (try list[type])')
+    elif _is_constructible_from_str(type_):
+        return type_
     elif ti.is_union_type(type_):
         return _make_union_parser(
             type_,
@@ -602,6 +605,32 @@ def _parse_slice(string):
     stop = ast.literal_eval(sl.upper) if sl.upper else None
     step = ast.literal_eval(sl.step) if sl.step else None
     return slice(start, stop, step)
+
+
+def _is_constructible_from_str(type_):
+    try:
+        signature = _inspect_signature(type_)
+        (argname, _), = signature.bind(object()).arguments.items()
+    except (TypeError, ValueError):
+        # TypeError can be raised by inspect.signature, Signature.bind, or
+        # _get_type; ValueError by funcsigs's inspect.signature.
+        return False
+    try:
+        argtype = _get_type(type_, argname)
+    except (TypeError, ValueError):
+        pass
+    else:
+        if argtype and argtype.type is str:
+            return True
+    if isinstance(type_, type):
+        try:
+            argtype = _get_type(type_.__init__, argname)
+        except (TypeError, ValueError):
+            pass
+        else:
+            if argtype and argtype.type is str:
+                return True
+    return False
 
 
 def _make_union_parser(union, parsers):

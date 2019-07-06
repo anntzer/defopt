@@ -34,6 +34,17 @@ class Choice(Enum):
 Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
 
 
+class ConstructibleFromStr(object):
+    def __init__(self, s):
+        """:type s: str"""
+        self.s = s
+
+
+class NotConstructibleFromStr(object):
+    def __init__(self, s):
+        pass
+
+
 class TestDefopt(unittest.TestCase):
     def test_main(self):
         def main(foo):
@@ -318,6 +329,20 @@ class TestParsers(unittest.TestCase):
         self.assertIs(defopt.run(main, argv=['--no-foo']), False)
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
+
+    def test_implicit_parser(self):
+        def ok(foo):
+            """:type foo: ConstructibleFromStr"""
+            return foo
+
+        self.assertEqual(defopt.run(ok, argv=["foo"]).s, "foo")
+
+    def test_implicit_noparser(self):
+        def notok(foo):
+            """:type foo: NotConstructibleFromStr"""
+
+        with self.assertRaises(Exception):
+            defopt.run(notok, argv=["foo"])
 
 
 class TestFlags(unittest.TestCase):

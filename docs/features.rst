@@ -205,6 +205,25 @@ You can now build ``Person`` objects directly from the command line. ::
 
 A runnable example is available at `examples/parsers.py`_.
 
+If the type of an annotation can be called with a single parameter and that
+parameter is annotated as `str`, then `defopt` will assume that the type is
+its own parser.
+
+.. code-block:: python
+
+    class StrWrapper:
+        def __init__(self, s: str):
+            self.s = s
+
+    def main(s: StrWrapper):
+        pass
+
+    defopt.run(main)
+
+You can now build ``StrWrapper`` objects directly from the command line. ::
+
+    test.py foo
+
 Variable Positional Arguments
 -----------------------------
 
