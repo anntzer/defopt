@@ -26,11 +26,13 @@ from docutils.utils import roman
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 import typing_inspect as ti
 
-try:  # pragma: no cover
+if sys.version_info >= (3,):  # pragma: no cover
     import collections.abc as collections_abc
+    from functools import lru_cache
     from inspect import Parameter, Signature, signature as _inspect_signature
-except ImportError:
+else:
     import collections as collections_abc
+    from backports.functools_lru_cache import lru_cache
     from funcsigs import Parameter, Signature, signature as _inspect_signature
 
 try:
@@ -377,14 +379,9 @@ def _parse_function_docstring(func):
     return _parse_docstring(inspect.getdoc(func))
 
 
-_parse_docstring_cache = {}
+@lru_cache()
 def _parse_docstring(doc):
     """Extract documentation from a function's docstring."""
-    _cache_key = doc
-    try:
-        return _parse_docstring_cache[_cache_key]
-    except KeyError:
-        pass
 
     if doc is None:
         return _Doc('', '', {})
@@ -544,7 +541,6 @@ def _parse_docstring(doc):
         parsed = _Doc(text[0], ''.join(text), tuples)
     else:
         parsed = _Doc('', '', tuples)
-    _parse_docstring_cache[_cache_key] = parsed
     return parsed
 
 

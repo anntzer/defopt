@@ -23,6 +23,7 @@ setup(
         'typing_inspect>=0.3.1',
     ],
     extras_require={
+        ':python_version<"3.2"': ['backports.functools_lru_cache'],
         ':python_version<"3.3"': ['funcsigs'],
         ':python_version<"3.4"': ['enum34'],
         ':python_version<"3.5"': ['typing'],
