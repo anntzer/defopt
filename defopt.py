@@ -7,15 +7,16 @@ from __future__ import (
 
 import ast
 import contextlib
+import functools
 import inspect
 import re
 import sys
+import typing
 from argparse import (
     SUPPRESS, ArgumentParser, RawTextHelpFormatter, _AppendAction,
     _StoreAction)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
-import typing
 from typing import Callable, Dict, Tuple, Union
 
 from docutils.core import publish_doctree
@@ -57,6 +58,9 @@ _Param = namedtuple('_Param', ('text', 'type'))
 _Type = namedtuple('_Type', ('type', 'container'))
 
 _SUPPRESS_BOOL_DEFAULT = object()
+
+# Make Py<3.7 behave consistently with Py>=3.7.
+_ti_get_args = functools.partial(ti.get_args, evaluate=True)
 
 
 def run(funcs, **kwargs):
@@ -244,7 +248,7 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
         make_tuple = member_types = None
         if ti.is_tuple_type(type_.type):
             make_tuple = tuple
-            member_types = ti.get_args(type_.type)
+            member_types = _ti_get_args(type_.type)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
                 tuple, member_types, parsers)
@@ -336,11 +340,11 @@ def _get_type_from_hint(hint):
         list, collections_abc.Iterable, collections_abc.Sequence,  # Py>=3.7
     ]
     if ti.get_origin(hint) in container_types:
-        [type_] = ti.get_args(hint)
+        [type_] = _ti_get_args(hint)
         return _Type(type_, list)
     elif ti.is_union_type(hint):
         # For Union[type, NoneType], just use type.
-        args = ti.get_args(hint, evaluate=True)  # evaluate needed on Py<3.7.
+        args = _ti_get_args(hint)
         if len(args) == 2:
             type_, none = args
             if none == type(None):
@@ -574,7 +578,8 @@ def _find_parser(type_, parsers):
     elif ti.is_union_type(type_):
         return _make_union_parser(
             type_,
-            [_find_parser(subtype, parsers) for subtype in ti.get_args(type_)])
+            [_find_parser(subtype, parsers)
+             for subtype in _ti_get_args(type_)])
     else:
         raise Exception('no parser found for type {}'.format(
             # typing types have no __name__.
