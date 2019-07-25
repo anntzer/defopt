@@ -19,7 +19,8 @@ except ImportError:
     import mock
 
 import defopt
-from examples import booleans, choices, lists, parsers, short, starargs, styles
+from examples import (
+    booleans, choices, exceptions, lists, parsers, short, starargs, styles)
 
 
 if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
@@ -484,6 +485,24 @@ class TestUnion(unittest.TestCase):
             defopt.run(main, argv=['1'])
 
 
+class TestExceptions(unittest.TestCase):
+    def test_exceptions(self):
+        def main(name):
+            """
+            :param str name: name
+            :raises RuntimeError:
+            """
+            if name == "RuntimeError":
+                raise RuntimeError("oops")
+            elif name == "ValueError":
+                raise ValueError("oops")
+
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=["RuntimeError"])
+        with self.assertRaises(ValueError):
+            defopt.run(main, argv=["ValueError"])
+
+
 class TestDoc(unittest.TestCase):
     def test_parse_function_docstring(self):
         def test(one, two):
@@ -936,6 +955,13 @@ class TestExamples(unittest.TestCase):
             self._run_example(choices, ['four'])
         self.assertIn(b'four', error.exception.output)
         self.assertIn(b'{one,two,three}', error.exception.output)
+
+    def test_exceptions(self):
+        self._run_example(exceptions, ['1'])
+        with self.assertRaises(subprocess.CalledProcessError) as error:
+            self._run_example(exceptions, ['0'])
+        self.assertIn(b"Don't do this!", error.exception.output)
+        self.assertNotIn(b"Traceback", error.exception.output)
 
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
