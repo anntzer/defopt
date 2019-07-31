@@ -4,6 +4,8 @@ Changelog
 next
 ----
 * Added support for Union types.
+* Assume that types annotated as constructible from a single str are their own
+  parser.
 * Added support for catching exceptions.
 
 5.1.0 (2019-03-01)
