@@ -37,8 +37,7 @@ try:
     from pathlib import PurePath
 except ImportError:
     class PurePath(object):
-        """Dummy type, such that no user input is ever of that type.
-        """
+        """Dummy type, such that no user input is ever of that type."""
 
 try:
     from colorama import colorama_text as _colorama_text
@@ -248,9 +247,8 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['action'] = 'append'
                 kwargs['default'] = []
-        make_tuple = member_types = None
+        member_types = None
         if ti.is_tuple_type(type_.type):
-            make_tuple = tuple
             member_types = _ti_get_args(type_.type)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
