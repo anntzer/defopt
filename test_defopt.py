@@ -478,6 +478,17 @@ class TestUnion(unittest.TestCase):
             defopt.run(main, argv=['1'])
 
 
+@unittest.skipIf(defopt.Literal is None, 'Literal not available')
+class TestLiteral(unittest.TestCase):
+    def test_literal(self):
+        def main(foo):
+            """:param defopt.Literal["bar","baz"] foo: foo"""
+            return foo
+        self.assertEqual(defopt.run(main, argv=["bar"]), "bar")
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=["quux"])
+
+
 class TestExceptions(unittest.TestCase):
     def test_exceptions(self):
         def main(name):
@@ -932,22 +943,37 @@ class TestExamples(unittest.TestCase):
     @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
     def test_choices(self, print_):
-        choices.main(choices.Choice.one)
+        choices.choose_enum(choices.Choice.one)
         print_.assert_called_with('Choice.one (1)')
-        choices.main(choices.Choice.one, choices.Choice.two)
+        choices.choose_enum(choices.Choice.one, choices.Choice.two)
         print_.assert_called_with('Choice.two (2.0)')
         with self.assertRaises(AttributeError):
-            choices.main('one')
+            choices.choose_enum('one')
+        choices.choose_literal('foo')
+        print_.assert_called_with('foo')
+        choices.choose_literal('foo', 'baz')
+        print_.assert_called_with('baz')
 
     def test_choices_cli(self):
-        output = self._run_example(choices, ['one'])
+        output = self._run_example(choices, ['choose-enum', 'one'])
         self.assertEqual(output, b'Choice.one (1)\n')
-        output = self._run_example(choices, ['one', '--opt', 'two'])
+        output = self._run_example(
+            choices, ['choose-enum', 'one', '--opt', 'two'])
         self.assertEqual(output, b'Choice.one (1)\nChoice.two (2.0)\n')
         with self.assertRaises(subprocess.CalledProcessError) as error:
-            self._run_example(choices, ['four'])
+            self._run_example(choices, ['choose-enum', 'four'])
         self.assertIn(b'four', error.exception.output)
         self.assertIn(b'{one,two,three}', error.exception.output)
+        if defopt.Literal is not None:
+            output = self._run_example(choices, ['choose-literal', 'foo'])
+            self.assertEqual(output, b'foo\n')
+            output = self._run_example(
+                choices, ['choose-literal', 'foo', '--opt', 'baz'])
+            self.assertEqual(output, b'foo\nbaz\n')
+            with self.assertRaises(subprocess.CalledProcessError) as error:
+                self._run_example(choices, ['choose-literal', 'baz'])
+            self.assertIn(b'baz', error.exception.output)
+            self.assertIn(b'{foo,bar}', error.exception.output)
 
     def test_exceptions(self):
         self._run_example(exceptions, ['1'])

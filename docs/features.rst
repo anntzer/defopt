@@ -163,6 +163,9 @@ This also produces a more helpful message when you choose an invalid option. ::
 
 A runnable example is available at `examples/choices.py`_.
 
+Likewise, `typing.Literal` and its backport ``typing_extensions.Literal`` are
+also supported.
+
 Tuples
 ------
 
