@@ -416,19 +416,6 @@ class TestEnums(unittest.TestCase):
         self.assertEqual(
             defopt.run([sub1, sub2], argv=['sub2', 'two']), Choice.two)
 
-    def test_valuedict(self):
-        valuedict = defopt._ValueOrderedDict({'a': 1})
-        self.assertEqual(list(valuedict), ['a'])
-        self.assertIn(1, valuedict)
-        self.assertNotIn('a', valuedict)
-
-    def test_enumgetter(self):
-        getter = defopt._enum_getter(Choice)
-        self.assertEqual(getter('one'), Choice.one)
-        self.assertEqual(getter('two'), Choice.two)
-        self.assertEqual(getter('three'), 'three',
-                         msg='argparse needs to report this value')
-
 
 class TestTuple(unittest.TestCase):
     def test_tuple(self):
@@ -436,6 +423,12 @@ class TestTuple(unittest.TestCase):
             """:param typing.Tuple[int,str] foo: foo"""
             return foo
         self.assertEqual(defopt.run(main, argv=['1', '2']), (1, '2'))
+
+    def test_tupleenum(self):
+        def main(foo):
+            """:param typing.Tuple[Choice] foo: foo"""
+            return foo
+        self.assertEqual(defopt.run(main, argv=['one']), (Choice.one,))
 
     def test_namedtuple(self):
         # Add a second argument after the tuple to ensure that the converter
