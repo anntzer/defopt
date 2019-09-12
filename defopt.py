@@ -13,8 +13,8 @@ import re
 import sys
 import typing
 from argparse import (
-    SUPPRESS, ArgumentParser, RawTextHelpFormatter, _AppendAction,
-    _StoreAction)
+    SUPPRESS, ArgumentError, ArgumentTypeError, ArgumentParser,
+    RawTextHelpFormatter, _AppendAction, _StoreAction)
 from collections import defaultdict, namedtuple, Counter, OrderedDict
 from enum import Enum
 from typing import Callable, Dict, Tuple, Union
@@ -268,13 +268,11 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
                 member_types, parsers)
             if not positional:  # http://bugs.python.org/issue14074
                 kwargs['metavar'] = type_.type._fields
-        elif inspect.isclass(type_.type) and issubclass(type_.type, Enum):
-            # Want these to behave like argparse choices.
-            kwargs['choices'] = _ValueOrderedDict(
-                (x.name, x) for x in type_.type)
-            kwargs['type'] = _enum_getter(type_.type)
         else:
             kwargs['type'] = _get_parser(type_.type, parsers)
+            if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
+                kwargs['metavar'] = (
+                    '{' + ','.join(type_.type.__members__) + '}')
         _add_argument(parser, name, short, **kwargs)
 
     parser.set_defaults(_func=func, _exc_types=exc_types)
@@ -582,6 +580,8 @@ def _find_parser(type_, parsers):
         return _parse_slice
     elif type_ == list:
         raise ValueError('unable to parse list (try list[type])')
+    elif inspect.isclass(type_) and issubclass(type_, Enum):
+        return _make_enum_parser(type_)
     elif _is_constructible_from_str(type_):
         return type_
     elif ti.is_union_type(type_):
@@ -619,6 +619,17 @@ def _parse_slice(string):
     stop = ast.literal_eval(sl.upper) if sl.upper else None
     step = ast.literal_eval(sl.step) if sl.step else None
     return slice(start, stop, step)
+
+
+def _make_enum_parser(enum):
+    def parser(value):
+        try:
+            return enum[value]
+        except KeyError:
+            raise ArgumentTypeError(
+                'invalid choice: {!r} (choose from {})'.format(
+                    value, ', '.join(map(repr, enum.__members__))))
+    return parser
 
 
 def _is_constructible_from_str(type_):
@@ -659,32 +670,14 @@ def _make_union_parser(union, parsers):
     return parser
 
 
-class _ValueOrderedDict(OrderedDict):
-    """OrderedDict that tests membership based on values instead of keys."""
-    def __contains__(self, item):
-        return item in self.values()
-
-
-def _enum_getter(enum):
-    """Return a function that converts a string to an enum member.
-
-    If ``name`` does not correspond to a member of the enum, it is returned
-    unmodified so that argparse can properly report the invalid value.
-    """
-    def getter(name):
-        try:
-            return enum[name]
-        except KeyError:
-            return name
-    getter.__name__ = enum.__name__
-    return getter
-
-
 def _make_store_tuple_action_class(make_tuple, member_types, parsers):
     class _StoreTupleAction(_StoreAction):
         def __call__(self, parser, namespace, values, option_string=None):
-            value = make_tuple(_get_parser(arg, parsers)(value)
-                               for arg, value in zip(member_types, values))
+            try:
+                value = make_tuple(_get_parser(arg, parsers)(value)
+                                   for arg, value in zip(member_types, values))
+            except ArgumentTypeError as exc:
+                raise ArgumentError(self, str(exc))
             return super(_StoreTupleAction, self).__call__(
                 parser, namespace, value, option_string)
     return _StoreTupleAction
