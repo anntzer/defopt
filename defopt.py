@@ -34,9 +34,9 @@ except ImportError:
     from funcsigs import Parameter, Signature, signature as _inspect_signature
 
 try:
-    from pathlib import Path
+    from pathlib import PurePath
 except ImportError:
-    class Path(object):
+    class PurePath(object):
         """Dummy type, such that no user input is ever of that type.
         """
 
@@ -572,7 +572,8 @@ def _find_parser(type_, parsers):
         return parsers[type_]
     except KeyError:
         pass
-    if type_ in [str, int, float, Path]:
+    if (type_ in [str, int, float]
+            or inspect.isclass(type_) and issubclass(type_, PurePath)):
         return type_
     elif type_ == bool:
         return _parse_bool
