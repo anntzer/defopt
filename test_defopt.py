@@ -673,7 +673,7 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(type_.type, int)
 
     def test_other(self):
-        with self.assertRaisesRegexp(ValueError, 'unsupported.*tuple'):
+        with self.assertRaisesRegex(ValueError, 'unsupported.*tuple'):
             defopt._get_type_from_doc('tuple[int]', {})
 
     def test_literal_block(self):
