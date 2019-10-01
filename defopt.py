@@ -7,7 +7,6 @@ from __future__ import (
 
 import ast
 import contextlib
-import functools
 import inspect
 import re
 import sys
@@ -40,6 +39,11 @@ except ImportError:
         """Dummy type, such that no user input is ever of that type."""
 
 try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
+try:
     from colorama import colorama_text as _colorama_text
 except ImportError:
     @contextlib.contextmanager
@@ -58,8 +62,11 @@ _Type = namedtuple('_Type', ('type', 'container'))
 
 _SUPPRESS_BOOL_DEFAULT = object()
 
-# Make Py<3.7 behave consistently with Py>=3.7.
-_ti_get_args = functools.partial(ti.get_args, evaluate=True)
+
+def _ti_get_args(tp):  # Make Py<3.7 behave consistently with Py>=3.7.
+    if type(tp) is type(Literal):  # Py <= 3.6.
+        return tp.__values__
+    return ti.get_args(tp, evaluate=True)  # evaluate = True default on Py >= 3.7.
 
 
 def run(funcs, **kwargs):
@@ -271,6 +278,12 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
             if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
                 kwargs['metavar'] = (
                     '{' + ','.join(type_.type.__members__) + '}')
+            elif Literal and ti.get_origin(type_.type) is Literal:  # Py >= 3.7.
+                kwargs['metavar'] = (
+                    '{' + ','.join(map(str, _ti_get_args(type_.type))) + '}')
+            elif Literal and type(type_.type) is type(Literal):  # Py <= 3.6.
+                kwargs['metavar'] = (
+                    '{' + ','.join(map(str, type_.type.__values__)) + '}')
         _add_argument(parser, name, short, **kwargs)
 
     parser.set_defaults(_func=func, _exc_types=exc_types)
@@ -429,6 +442,9 @@ def _parse_docstring(doc):
             self.paragraphs.append(text)
             self._current_paragraph = None
 
+        visit_block_quote = visit_paragraph
+        depart_block_quote = depart_paragraph
+
         def visit_Text(self, node):
             self._current_paragraph.append(node)
 
@@ -570,7 +586,7 @@ def _find_parser(type_, parsers):
         return parsers[type_]
     except KeyError:
         pass
-    if (type_ in [str, int, float]
+    if (type_ in [str, type(''), int, float]  # type('') is Py2's unicode.
             or inspect.isclass(type_) and issubclass(type_, PurePath)):
         return type_
     elif type_ == bool:
@@ -588,6 +604,12 @@ def _find_parser(type_, parsers):
             type_,
             [_find_parser(subtype, parsers)
              for subtype in _ti_get_args(type_)])
+    elif Literal and (ti.get_origin(type_) is Literal  # Py >= 3.7.
+                      or type(type_) is type(Literal)):  # Py <= 3.6.
+        return _make_literal_parser(
+            type_,
+            [_find_parser(type(arg), parsers)
+             for arg in _ti_get_args(type_)])
     else:
         raise Exception('no parser found for type {}'.format(
             # typing types have no __name__.
@@ -662,10 +684,25 @@ def _make_union_parser(union, parsers):
         for p in parsers:
             try:
                 return p(value)
-            except ValueError:
+            except (ValueError, ArgumentTypeError):
                 pass
         raise ValueError(
             '{} could not be parsed as any of {}'.format(value, union))
+    return parser
+
+
+def _make_literal_parser(literal, parsers):
+    def parser(value):
+        for arg, p in zip(_ti_get_args(literal), parsers):
+            try:
+                parsed = p(value)
+            except ValueError:
+                pass
+            if parsed == arg:
+                return arg
+        raise ArgumentTypeError(
+            'invalid choice: {!r} (choose from {})'.format(
+                value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
     return parser
 
 

@@ -25,7 +25,8 @@ setup(
     extras_require={
         ':python_version<"3.3"': ['funcsigs'],
         ':python_version<"3.4"': ['enum34'],
-        ':python_version<"3.5"': ['typing'],
+        ':python_version<"3.5"': ['typing>=3.7.4'],  # Version constraint matches typing_extensions.
+        ':python_version<"3.8"': ['typing_extensions>=3.7.4'],  # Literal support.
         ':sys.platform=="win32"': ['colorama>=0.3.4'],
     },
     tests_require=[
