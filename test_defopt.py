@@ -1,30 +1,16 @@
-from argparse import ArgumentParser
-from collections import namedtuple
-from enum import Enum
 import inspect
 import subprocess
 import sys
-import textwrap
 import typing
 import unittest
-
-try:
-    from pathlib import Path
-except ImportError:
-    Path = None
-
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from collections import namedtuple
+from enum import Enum
+from pathlib import Path
+from unittest import mock
 
 import defopt
 from examples import (
     booleans, choices, exceptions, lists, parsers, short, starargs, styles)
-
-
-if not hasattr(unittest.TestCase, 'assertRaisesRegex'):
-    unittest.TestCase.assertRaisesRegex = unittest.TestCase.assertRaisesRegexp
 
 
 class Choice(Enum):
@@ -35,13 +21,13 @@ class Choice(Enum):
 Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
 
 
-class ConstructibleFromStr(object):
+class ConstructibleFromStr:
     def __init__(self, s):
         """:type s: str"""
         self.s = s
 
 
-class NotConstructibleFromStr(object):
+class NotConstructibleFromStr:
     def __init__(self, s):
         pass
 
@@ -86,31 +72,21 @@ class TestDefopt(unittest.TestCase):
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
-        globals_ = {}
-        exec(textwrap.dedent('''\
-            def main(foo='bar', *, baz='quux'):
-                """
-                :type foo: str
-                :type baz: str
-                """
-                return foo, baz
-        '''), globals_)
-        main = globals_['main']
+        def main(foo='bar', *, baz='quux'):
+            """
+            :type foo: str
+            :type baz: str
+            """
+            return foo, baz
         self.assertEqual(defopt.run(main, argv=['FOO', '--baz', 'BAZ']),
                          ('FOO', 'BAZ'))
         self.assertEqual(defopt.run(main, argv=[]), ('bar', 'quux'))
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only_no_default(self):
-        globals_ = {}
-        exec(textwrap.dedent('''\
-            def main(*, foo):
-                """:type foo: str"""
-                return foo
-        '''), globals_)
-        main = globals_['main']
+        def main(*, foo):
+            """:type foo: str"""
+            return foo
         self.assertEqual(defopt.run(main, argv=['--foo', 'baz']), 'baz')
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
@@ -248,15 +224,10 @@ class TestParsers(unittest.TestCase):
         with self.assertRaises(ValueError):
             defopt._get_parser(list)
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_list_keyword_only(self):
-        globals_ = {}
-        exec(textwrap.dedent('''\
-            def main(*, foo):
-                """:type foo: list[int]"""
-                return foo
-        '''), globals_)
-        main = globals_['main']
+        def main(*, foo):
+            """:type foo: list[int]"""
+            return foo
         self.assertEqual(defopt.run(main, argv=['--foo', '1', '2']), [1, 2])
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
@@ -323,15 +294,10 @@ class TestParsers(unittest.TestCase):
         self.assertIs(defopt.run(main, strict_kwonly=False,
                                  argv=['--foo', '--no-foo']), False)
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_bool_keyword_only(self):
-        globals_ = {}
-        exec(textwrap.dedent('''\
-            def main(*, foo):
-                """:type foo: bool"""
-                return foo
-        '''), globals_)
-        main = globals_['main']
+        def main(*, foo):
+            """:type foo: bool"""
+            return foo
         self.assertIs(defopt.run(main, argv=['--foo']), True)
         self.assertIs(defopt.run(main, argv=['--no-foo']), False)
         with self.assertRaises(SystemExit):
@@ -758,15 +724,11 @@ class TestAnnotations(unittest.TestCase):
         self.assertEqual(type_.type, int)
         self.assertEqual(type_.container, None)
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_conflicting(self):
-        globals_ = {}
-        exec(textwrap.dedent('''\
-            def foo(bar: int):
-                """:type bar: float"""
-        '''), globals_)
+        def foo(bar: int):
+            """:type bar: float"""
         with self.assertRaisesRegex(ValueError, 'bar.*float.*int'):
-            defopt.run(globals_['foo'], argv=['1'])
+            defopt.run(foo, argv=['1'])
 
     def test_none(self):
         def foo(bar):
@@ -774,15 +736,11 @@ class TestAnnotations(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no type'):
             defopt.run(foo, argv=['1'])
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_same(self):
-        globals_ = {}
-        exec(textwrap.dedent('''\
-            def foo(bar: int):
-                """:type bar: int"""
-                return bar
-        '''), globals_)
-        self.assertEqual(defopt.run(globals_['foo'], argv=['1']), 1)
+        def foo(bar: int):
+            """:type bar: int"""
+            return bar
+        self.assertEqual(defopt.run(foo, argv=['1']), 1)
 
 
 class TestHelp(unittest.TestCase):
@@ -816,25 +774,17 @@ class TestHelp(unittest.TestCase):
             return bar
         self.assertIn('(default: False)', self._get_help(foo))
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only(self):
-        globals_ = {}
-        exec(textwrap.dedent('''\
-            def foo(*, bar):
-                """:param int bar: baz"""
-                return bar
-        '''), globals_)
-        self.assertNotIn('default', self._get_help(globals_['foo']))
+        def foo(*, bar):
+            """:param int bar: baz"""
+            return bar
+        self.assertNotIn('default', self._get_help(foo))
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_keyword_only_bool(self):
-        globals_ = {}
-        exec(textwrap.dedent('''\
-            def foo(*, bar):
-                """:param bool bar: baz"""
-                return bar
-        '''), globals_)
-        self.assertNotIn('default', self._get_help(globals_['foo']))
+        def foo(*, bar):
+            """:param bool bar: baz"""
+            return bar
+        self.assertNotIn('default', self._get_help(foo))
 
     def test_tuple(self):
         def main(foo=None):
@@ -877,7 +827,6 @@ class TestHelp(unittest.TestCase):
     def test_rst_ansi(self):
         def foo():
             """**bold** *italic* `underlined`"""
-            return bar
         self.assertIn('\033[1mbold\033[0m '
                       '\033[3mitalic\033[0m '
                       '\033[4munderlined\033[0m',
@@ -912,16 +861,13 @@ class TestHelp(unittest.TestCase):
 
 
 class TestExamples(unittest.TestCase):
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
-    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
-    def test_annotations(self, print_):
+    def test_annotations(self, print):
         from examples import annotations
         for command in [annotations.documented, annotations.undocumented]:
             command([1, 2], 3)
-            print_.assert_called_with([1, 8])
+            print.assert_called_with([1, 8])
 
-    @unittest.skipIf(sys.version_info.major == 2, 'Syntax not supported')
     def test_annotations_cli(self):
         from examples import annotations
         for command in ['documented', 'undocumented']:
@@ -929,13 +875,12 @@ class TestExamples(unittest.TestCase):
             output = self._run_example(annotations, args)
             self.assertEqual(output, b'[1.0, 8.0]\n')
 
-    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
-    def test_booleans(self, print_):
+    def test_booleans(self, print):
         booleans.main('test', upper=False, repeat=True)
-        print_.assert_has_calls([mock.call('test'), mock.call('test')])
+        print.assert_has_calls([mock.call('test'), mock.call('test')])
         booleans.main('test')
-        print_.assert_called_with('TEST')
+        print.assert_called_with('TEST')
 
     def test_booleans_cli(self):
         output = self._run_example(
@@ -945,19 +890,18 @@ class TestExamples(unittest.TestCase):
             booleans, ['test'])
         self.assertEqual(output, b'TEST\n')
 
-    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
-    def test_choices(self, print_):
+    def test_choices(self, print):
         choices.choose_enum(choices.Choice.one)
-        print_.assert_called_with('Choice.one (1)')
-        choices.choose_enum(choices.Choice.one, choices.Choice.two)
-        print_.assert_called_with('Choice.two (2.0)')
+        print.assert_called_with('Choice.one (1)')
+        choices.choose_enum(choices.Choice.one, opt=choices.Choice.two)
+        print.assert_called_with('Choice.two (2.0)')
         with self.assertRaises(AttributeError):
             choices.choose_enum('one')
         choices.choose_literal('foo')
-        print_.assert_called_with('foo')
-        choices.choose_literal('foo', 'baz')
-        print_.assert_called_with('baz')
+        print.assert_called_with('foo')
+        choices.choose_literal('foo', opt='baz')
+        print.assert_called_with('baz')
 
     def test_choices_cli(self):
         output = self._run_example(choices, ['choose-enum', 'one'])
@@ -986,13 +930,12 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b"Don't do this!", error.exception.output)
         self.assertNotIn(b"Traceback", error.exception.output)
 
-    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
-    def test_lists(self, print_):
+    def test_lists(self, print):
         lists.main([1.2, 3.4], 2)
-        print_.assert_called_with([2.4, 6.8])
+        print.assert_called_with([2.4, 6.8])
         lists.main([1, 2, 3], 2)
-        print_.assert_called_with([2, 4, 6])
+        print.assert_called_with([2, 4, 6])
 
     def test_lists_cli(self):
         output = self._run_example(
@@ -1002,14 +945,13 @@ class TestExamples(unittest.TestCase):
             lists, ['--numbers', '1.2', '3.4', '--', '2'])
         self.assertEqual(output, b'[2.4, 6.8]\n')
 
-    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
-    def test_parsers(self, print_):
+    def test_parsers(self, print):
         date = parsers.datetime(2015, 9, 13)
         parsers.main(date)
-        print_.assert_called_with(date)
+        print.assert_called_with(date)
         parsers.main('junk')
-        print_.assert_called_with('junk')
+        print.assert_called_with('junk')
 
     def test_parsers_cli(self):
         output = self._run_example(parsers, ['2015-09-13'])
@@ -1019,13 +961,12 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b'datetime', error.exception.output)
         self.assertIn(b'junk', error.exception.output)
 
-    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
-    def test_short(self, print_):
+    def test_short(self, print):
         short.main()
-        print_.assert_has_calls([mock.call('hello!')])
+        print.assert_has_calls([mock.call('hello!')])
         short.main(count=2)
-        print_.assert_has_calls([mock.call('hello!'), mock.call('hello!')])
+        print.assert_has_calls([mock.call('hello!'), mock.call('hello!')])
 
     def test_short_cli(self):
         output = self._run_example(short, ['--count', '2'])
@@ -1033,13 +974,12 @@ class TestExamples(unittest.TestCase):
         output = self._run_example(short, ['-C', '2'])
         self.assertEqual(output, b'hello!\nhello!\n')
 
-    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
-    def test_starargs(self, print_):
+    def test_starargs(self, print):
         starargs.plain(1, 2, 3)
-        print_.assert_has_calls([mock.call(1), mock.call(2), mock.call(3)])
+        print.assert_has_calls([mock.call(1), mock.call(2), mock.call(3)])
         starargs.iterable([1, 2], [3, 4, 5])
-        print_.assert_has_calls([mock.call([1, 2]), mock.call([3, 4, 5])])
+        print.assert_has_calls([mock.call([1, 2]), mock.call([3, 4, 5])])
 
     def test_starargs_cli(self):
         output = self._run_example(starargs, ['plain', '1', '2', '3'])
@@ -1048,14 +988,13 @@ class TestExamples(unittest.TestCase):
         output = self._run_example(starargs, args)
         self.assertEqual(output, b'[1, 2]\n[3, 4, 5]\n')
 
-    @unittest.skipIf(sys.version_info.major == 2, 'print is unpatchable')
     @mock.patch('builtins.print')
-    def test_styles(self, print_):
+    def test_styles(self, print):
         for command in [styles.sphinx, styles.google, styles.numpy]:
             command(2)
-            print_.assert_called_with(4)
-            command(2, 'bye')
-            print_.assert_called_with('bye')
+            print.assert_called_with(4)
+            command(2, farewell='bye')
+            print.assert_called_with('bye')
 
     def test_styles_cli(self):
         for style in ['sphinx', 'google', 'numpy']:

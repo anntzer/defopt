@@ -15,7 +15,7 @@ Command line usage::
 import defopt
 
 
-def main(message, upper=True, repeat=False):
+def main(message, *, upper=True, repeat=False):
     """Example function with boolean flags.
 
     :param str message: Message to display
@@ -29,4 +29,4 @@ def main(message, upper=True, repeat=False):
 
 
 if __name__ == '__main__':
-    defopt.run(main, strict_kwonly=False)
+    defopt.run(main)

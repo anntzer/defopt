@@ -7,8 +7,6 @@ instead of writing types in docstrings.
 in the same way as ``list[x]`` in the docstring itself.
 (See the lists example for more information.)
 
-This syntax requires Python 3.x.
-
 Code usage::
 
     >>> documented([1.2, 3.4], 2)

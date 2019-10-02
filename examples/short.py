@@ -15,7 +15,7 @@ Command line usage::
 import defopt
 
 
-def main(count=1):
+def main(*, count=1):
     """Example function which prints a message.
 
     :param int count: Number of times to print the message
@@ -25,4 +25,4 @@ def main(count=1):
 
 
 if __name__ == '__main__':
-    defopt.run(main, short={'count': 'C'}, strict_kwonly=False)
+    defopt.run(main, short={'count': 'C'})

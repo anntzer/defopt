@@ -28,7 +28,7 @@ class Choice(Enum):
     three = '03'
 
 
-def choose_enum(arg, opt=None):
+def choose_enum(arg, *, opt=None):
     """Example function with `enum.Enum` arguments.
 
     :param Choice arg: Choice to display
@@ -39,7 +39,7 @@ def choose_enum(arg, opt=None):
         print('{} ({})'.format(opt, opt.value))
 
 
-def choose_literal(arg, opt=None):
+def choose_literal(arg, *, opt=None):
     """Example function with `enum.Enum` arguments.
 
     :param Literal["foo","bar"] arg: Choice to display
@@ -51,4 +51,4 @@ def choose_literal(arg, opt=None):
 
 
 if __name__ == '__main__':
-    defopt.run([choose_enum, choose_literal], strict_kwonly=False)
+    defopt.run([choose_enum, choose_literal])

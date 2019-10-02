@@ -15,28 +15,19 @@ setup(
     license='MIT',
     py_modules=['defopt'],
     test_suite='test_defopt',
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
+    python_requires='>=3.5',
     install_requires=[
         'docutils',
         'sphinxcontrib-napoleon>=0.7.0',
         'typing_inspect>=0.3.1',
     ],
     extras_require={
-        ':python_version<"3.3"': ['funcsigs'],
-        ':python_version<"3.4"': ['enum34'],
         ':python_version<"3.5"': ['typing>=3.7.4'],  # Version constraint matches typing_extensions.
         ':python_version<"3.8"': ['typing_extensions>=3.7.4'],  # Literal support.
         ':sys.platform=="win32"': ['colorama>=0.3.4'],
     },
-    tests_require=[
-        'mock;python_version<"3.3"',
-    ],
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

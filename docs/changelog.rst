@@ -9,6 +9,7 @@ next
 * Added support for catching exceptions.
 * Added support for passing functions as a ``{name: function}`` mapping (Thanks
   to @johnfarina).
+* Removed support for Python<=3.4.
 
 5.1.0 (2019-03-01)
 ------------------

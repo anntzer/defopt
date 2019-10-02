@@ -1,12 +1,13 @@
-"""Effortless argument parser.
+"""
+Effortless argument parser.
 
 Run Python functions from the command line with ``run(func)``.
 """
-from __future__ import (
-    absolute_import, division, unicode_literals, print_function)
 
 import ast
+import collections.abc
 import contextlib
+import functools
 import inspect
 import re
 import sys
@@ -14,9 +15,10 @@ import typing
 from argparse import (
     SUPPRESS, ArgumentError, ArgumentTypeError, ArgumentParser,
     RawTextHelpFormatter, _AppendAction, _StoreAction)
-from collections import defaultdict, namedtuple, Counter, OrderedDict
+from collections import defaultdict, namedtuple, Counter
 from enum import Enum
-from typing import Callable, Dict, Tuple, Union
+from pathlib import PurePath
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from docutils.core import publish_doctree
 from docutils.nodes import NodeVisitor, SkipNode
@@ -24,19 +26,6 @@ from docutils.parsers.rst.states import Body
 from docutils.utils import roman
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 import typing_inspect as ti
-
-try:  # pragma: no cover
-    import collections.abc as collections_abc
-    from inspect import Parameter, Signature, signature as _inspect_signature
-except ImportError:
-    import collections as collections_abc
-    from funcsigs import Parameter, Signature, signature as _inspect_signature
-
-try:
-    from pathlib import PurePath
-except ImportError:
-    class PurePath(object):
-        """Dummy type, such that no user input is ever of that type."""
 
 try:
     from typing import Literal
@@ -69,7 +58,13 @@ def _ti_get_args(tp):  # Make Py<3.7 behave consistently with Py>=3.7.
     return ti.get_args(tp, evaluate=True)  # evaluate = True default on Py >= 3.7.
 
 
-def run(funcs, **kwargs):
+def run(funcs: Union[Callable, List[Callable]], *,
+        parsers: Optional[Dict[type, Callable[[str], Any]]] = None,
+        short: Optional[Dict[str, str]] = None,
+        strict_kwonly: bool = True,
+        show_types: bool = False,
+        argparse_kwargs: dict = {},
+        argv: Optional[List[str]] = None):
     """
     Process command line arguments and run the given functions.
 
@@ -77,33 +72,37 @@ def run(funcs, **kwargs):
     a list of callables, in which case each one is given a subparser with its
     name, and only the chosen callable is run.
 
-    :param Callable funcs: Function or functions to process and run
-    :param parsers: Dictionary mapping types to parsers to use for parsing
-        function arguments.
-    :type parsers: Dict[type, Callable[[str], type]]
-    :param short: Dictionary mapping parameter names (after conversion of
-        underscores to dashes) to letters, to use as alternative short flags.
-        Defaults to ``None``, which means to generate short flags for any
-        non-ambiguous option.  Set to ``{}`` to completely disable short flags.
-    :type short: Dict[str, str]
-    :param bool strict_kwonly: If `True` (the default), only keyword-only
-        arguments are converted into command line flags; non-keyword-only
-        arguments become optional positional command line parameters.  Note
-        that on Python 2, setting this to False is the only way to obtain
-        command line flags.
-    :param bool show_types: If `True`, display type names after parameter
-        descriptions in the the help text.
-    :param dict argparse_kwargs: A mapping of keyword arguments that will be
-        passed to the ArgumentParser constructor.  (If the ``formatter_class``
-        key is set, it will override the formatter implied by ``show_types``.)
-    :param List[str] argv: Command line arguments to parse (default:
-        sys.argv[1:])
-    :return: The value returned by the function that was run
+    :param funcs:
+        Function or functions to process and run.
+    :param parsers:
+        Dictionary mapping types to parsers to use for parsing function
+        arguments.
+    :param short:
+        Dictionary mapping parameter names (after conversion of underscores to
+        dashes) to letters, to use as alternative short flags.  Defaults to
+        ``None``, which means to generate short flags for any non-ambiguous
+        option.  Set to ``{}`` to completely disable short flags.
+    :param strict_kwonly:
+        If `False`, all parameters with a default are converted into
+        command-line flags.  The default behavior (`True`) is to convert
+        keyword-only parameters to command line flags, and non-keyword-only
+        parameters with a default to optional positional command line
+        parameters.
+    :param show_types:
+        If `True`, display type names after parameter descriptions in the help
+        text.
+    :param argparse_kwargs:
+        A mapping of keyword arguments that will be passed to the
+        ArgumentParser constructor.  (If the ``formatter_class`` key is set, it
+        will override the formatter implied by ``show_types``.)
+    :param argv:
+        Command line arguments to parse (default: ``sys.argv[1:]``).
+    :return:
+        The value returned by the function that was run.
     """
-    argv = kwargs.pop('argv', None)
-    if argv is None:
-        argv = sys.argv[1:]
-    parser = _create_parser(funcs, **kwargs)
+    parser = _create_parser(
+        funcs, parsers=parsers, short=short, strict_kwonly=strict_kwonly,
+        show_types=show_types, argparse_kwargs=argparse_kwargs)
     with _colorama_text():
         args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
@@ -115,29 +114,16 @@ def run(funcs, **kwargs):
         sys.exit(e)
 
 
-run.__signature__ = Signature([
-    Parameter("funcs", Parameter.POSITIONAL_OR_KEYWORD),
-    Parameter("parsers", Parameter.KEYWORD_ONLY, default=None),
-    Parameter("short", Parameter.KEYWORD_ONLY, default=None),
-    Parameter("strict_kwonly", Parameter.KEYWORD_ONLY, default=True),
-    Parameter("show_types", Parameter.KEYWORD_ONLY, default=False),
-    Parameter("argparse_kwargs", Parameter.KEYWORD_ONLY, default={}),
-    Parameter("argv", Parameter.KEYWORD_ONLY, default=None),
-])
-
-
-def _create_parser(funcs, **kwargs):
-    parsers = kwargs.pop('parsers', None)
-    short = kwargs.pop('short', None)
-    strict_kwonly = kwargs.pop('strict_kwonly', True)
-    show_types = kwargs.pop('show_types', False)
-    argparse_kwargs = kwargs.pop('argparse_kwargs', {}).copy()
-    if kwargs:
-        raise TypeError(
-            'unexpected keyword argument: {}'.format(list(kwargs)[0]))
+def _create_parser(
+        funcs, *,
+        parsers=None,
+        short=None,
+        strict_kwonly=True,
+        show_types=False,
+        argparse_kwargs={}):
     formatter_class = _Formatter if show_types else _NoTypeFormatter
-    argparse_kwargs.setdefault("formatter_class", formatter_class)
-    parser = ArgumentParser(**argparse_kwargs)
+    parser = ArgumentParser(
+        **{"formatter_class": formatter_class, **argparse_kwargs})
     if callable(funcs):
         _populate_parser(funcs, parser, parsers, short, strict_kwonly)
     else:
@@ -183,7 +169,7 @@ class _NoTypeFormatter(_Formatter):
 
 
 def _public_signature(func):
-    full_sig = _inspect_signature(func)
+    full_sig = inspect.signature(func)
     return full_sig.replace(
         parameters=list(param for param in full_sig.parameters.values()
                         if not param.name.startswith('_')))
@@ -264,7 +250,7 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
                 tuple, member_types, parsers)
-        elif (inspect.isclass(type_.type) and issubclass(type_.type, tuple)
+        elif (isinstance(type_.type, type) and issubclass(type_.type, tuple)
               and hasattr(type_.type, '_fields')
               and hasattr(type_.type, '_field_types')):
             # Before Py3.6, `_field_types` does not preserve order, so retrieve
@@ -279,7 +265,7 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
                 kwargs['metavar'] = type_.type._fields
         else:
             kwargs['type'] = _get_parser(type_.type, parsers)
-            if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
+            if isinstance(type_.type, type) and issubclass(type_.type, Enum):
                 kwargs['metavar'] = (
                     '{' + ','.join(type_.type.__members__) + '}')
             elif ti.get_origin(type_.type) is Literal:  # Py >= 3.7.
@@ -315,7 +301,7 @@ def _get_type(func, name):
     if doc_type is not None:
         doc_type = _get_type_from_doc(doc_type, func.__globals__)
 
-    hints = typing.get_type_hints(func) or {}  # Py2 backport returns None.
+    hints = typing.get_type_hints(func)
     try:
         hint = hints[name]
     except KeyError:
@@ -355,7 +341,7 @@ def _get_type_from_doc(name, globalns):
 def _get_type_from_hint(hint):
     container_types = [
         typing.List, typing.Iterable, typing.Sequence,  # Py<3.7.
-        list, collections_abc.Iterable, collections_abc.Sequence,  # Py>=3.7
+        list, collections.abc.Iterable, collections.abc.Sequence,  # Py>=3.7
     ]
     if ti.get_origin(hint) in container_types:
         [type_] = _ti_get_args(hint)
@@ -395,15 +381,9 @@ def _parse_function_docstring(func):
     return _parse_docstring(inspect.getdoc(func))
 
 
-_parse_docstring_cache = {}
+@functools.lru_cache()
 def _parse_docstring(doc):
     """Extract documentation from a function's docstring."""
-    _cache_key = doc
-    try:
-        return _parse_docstring_cache[_cache_key]
-    except KeyError:
-        pass
-
     if doc is None:
         return _Doc('', '', {}, [])
 
@@ -569,7 +549,6 @@ def _parse_docstring(doc):
         parsed = _Doc(text[0], ''.join(text), tuples, visitor.raises)
     else:
         parsed = _Doc('', '', tuples, visitor.raises)
-    _parse_docstring_cache[_cache_key] = parsed
     return parsed
 
 
@@ -590,8 +569,8 @@ def _find_parser(type_, parsers):
         return parsers[type_]
     except KeyError:
         pass
-    if (type_ in [str, type(''), int, float]  # type('') is Py2's unicode.
-            or inspect.isclass(type_) and issubclass(type_, PurePath)):
+    if (type_ in [str, int, float]
+            or isinstance(type_, type) and issubclass(type_, PurePath)):
         return type_
     elif type_ == bool:
         return _parse_bool
@@ -599,7 +578,7 @@ def _find_parser(type_, parsers):
         return _parse_slice
     elif type_ == list:
         raise ValueError('unable to parse list (try list[type])')
-    elif inspect.isclass(type_) and issubclass(type_, Enum):
+    elif isinstance(type_, type) and issubclass(type_, Enum):
         return _make_enum_parser(type_)
     elif _is_constructible_from_str(type_):
         return type_
@@ -659,11 +638,10 @@ def _make_enum_parser(enum):
 
 def _is_constructible_from_str(type_):
     try:
-        signature = _inspect_signature(type_)
+        signature = inspect.signature(type_)
         (argname, _), = signature.bind(object()).arguments.items()
-    except (TypeError, ValueError):
-        # TypeError can be raised by inspect.signature, Signature.bind, or
-        # _get_type; ValueError by funcsigs's inspect.signature.
+    except TypeError:
+        # Can be raised by inspect.signature, Signature.bind, or _get_type.
         return False
     try:
         argtype = _get_type(type_, argname)

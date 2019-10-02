@@ -28,9 +28,6 @@ sys.path.insert(0, os.path.abspath('..'))
 # (though RTD now appears to be using Python 3.5 anyway).
 needs_sphinx = '1.5.2'
 
-if sys.version_info.major < 3:
-    raise Exception('examples.annotations requires Python 3 to build')
-
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.

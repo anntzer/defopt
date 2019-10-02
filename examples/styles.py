@@ -14,7 +14,7 @@ Command line usage::
 import defopt
 
 
-def sphinx(integer, farewell=None):
+def sphinx(integer, *, farewell=None):
     """Example function with a Sphinx-style docstring.
 
     Squares a given integer.
@@ -39,7 +39,7 @@ def sphinx(integer, farewell=None):
         print(farewell)
 
 
-def google(integer, farewell=None):
+def google(integer, *, farewell=None):
     """Example function with a Google-style docstring.
 
     Squares a given integer.
@@ -66,7 +66,7 @@ def google(integer, farewell=None):
         print(farewell)
 
 
-def numpy(integer, farewell=None):
+def numpy(integer, *, farewell=None):
     """Example function with a Numpy-style docstring.
 
     Squares a given integer.
@@ -98,4 +98,4 @@ def numpy(integer, farewell=None):
 
 
 if __name__ == '__main__':
-    defopt.run([sphinx, google, numpy], strict_kwonly=False)
+    defopt.run([sphinx, google, numpy])
