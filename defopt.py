@@ -52,10 +52,10 @@ _Type = namedtuple('_Type', ('type', 'container'))
 _SUPPRESS_BOOL_DEFAULT = object()
 
 
-def _ti_get_args(tp):  # Make Py<3.7 behave consistently with Py>=3.7.
-    if type(tp) is type(Literal):  # Py <= 3.6.
+def _ti_get_args(tp):  # Make Py<=3.6 behave consistently with Py>=3.7.
+    if type(tp) is type(Literal):  # Py<=3.6.
         return tp.__values__
-    return ti.get_args(tp, evaluate=True)  # evaluate = True default on Py >= 3.7.
+    return ti.get_args(tp, evaluate=True)  # evaluate=True default on Py>=3.7.
 
 
 def run(funcs: Union[Callable, List[Callable]], *,
@@ -184,18 +184,17 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
              for name, param in sig.parameters.items()}
     exc_types = tuple(_get_type_from_doc(name, func.__globals__).type
                       for name in doc.raises)
-    positionals = set(name for name, param in sig.parameters.items()
-                      if ((param.default is param.empty or strict_kwonly)
-                          and not types[name].container
-                          and param.kind != param.KEYWORD_ONLY))
+    positionals = {name for name, param in sig.parameters.items()
+                   if ((param.default is param.empty or strict_kwonly)
+                       and not types[name].container
+                       and param.kind != param.KEYWORD_ONLY)}
     if short is None:
         count_initials = Counter(name[0] for name in sig.parameters
                                  if name not in positionals)
         if parser.add_help:
             count_initials['h'] += 1
-        short = dict(
-            (name.replace('_', '-'), name[0]) for name in sig.parameters
-            if name not in positionals and count_initials[name[0]] == 1)
+        short = {name.replace('_', '-'): name[0] for name in sig.parameters
+                 if name not in positionals and count_initials[name[0]] == 1}
 
     for name, param in sig.parameters.items():
         kwargs = {}
@@ -268,10 +267,10 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
             if isinstance(type_.type, type) and issubclass(type_.type, Enum):
                 kwargs['metavar'] = (
                     '{' + ','.join(type_.type.__members__) + '}')
-            elif ti.get_origin(type_.type) is Literal:  # Py >= 3.7.
+            elif ti.get_origin(type_.type) is Literal:  # Py>=3.7.
                 kwargs['metavar'] = (
                     '{' + ','.join(map(str, _ti_get_args(type_.type))) + '}')
-            elif type(type_.type) is type(Literal):  # Py <= 3.6.
+            elif type(type_.type) is type(Literal):  # Py<=3.6.
                 kwargs['metavar'] = (
                     '{' + ','.join(map(str, type_.type.__values__)) + '}')
         _add_argument(parser, name, short, **kwargs)
@@ -292,7 +291,8 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
 
 
 def _get_type(func, name):
-    """Retrieve a type from either documentation or annotations.
+    """
+    Retrieve a type from either documentation or annotations.
 
     If both are specified, they must agree exactly.
     """
@@ -340,18 +340,17 @@ def _get_type_from_doc(name, globalns):
 
 def _get_type_from_hint(hint):
     container_types = [
-        typing.List, typing.Iterable, typing.Sequence,  # Py<3.7.
+        typing.List, typing.Iterable, typing.Sequence,  # Py<=3.6.
         list, collections.abc.Iterable, collections.abc.Sequence,  # Py>=3.7
     ]
     if ti.get_origin(hint) in container_types:
         [type_] = _ti_get_args(hint)
         return _Type(type_, list)
     elif ti.is_union_type(hint):
-        # For Union[type, NoneType], just use type.
         args = _ti_get_args(hint)
         if len(args) == 2:
             type_, none = args
-            if none == type(None):
+            if none == type(None):  # For Union[type, NoneType], just use type.
                 return _Type(type_, None)
         if any(ti.get_origin(subtype) in container_types for subtype in args):
             raise ValueError(
@@ -452,7 +451,8 @@ def _parse_docstring(doc):
         def visit_literal_block(self, node):
             text, = node
             self.start_lines.append(node.line)
-            self.paragraphs.append(re.sub('^|\n', r'\g<0>    ', text))  # indent
+            self.paragraphs.append(
+                re.sub('^|\n', r'\g<0>    ', text))  # indent
             raise SkipNode
 
         def visit_bullet_list(self, node):
@@ -559,7 +559,7 @@ def _get_parser(type_, parsers=None):
     def named_parser(string):
         return parser(string)
 
-    # Union types don't have a __name__, but their str is fine.
+    # Unions and Literals don't have a __name__, but their str is fine.
     named_parser.__name__ = getattr(type_, '__name__', str(type_))
     return named_parser
 
@@ -587,8 +587,8 @@ def _find_parser(type_, parsers):
             type_,
             [_find_parser(subtype, parsers)
              for subtype in _ti_get_args(type_)])
-    elif (ti.get_origin(type_) is Literal  # Py >= 3.7.
-          or type(type_) is type(Literal)):  # Py <= 3.6.
+    elif (ti.get_origin(type_) is Literal  # Py>=3.7.
+          or type(type_) is type(Literal)):  # Py<=3.6.
         return _make_literal_parser(
             type_,
             [_find_parser(type(arg), parsers)

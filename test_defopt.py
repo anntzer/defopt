@@ -3,7 +3,6 @@ import subprocess
 import sys
 import typing
 import unittest
-from collections import namedtuple
 from enum import Enum
 from pathlib import Path
 from unittest import mock
