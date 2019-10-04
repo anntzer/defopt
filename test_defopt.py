@@ -627,15 +627,15 @@ class TestDoc(unittest.TestCase):
 
     def test_sequence(self):
         globalns = {'Sequence': typing.Sequence}
-        type_ = defopt._get_type_from_doc('Sequence[int]', globalns)
-        self.assertEqual(type_.container, list)
-        self.assertEqual(type_.type, int)
+        self.assertEqual(
+            defopt._get_type_from_doc('Sequence[int]', globalns),
+            typing.List[int])
 
     def test_iterable(self):
         globalns = {'typing': typing}
-        type_ = defopt._get_type_from_doc('typing.Iterable[int]', globalns)
-        self.assertEqual(type_.container, list)
-        self.assertEqual(type_.type, int)
+        self.assertEqual(
+            defopt._get_type_from_doc('typing.Iterable[int]', globalns),
+            typing.List[int])
 
     def test_other(self):
         with self.assertRaisesRegex(ValueError, 'unsupported.*tuple'):
@@ -691,19 +691,14 @@ class TestDoc(unittest.TestCase):
 
 class TestAnnotations(unittest.TestCase):
     def test_simple(self):
-        type_ = defopt._get_type_from_hint(int)
-        self.assertEqual(type_.type, int)
-        self.assertEqual(type_.container, None)
+        self.assertEqual(defopt._get_type_from_hint(int), int)
 
     def test_container(self):
-        type_ = defopt._get_type_from_hint(typing.Sequence[int])
-        self.assertEqual(type_.type, int)
-        self.assertEqual(type_.container, list)
+        self.assertEqual(defopt._get_type_from_hint(typing.Sequence[int]),
+                         typing.List[int])
 
     def test_optional(self):
-        type_ = defopt._get_type_from_hint(typing.Optional[int])
-        self.assertEqual(type_.type, int)
-        self.assertEqual(type_.container, None)
+        self.assertEqual(defopt._get_type_from_hint(typing.Optional[int]), int)
 
     def test_conflicting(self):
         def foo(bar: int):

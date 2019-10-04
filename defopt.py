@@ -47,7 +47,6 @@ _TYPE_NAMES = ['type', 'kwtype']
 
 _Doc = namedtuple('_Doc', ('first_line', 'text', 'params', 'raises'))
 _Param = namedtuple('_Param', ('text', 'type'))
-_Type = namedtuple('_Type', ('type', 'container'))
 
 _SUPPRESS_BOOL_DEFAULT = object()
 
@@ -182,11 +181,11 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
 
     types = {name: _get_type(func, name)
              for name, param in sig.parameters.items()}
-    exc_types = tuple(_get_type_from_doc(name, func.__globals__).type
+    exc_types = tuple(_get_type_from_doc(name, func.__globals__)
                       for name in doc.raises)
     positionals = {name for name, param in sig.parameters.items()
                    if ((param.default is param.empty or strict_kwonly)
-                       and not types[name].container
+                       and not _is_list_like(types[name])
                        and param.kind != param.KEYWORD_ONLY)}
     if short is None:
         count_initials = Counter(name[0] for name in sig.parameters
@@ -209,7 +208,7 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
-        if type_.type == bool and not positional and not type_.container:
+        if type_ == bool and not positional:
             # Special case: just add parameterless --name and --no-name flags.
             if default == SUPPRESS:
                 # Work around lack of "required non-exclusive group" in
@@ -237,42 +236,41 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
         else:
             kwargs['required'] = required
             kwargs['default'] = default
-        if type_.container:
-            assert type_.container == list
+        if _is_list_like(type_):
+            type_, = _ti_get_args(type_)
             kwargs['nargs'] = '*'
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['action'] = 'append'
                 kwargs['default'] = []
         member_types = None
-        if ti.is_tuple_type(type_.type):
-            member_types = _ti_get_args(type_.type)
+        if ti.is_tuple_type(type_):
+            member_types = _ti_get_args(type_)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
                 tuple, member_types, parsers)
-        elif (isinstance(type_.type, type) and issubclass(type_.type, tuple)
-              and hasattr(type_.type, '_fields')
-              and hasattr(type_.type, '_field_types')):
+        elif (isinstance(type_, type) and issubclass(type_, tuple)
+              and hasattr(type_, '_fields')
+              and hasattr(type_, '_field_types')):
             # Before Py3.6, `_field_types` does not preserve order, so retrieve
             # the order from `_fields`.
-            member_types = tuple(type_.type._field_types[field]
-                                 for field in type_.type._fields)
+            member_types = tuple(type_._field_types[field]
+                                 for field in type_._fields)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
-                lambda args, type_=type_: type_.type(*args),
+                lambda args, type_=type_: type_(*args),
                 member_types, parsers)
             if not positional:  # http://bugs.python.org/issue14074
-                kwargs['metavar'] = type_.type._fields
+                kwargs['metavar'] = type_._fields
         else:
-            kwargs['type'] = _get_parser(type_.type, parsers)
-            if isinstance(type_.type, type) and issubclass(type_.type, Enum):
+            kwargs['type'] = _get_parser(type_, parsers)
+            if isinstance(type_, type) and issubclass(type_, Enum):
+                kwargs['metavar'] = '{' + ','.join(type_.__members__) + '}'
+            elif ti.get_origin(type_) is Literal:  # Py>=3.7.
                 kwargs['metavar'] = (
-                    '{' + ','.join(type_.type.__members__) + '}')
-            elif ti.get_origin(type_.type) is Literal:  # Py>=3.7.
+                    '{' + ','.join(map(str, _ti_get_args(type_))) + '}')
+            elif type(type_) is type(Literal):  # Py<=3.6.
                 kwargs['metavar'] = (
-                    '{' + ','.join(map(str, _ti_get_args(type_.type))) + '}')
-            elif type(type_.type) is type(Literal):  # Py<=3.6.
-                kwargs['metavar'] = (
-                    '{' + ','.join(map(str, type_.type.__values__)) + '}')
+                    '{' + ','.join(map(str, type_.__values__)) + '}')
         _add_argument(parser, name, short, **kwargs)
 
     parser.set_defaults(_func=func, _exc_types=exc_types)
@@ -288,6 +286,13 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
         if name in short:
             args.insert(0, prefix_char + short[name])
     return parser.add_argument(*args, **kwargs)
+
+
+def _is_list_like(type_):
+    return ti.get_origin(type_) in [
+        typing.List, typing.Iterable, typing.Sequence,  # Py<=3.6.
+        list, collections.abc.Iterable, collections.abc.Sequence,  # Py>=3.7
+    ]
 
 
 def _get_type(func, name):
@@ -322,10 +327,10 @@ def _get_type_from_doc(name, globalns):
     if ' or ' in name:
         subtypes = [_get_type_from_doc(part, globalns)
                     for part in name.split(' or ')]
-        if any(subtype.container is not None for subtype in subtypes):
+        if any(map(_is_list_like, subtypes)):
             raise ValueError(
                 'unsupported union including container type: {}'.format(name))
-        return _Type(Union[tuple(subtype.type for subtype in subtypes)], None)
+        return Union[tuple(subtype for subtype in subtypes)]
     # Support for legacy list syntax "list[type]".
     # (This intentionally won't catch `List` or `typing.List`)
     match = re.match(r'([a-z]\w+)\[([\w\.]+)\]', name)
@@ -334,28 +339,24 @@ def _get_type_from_doc(name, globalns):
         if container != 'list':
             raise ValueError(
                 'unsupported container type: {}'.format(container))
-        return _Type(eval(type_, globalns), list)
+        return List[eval(type_, globalns)]
     return _get_type_from_hint(eval(name, globalns))
 
 
 def _get_type_from_hint(hint):
-    container_types = [
-        typing.List, typing.Iterable, typing.Sequence,  # Py<=3.6.
-        list, collections.abc.Iterable, collections.abc.Sequence,  # Py>=3.7
-    ]
-    if ti.get_origin(hint) in container_types:
+    if _is_list_like(hint):
         [type_] = _ti_get_args(hint)
-        return _Type(type_, list)
+        return List[type_]
     elif ti.is_union_type(hint):
         args = _ti_get_args(hint)
         if len(args) == 2:
             type_, none = args
             if none == type(None):  # For Union[type, NoneType], just use type.
-                return _Type(type_, None)
-        if any(ti.get_origin(subtype) in container_types for subtype in args):
+                return type_
+        if any(_is_list_like(subtype) for subtype in args):
             raise ValueError(
                 'unsupported union including container type: {}'.format(hint))
-    return _Type(hint, None)
+    return hint
 
 
 def _call_function(parser, func, args):
@@ -644,7 +645,7 @@ def _is_constructible_from_str(type_):
     except (TypeError, ValueError):
         pass
     else:
-        if argtype and argtype.type is str:
+        if argtype is str:
             return True
     if isinstance(type_, type):
         try:
@@ -652,7 +653,7 @@ def _is_constructible_from_str(type_):
         except (TypeError, ValueError):
             pass
         else:
-            if argtype and argtype.type is str:
+            if argtype is str:
                 return True
     return False
 
