@@ -136,7 +136,7 @@ def _create_parser(
             subparser = subparsers.add_parser(
                 name,
                 formatter_class=formatter_class,
-                help=_parse_function_docstring(func).first_line)
+                help=_parse_docstring(inspect.getdoc(func)).first_line)
             _populate_parser(func, subparser, parsers, short, strict_kwonly)
     return parser
 
@@ -177,7 +177,7 @@ def _public_signature(func):
 
 def _populate_parser(func, parser, parsers, short, strict_kwonly):
     sig = _public_signature(func)
-    doc = _parse_function_docstring(func)
+    doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
 
     types = {name: _get_type(func, name)
@@ -296,7 +296,7 @@ def _get_type(func, name):
 
     If both are specified, they must agree exactly.
     """
-    doc = _parse_function_docstring(func)
+    doc = _parse_docstring(inspect.getdoc(func))
     doc_type = doc.params.get(name, _Param(None, None)).type
     if doc_type is not None:
         doc_type = _get_type_from_doc(doc_type, func.__globals__)
@@ -374,10 +374,6 @@ def _call_function(parser, func, args):
         else:
             keywords[name] = arg
     return func(*positionals, **keywords)
-
-
-def _parse_function_docstring(func):
-    return _parse_docstring(inspect.getdoc(func))
 
 
 @functools.lru_cache()

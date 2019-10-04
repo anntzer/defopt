@@ -473,17 +473,17 @@ class TestExceptions(unittest.TestCase):
 
 
 class TestDoc(unittest.TestCase):
-    def test_parse_function_docstring(self):
-        def test(one, two):
-            """Test function
+    def test_parse_docstring(self):
+        doc = """
+        Test function
 
-            :param one: first param
-            :type one: int
-            :param float two: second param
-            :returns: str
-            :junk one two: nothing
-            """
-        doc = defopt._parse_function_docstring(test)
+        :param one: first param
+        :type one: int
+        :param float two: second param
+        :returns: str
+        :junk one two: nothing
+        """
+        doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self.assertEqual(doc.text, 'Test function')
         one = doc.params['one']
         self.assertEqual(one.text, 'first param')
@@ -493,17 +493,17 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(two.type, 'float')
 
     def test_parse_params(self):
-        def test(first, second, third, fourth, fifth, sixth):
-            """Test function
+        doc = """
+        Test function
 
-            :param first: first param
-            :parameter int second: second param
-            :arg third: third param
-            :argument float fourth: fourth param
-            :key fifth: fifth param
-            :keyword str sixth: sixth param
-            """
-        doc = defopt._parse_function_docstring(test)
+        :param first: first param
+        :parameter int second: second param
+        :arg third: third param
+        :argument float fourth: fourth param
+        :key fifth: fifth param
+        :keyword str sixth: sixth param
+        """
+        doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self.assertEqual(doc.params['first'].text, 'first param')
         self.assertEqual(doc.params['second'].text, 'second param')
         self.assertEqual(doc.params['third'].text, 'third param')
@@ -512,117 +512,106 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(doc.params['sixth'].text, 'sixth param')
 
     def test_parse_doubles(self):
-        def test(param):
-            """Test function
+        doc = """
+        Test function
 
-            :param int param: the parameter
-            :type param: int
-            """
+        :param int param: the parameter
+        :type param: int
+        """
         with self.assertRaises(ValueError):
-            defopt._parse_function_docstring(test)
+            defopt._parse_docstring(inspect.cleandoc(doc))
 
-        def test(param):
-            """Test function
+        doc = """Test function
 
-            :type param: int
-            :param int param: the parameter
-            """
+        :type param: int
+        :param int param: the parameter
+        """
         with self.assertRaises(ValueError):
-            defopt._parse_function_docstring(test)
+            defopt._parse_docstring(inspect.cleandoc(doc))
 
     def test_no_doc(self):
-        def test(param):
-            pass
-        doc = defopt._parse_function_docstring(test)
+        doc = defopt._parse_docstring(None)
         self.assertEqual(doc.text, '')
         self.assertEqual(doc.params, {})
 
     def test_param_only(self):
-        def test(param):
-            """:param int param: test"""
-        doc = defopt._parse_function_docstring(test)
+        doc = defopt._parse_docstring(""":param int param: test""")
         self.assertEqual(doc.text, '')
         param = doc.params['param']
         self.assertEqual(param.text, 'test')
         self.assertEqual(param.type, 'int')
 
     def test_implicit_role(self):
-        def test():
-            """start `int` end"""
-        doc = defopt._parse_function_docstring(test)
+        doc = defopt._parse_docstring("""start `int` end""")
         self.assertEqual(doc.text, 'start \033[4mint\033[0m end')
 
     @unittest.expectedFailure
     def test_explicit_role_desired(self):
         """Desired output for issue #1."""
-        def test():
-            """start :py:class:`int` end"""
-        doc = defopt._parse_function_docstring(test)
+        doc = defopt._parse_docstring("""start :py:class:`int` end""")
         self.assertEqual(doc.text, 'start int end')
 
     def test_explicit_role_actual(self):
         """Workaround output for issue #1."""
-        def test():
-            """start :py:class:`int` end"""
-        doc = defopt._parse_function_docstring(test)
+        doc = defopt._parse_docstring("""start :py:class:`int` end""")
         self.assertEqual(doc.text, 'start :py:class:`int` end')
 
     def test_sphinx(self):
-        def func(arg1, arg2, arg3=None):
-            """One line summary.
+        doc = """
+        One line summary.
 
-            Extended description.
+        Extended description.
 
-            :param int arg1: Description of arg1
-            :param str arg2: Description of arg2
-            :keyword float arg3: Description of arg3
-            :returns: Description of return value.
-            :rtype: str
-            """
-        doc = defopt._parse_function_docstring(func)
+        :param int arg1: Description of arg1
+        :param str arg2: Description of arg2
+        :keyword float arg3: Description of arg3
+        :returns: Description of return value.
+        :rtype: str
+        """
+        doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self._check_doc(doc)
 
     def test_google(self):
         # Docstring taken from Napoleon's example (plus a keyword argument).
-        def func(arg1, arg2, arg3=None):
-            """One line summary.
+        doc = """
+        One line summary.
 
-            Extended description.
+        Extended description.
 
-            Args:
-              arg1(int): Description of arg1
-              arg2(str): Description of arg2
-            Keyword Arguments:
-              arg3(float): Description of arg3
-            Returns:
-              str: Description of return value.
-            """
-        doc = defopt._parse_function_docstring(func)
+        Args:
+          arg1(int): Description of arg1
+          arg2(str): Description of arg2
+        Keyword Arguments:
+          arg3(float): Description of arg3
+        Returns:
+          str: Description of return value.
+        """
+        doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self._check_doc(doc)
 
     def test_numpy(self):
         # Docstring taken from Napoleon's example (plus a keyword argument).
-        def func(arg1, arg2, arg3=None):
-            """One line summary.
+        doc = """
+        One line summary.
 
-            Extended description.
+        Extended description.
 
-            Parameters
-            ----------
-            arg1 : int
-                Description of arg1
-            arg2 : str
-                Description of arg2
-            Keyword Arguments
-            -----------------
-            arg3 : float
-                Description of arg3
-            Returns
-            -------
-            str
-                Description of return value.
-            """
-        doc = defopt._parse_function_docstring(func)
+        Parameters
+        ----------
+        arg1 : int
+            Description of arg1
+        arg2 : str
+            Description of arg2
+        Keyword Arguments
+        -----------------
+        arg3 : float
+            Description of arg3
+        Returns
+        -------
+        str
+            Description of return value.
+        """
+        doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self._check_doc(doc)
 
     def _check_doc(self, doc):
@@ -653,35 +642,33 @@ class TestDoc(unittest.TestCase):
             defopt._get_type_from_doc('tuple[int]', {})
 
     def test_literal_block(self):
-        def func():
-            """
-            ::
+        doc = """
+        ::
 
-                Literal block
-                    Multiple lines
-            """
-        doc = defopt._parse_function_docstring(func)
+            Literal block
+                Multiple lines
+        """
+        doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self.assertEqual(doc.text, '    Literal block\n        Multiple lines')
 
     def test_newlines(self):
-        def func():
-            """
-            Bar
-            Baz
+        doc = """
+        Bar
+        Baz
 
-            - bar
-            - baz
+        - bar
+        - baz
 
-            quux::
+        quux::
 
-                hello
+            hello
 
 
-            1. bar
+        1. bar
 
-            2. baz
-            """
-        doc = defopt._parse_function_docstring(func)
+        2. baz
+        """
+        doc = defopt._parse_docstring(inspect.cleandoc(doc))
         # Use inspect.cleandoc and not textwrap.dedent, as we want to keep
         # whitespace in lines that contain more than the common leading
         # whitespace.
