@@ -7,6 +7,8 @@ next
 * Assume that types annotated as constructible from a single str are their own
   parser.
 * Added support for catching exceptions.
+* Added support for passing functions as a ``{name: function}`` mapping (Thanks
+  to @johnfarina).
 
 5.1.0 (2019-03-01)
 ------------------
