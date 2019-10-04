@@ -167,25 +167,24 @@ class _NoTypeFormatter(_Formatter):
     show_types = False
 
 
-def _public_signature(func):
+def _public_typed_signature(func):
     full_sig = inspect.signature(func)
     return full_sig.replace(
-        parameters=list(param for param in full_sig.parameters.values()
-                        if not param.name.startswith('_')))
+        parameters=[param.replace(annotation=_get_type(func, param.name))
+                    for param in full_sig.parameters.values()
+                    if not param.name.startswith('_')])
 
 
 def _populate_parser(func, parser, parsers, short, strict_kwonly):
-    sig = _public_signature(func)
+    sig = _public_typed_signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
 
-    types = {name: _get_type(func, name)
-             for name, param in sig.parameters.items()}
     exc_types = tuple(_get_type_from_doc(name, func.__globals__)
                       for name in doc.raises)
     positionals = {name for name, param in sig.parameters.items()
                    if ((param.default is param.empty or strict_kwonly)
-                       and not _is_list_like(types[name])
+                       and not _is_list_like(param.annotation)
                        and param.kind != param.KEYWORD_ONLY)}
     if short is None:
         count_initials = Counter(name[0] for name in sig.parameters
@@ -201,7 +200,7 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
             help_ = doc.params[name].text
             if help_ is not None:
                 kwargs['help'] = help_.replace('%', '%%')
-        type_ = types[name]
+        type_ = param.annotation
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         hasdefault = param.default is not param.empty
@@ -362,7 +361,7 @@ def _get_type_from_hint(hint):
 def _call_function(parser, func, args):
     positionals = []
     keywords = {}
-    sig = _public_signature(func)
+    sig = _public_typed_signature(func)
     for name, param in sig.parameters.items():
         arg = getattr(args, name)
         if arg is _SUPPRESS_BOOL_DEFAULT:
