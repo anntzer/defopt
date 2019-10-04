@@ -42,19 +42,19 @@ class TestDefopt(unittest.TestCase):
         def sub(*bar):
             """:type bar: float"""
             return bar
-        def sub_with_dash(baz=None):
+        def sub_with_dash(*, baz=None):
             """:type baz: int"""
             return baz
         self.assertEqual(
             defopt.run([sub, sub_with_dash], argv=['sub', '1.1']), (1.1,))
         self.assertEqual(
-            defopt.run([sub, sub_with_dash], strict_kwonly=False,
+            defopt.run([sub, sub_with_dash],
                        argv=['sub-with-dash', '--baz', '1']), 1)
         self.assertEqual(
-            defopt.run({"sub1": sub, "sub_2": sub_with_dash}, strict_kwonly=False,
+            defopt.run({"sub1": sub, "sub_2": sub_with_dash},
                        argv=['sub1', '1.2']), (1.2,))
         self.assertEqual(
-            defopt.run({"sub1": sub, "sub_2": sub_with_dash}, strict_kwonly=False,
+            defopt.run({"sub1": sub, "sub_2": sub_with_dash},
                        argv=['sub_2', '--baz', '1']), 1)
 
     def test_var_positional(self):
@@ -132,16 +132,14 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(defopt.run([one, none], argv=['none']), None)
 
     def test_underscores(self):
-        def main(a_b_c, d_e_f=None):
+        def main(a_b_c, *, d_e_f=None):
             """Test function
 
             :type a_b_c: int
             :type d_e_f: int
             """
             return a_b_c, d_e_f
-        self.assertEqual(
-            defopt.run(main, strict_kwonly=False, argv=['1', '--d-e-f', '2']),
-            (1, 2))
+        self.assertEqual(defopt.run(main, argv=['1', '--d-e-f', '2']), (1, 2))
 
     def test_private_with_default(self):
         def main(_a=None):
@@ -149,12 +147,12 @@ class TestDefopt(unittest.TestCase):
         defopt.run(main, argv=[])
 
     def test_argparse_kwargs(self):
-        def main(a=None):
+        def main(*, a=None):
             """:type a: str"""
             return a
         self.assertEqual(
-            defopt.run(main, strict_kwonly=False,
-                       argparse_kwargs={'prefix_chars': '+'}, argv=['+a', 'foo']),
+            defopt.run(main, argparse_kwargs={'prefix_chars': '+'},
+                       argv=['+a', 'foo']),
             'foo')
 
 
@@ -279,13 +277,11 @@ class TestParsers(unittest.TestCase):
             defopt.run(main, argv=[]), ())
 
     def test_bool_kwarg(self):
-        default = object()
-
-        def main(foo=default):
+        def main(foo='default'):
             """:type foo: bool"""
             return foo
         self.assertIs(defopt.run(main, strict_kwonly=False,
-                                 argv=[]), default)
+                                 argv=[]), 'default')
         self.assertIs(defopt.run(main, strict_kwonly=False,
                                  argv=['--foo']), True)
         self.assertIs(defopt.run(main, strict_kwonly=False,
@@ -322,39 +318,39 @@ class TestFlags(unittest.TestCase):
         def func(foo=1):
             """:type foo: int"""
             return foo
-        out = defopt.run(func, short={'foo': 'f'}, strict_kwonly=False,
-                         argv=['-f', '2'])
-        self.assertEqual(out, 2)
+        self.assertEqual(
+            defopt.run(func, short={'foo': 'f'}, strict_kwonly=False,
+                       argv=['-f', '2']),
+            2)
 
     def test_short_negation(self):
-        def func(foo=False):
+        def func(*, foo=False):
             """:type foo: bool"""
             return foo
-        out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'},
-                         strict_kwonly=False, argv=['-f'])
-        self.assertIs(out, True)
-        out = defopt.run(func, short={'foo': 'f', 'no-foo': 'F'},
-                         strict_kwonly=False, argv=['-F'])
-        self.assertIs(out, False)
+        self.assertIs(
+            defopt.run(func, short={'foo': 'f', 'no-foo': 'F'}, argv=['-f']),
+            True)
+        self.assertIs(
+            defopt.run(func, short={'foo': 'f', 'no-foo': 'F'}, argv=['-F']),
+            False)
 
     def test_auto_short(self):
-        def func(foo=1, bar=2, baz=3):
+        def func(*, foo=1, bar=2, baz=3):
             """
             :type foo: int
             :type bar: int
             :type baz: int
             """
             return foo
-        out = defopt.run(func, strict_kwonly=False, argv=['-f', '2'])
-        self.assertEqual(out, 2)
+        self.assertEqual(defopt.run(func, argv=['-f', '2']), 2)
         with self.assertRaises(SystemExit):
-            defopt.run(func, strict_kwonly=False, argv=['-b', '2'])
+            defopt.run(func, argv=['-b', '2'])
 
 
     def test_auto_short_help(self):
-        def func(hello="world"):
+        def func(*, hello="world"):
             """:type hello: str"""
-        defopt.run(func, strict_kwonly=False, argv=[])
+        defopt.run(func, argv=[])
 
 
 class TestEnums(unittest.TestCase):
@@ -368,11 +364,10 @@ class TestEnums(unittest.TestCase):
             defopt.run(main, argv=['three'])
 
     def test_optional(self):
-        def main(foo=None):
+        def main(*, foo=None):
             """:type foo: Choice"""
             return foo
-        self.assertEqual(defopt.run(main, strict_kwonly=False,
-                                    argv=['--foo', 'one']), Choice.one)
+        self.assertEqual(defopt.run(main, argv=['--foo', 'one']), Choice.one)
         self.assertIs(defopt.run(main, argv=[]), None)
 
     def test_subcommand(self):
