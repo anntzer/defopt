@@ -117,7 +117,7 @@ Documentation is hosted on `Read the Docs`_.
 .. _click: http://click.pocoo.org/
 .. _argh: http://argh.readthedocs.io/en/latest/
 .. _documented: http://defopt.readthedocs.io/en/latest/features.html#docstring-styles
-.. _GitHub repository: https://github.com/evanunderscore/defopt
+.. _GitHub repository: https://github.com/anntzer/defopt
 .. _Read the Docs: http://defopt.readthedocs.io/en/latest/
 
 .. This document is included in docs/index.rst; table of contents appears here.

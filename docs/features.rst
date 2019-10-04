@@ -317,14 +317,14 @@ A runnable example is available at `examples/exceptions.py`_.
 .. _Numpy: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _Napoleon: https://sphinxcontrib-napoleon.readthedocs.io/en/latest/
 .. _PEP 0484: https://www.python.org/dev/peps/pep-0484/
-.. _examples/styles.py: https://github.com/evanunderscore/defopt/blob/master/examples/styles.py
-.. _examples/short.py: https://github.com/evanunderscore/defopt/blob/master/examples/short.py
-.. _examples/booleans.py: https://github.com/evanunderscore/defopt/blob/master/examples/booleans.py
-.. _examples/lists.py: https://github.com/evanunderscore/defopt/blob/master/examples/lists.py
-.. _examples/choices.py: https://github.com/evanunderscore/defopt/blob/master/examples/choices.py
-.. _examples/parsers.py: https://github.com/evanunderscore/defopt/blob/master/examples/parsers.py
-.. _examples/starargs.py: https://github.com/evanunderscore/defopt/blob/master/examples/starargs.py
-.. _examples/annotations.py: https://github.com/evanunderscore/defopt/blob/master/examples/annotations.py
+.. _examples/styles.py: https://github.com/anntzer/defopt/blob/master/examples/styles.py
+.. _examples/short.py: https://github.com/anntzer/defopt/blob/master/examples/short.py
+.. _examples/booleans.py: https://github.com/anntzer/defopt/blob/master/examples/booleans.py
+.. _examples/lists.py: https://github.com/anntzer/defopt/blob/master/examples/lists.py
+.. _examples/choices.py: https://github.com/anntzer/defopt/blob/master/examples/choices.py
+.. _examples/parsers.py: https://github.com/anntzer/defopt/blob/master/examples/parsers.py
+.. _examples/starargs.py: https://github.com/anntzer/defopt/blob/master/examples/starargs.py
+.. _examples/annotations.py: https://github.com/anntzer/defopt/blob/master/examples/annotations.py
 
 .. [#] While Napoleon is included with Sphinx as `sphinx.ext.napoleon`, defopt
    depends on ``sphinxcontrib-napoleon`` so that end users of your command line

@@ -72,4 +72,4 @@ Short Flags
     :undoc-members:
     :show-inheritance:
 
-.. _examples: https://github.com/evanunderscore/defopt/tree/master/examples
+.. _examples: https://github.com/anntzer/defopt/tree/master/examples
