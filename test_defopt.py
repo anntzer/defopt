@@ -174,7 +174,7 @@ class TestParsers(unittest.TestCase):
             defopt.run(main, parsers={int: parser}, argv=['1']), 2)
 
     def test_parse_bool(self):
-        parser = defopt._get_parser(bool)
+        parser = defopt._get_parser(bool, {})
         self.assertEqual(parser('t'), True)
         self.assertEqual(parser('FALSE'), False)
         self.assertEqual(parser('1'), True)
@@ -189,7 +189,7 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['foo']), Path('foo'))
 
     def test_parse_slice(self):
-        parser = defopt._get_parser(slice)
+        parser = defopt._get_parser(slice, {})
         self.assertEqual(parser(':'), slice(None))
         self.assertEqual(parser(':1'), slice(None, 1))
         self.assertEqual(parser('"a":"b":"c"'), slice("a", "b", "c"))
@@ -219,7 +219,7 @@ class TestParsers(unittest.TestCase):
 
     def test_list_bare(self):
         with self.assertRaises(ValueError):
-            defopt._get_parser(list)
+            defopt._get_parser(list, {})
 
     def test_list_keyword_only(self):
         def main(*, foo):
@@ -987,6 +987,14 @@ class TestExamples(unittest.TestCase):
         argv = [sys.executable, '-m', example.__name__] + argv
         output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
         return output.replace(b'\r\n', b'\n')
+
+
+class TestDefaultsPreserved(unittest.TestCase):
+    def test_defaults_preserved(self):
+        """Check that mutable defaults are not modified."""
+        params = inspect.signature(defopt.run).parameters
+        self.assertEqual(params['parsers'].default, {})
+        self.assertEqual(params['argparse_kwargs'].default, {})
 
 
 if __name__ == "__main__":

@@ -59,7 +59,7 @@ def _ti_get_args(tp):  # Make Py<=3.6 behave consistently with Py>=3.7.
 
 
 def run(funcs: Union[Callable, List[Callable]], *,
-        parsers: Optional[Dict[type, Callable[[str], Any]]] = None,
+        parsers: Dict[type, Callable[[str], Any]] = {},
         short: Optional[Dict[str, str]] = None,
         strict_kwonly: bool = True,
         show_types: bool = False,
@@ -116,7 +116,7 @@ def run(funcs: Union[Callable, List[Callable]], *,
 
 def _create_parser(
         funcs, *,
-        parsers=None,
+        parsers={},
         short=None,
         strict_kwonly=True,
         show_types=False,
@@ -548,8 +548,8 @@ def _parse_docstring(doc):
     return parsed
 
 
-def _get_parser(type_, parsers=None):
-    parser = _find_parser(type_, parsers or {})
+def _get_parser(type_, parsers):
+    parser = _find_parser(type_, parsers)
 
     # Make a parser with the name the user expects to see in error messages.
     def named_parser(string):

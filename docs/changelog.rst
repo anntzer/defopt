@@ -10,6 +10,7 @@ next
 * Added support for passing functions as a ``{name: function}`` mapping (Thanks
   to @johnfarina).
 * Removed support for Python<=3.4.
+* Disallowed ``parsers=None`` as a synonym for ``parsers={}``.
 
 5.1.0 (2019-03-01)
 ------------------
