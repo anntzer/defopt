@@ -39,7 +39,7 @@ except ImportError:
     def _colorama_text(*args):
         yield
 
-__all__ = ['run']
+__all__ = ['run', 'signature']
 __version__ = '5.1.0'
 
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
@@ -167,16 +167,49 @@ class _NoTypeFormatter(_Formatter):
     show_types = False
 
 
-def _public_typed_signature(func):
+class Parameter(inspect.Parameter):
+    __slots__ = (*inspect.Parameter.__slots__, '_doc')
+    doc = property(lambda self: self._doc)
+
+    def __init__(self, *args, doc=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._doc = doc
+
+    def replace(self, *, doc=inspect._void, **kwargs):
+        copy = super().replace(**kwargs)
+        copy._doc = self._doc if doc is inspect._void else doc
+        return copy
+
+
+def signature(func: Callable):
+    """
+    Return an enhanced signature for ``func``.
+
+    This function behaves similarly to `inspect.signature`, with the following
+    differences:
+
+    - Private parameters (starting with an underscore) are not listed.
+    - Parameter annotations are also read from ``func``'s docstring (if a
+      parameter's type is specified both in the signature and the docstring,
+      both types must match).
+    - The docstring for each parameter is available as the
+      `~inspect.Parameter`'s ``.doc`` attribute (in fact, a subclass of
+      `~inspect.Parameter` is used).
+    """
     full_sig = inspect.signature(func)
+    doc = _parse_docstring(inspect.getdoc(func))
     return full_sig.replace(
-        parameters=[param.replace(annotation=_get_type(func, param.name))
-                    for param in full_sig.parameters.values()
-                    if not param.name.startswith('_')])
+        parameters=[
+            Parameter(
+                name=param.name, kind=param.kind, default=param.default,
+                annotation=_get_type(func, param.name),
+                doc=doc.params.get(param.name, _Param(None, None)).text)
+            for param in full_sig.parameters.values()
+            if not param.name.startswith('_')])
 
 
 def _populate_parser(func, parser, parsers, short, strict_kwonly):
-    sig = _public_typed_signature(func)
+    sig = signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
 
@@ -196,10 +229,8 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
 
     for name, param in sig.parameters.items():
         kwargs = {}
-        if name in doc.params:
-            help_ = doc.params[name].text
-            if help_ is not None:
-                kwargs['help'] = help_.replace('%', '%%')
+        if param.doc is not None:
+            kwargs['help'] = param.doc.replace('%', '%%')
         type_ = param.annotation
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
@@ -361,7 +392,7 @@ def _get_type_from_hint(hint):
 def _call_function(parser, func, args):
     positionals = []
     keywords = {}
-    sig = _public_typed_signature(func)
+    sig = signature(func)
     for name, param in sig.parameters.items():
         arg = getattr(args, name)
         if arg is _SUPPRESS_BOOL_DEFAULT:
@@ -634,26 +665,21 @@ def _make_enum_parser(enum):
 
 def _is_constructible_from_str(type_):
     try:
-        signature = inspect.signature(type_)
-        (argname, _), = signature.bind(object()).arguments.items()
-    except TypeError:
-        # Can be raised by inspect.signature, Signature.bind, or _get_type.
+        sig = signature(type_)
+        (argname, _), = sig.bind(object()).arguments.items()
+    except TypeError:  # Can be raised by signature() or Signature.bind().
         return False
-    try:
-        argtype = _get_type(type_, argname)
-    except (TypeError, ValueError):
-        pass
+    except ValueError:
+        # Can be raised for classes, if the relevant info is in `__init__`.
+        if not isinstance(type_, type):
+            raise
     else:
-        if argtype is str:
+        if sig.parameters[argname].annotation is str:
             return True
     if isinstance(type_, type):
-        try:
-            argtype = _get_type(type_.__init__, argname)
-        except (TypeError, ValueError):
-            pass
-        else:
-            if argtype is str:
-                return True
+        # signature() first checks __new__, if it is present.
+        return _is_constructible_from_str(
+            type_.__init__.__get__(object(), type_))
     return False
 
 

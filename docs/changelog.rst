@@ -11,6 +11,8 @@ next
   to @johnfarina).
 * Removed support for Python<=3.4.
 * Disallowed ``parsers=None`` as a synonym for ``parsers={}``.
+* Added `defopt.signature` to separate the signature-and-docstring parsing from
+  the ArgumentParser construction.
 
 5.1.0 (2019-03-01)
 ------------------
