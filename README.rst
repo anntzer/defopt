@@ -5,14 +5,14 @@ defopt is a lightweight, no-effort argument parser.
 
 defopt will:
 
-- Allow functions to be run from code and the command line without modification
-- Reward you for documenting your functions
-- Save you from writing, testing and maintaining argument parsing code
+- Allow functions to be run from code and the command line without modification.
+- Reward you for documenting your functions.
+- Save you from writing, testing and maintaining argument parsing code.
 
 defopt will not:
 
-- Modify your functions in any way
-- Allow you to build highly complex or customized command line tools
+- Modify your functions in any way.
+- Allow you to build highly complex or customized command line tools.
 
 If you want total control over how your command line looks or behaves, try
 docopt_, click_ or argh_. If you just want to write Python code and leave the
@@ -24,12 +24,25 @@ Usage
 Once you have written and documented_ your function, simply pass it to
 `defopt.run()` and you're done.
 
-::
+.. code-block:: python
 
     import defopt
 
+    # Use type hints:
+    def main(greeting: str, *, count: int = 1):
+        """
+        Display a friendly greeting.
+
+        :param greeting: Greeting to display
+        :param count: Number of times to display the greeting
+        """
+        for _ in range(count):
+            print(greeting)
+
+    # ... or document parameter types in the docstring:
     def main(greeting, *, count=1):
-        """Display a friendly greeting.
+        """
+        Display a friendly greeting.
 
         :param str greeting: Greeting to display
         :param int count: Number of times to display the greeting
@@ -109,10 +122,10 @@ Documentation is hosted on `Read the Docs`_.
 
 .. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 .. _docopt: http://docopt.org/
-.. _click: http://click.pocoo.org/
-.. _argh: http://argh.readthedocs.io/en/latest/
-.. _documented: http://defopt.readthedocs.io/en/latest/features.html#docstring-styles
+.. _click: http://click.palletsprojects.com/
+.. _argh: https://argh.readthedocs.io/en/latest/
+.. _documented: https://defopt.readthedocs.io/en/latest/features.html#docstring-styles
 .. _GitHub repository: https://github.com/anntzer/defopt
-.. _Read the Docs: http://defopt.readthedocs.io/en/latest/
+.. _Read the Docs: https://defopt.readthedocs.io/en/latest/
 
 .. This document is included in docs/index.rst; table of contents appears here.

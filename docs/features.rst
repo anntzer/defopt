@@ -3,50 +3,43 @@
 Features
 ========
 
-Docstring Styles
-----------------
-
-In addition to the standard Sphinx_-style, you can also use Google_- and
-Numpy_-style docstrings. These are converted using Napoleon_ [#]_. If you are
-using one of these alternate styles and generating documentation with
-`sphinx.ext.autodoc`, be sure to also enable `sphinx.ext.napoleon`.
-
-A runnable example is available at `examples/styles.py`_.
-
 Types
 -----
 
-Argument types are read from your function's type hints and docstrings.
+Argument types are read from your function's type hints (see
+`examples/annotations.py`_) or docstring.  If type information for a parameter
+is given both as type hint and in the docstring, the types must match.
 
 .. code-block:: python
 
     def func(arg1: int, arg2: str):
         ...
 
-For docstrings, both ``param`` and ``type`` (and their variants [#]_) are
-supported. ::
+Docstrings can use the standard Sphinx_-style
+
+.. code-block:: rst
 
     :param <type> <name>: <description>
 
-::
+    .. or
 
     :param <name>: <description>
     :type <name>: <type>
 
+    .. Any of ``param``, ``parameter``, ``arg``, ``argument``, ``key``, and
+       ``keyword`` can be used interchangeably, as can ``type`` and
+       ``kwtype``.  Consistency is recommended but not enforced.
+
+or Google_- and Numpy_-style docstrings (see `examples/styles.py`_), which are
+converted using Napoleon_ [#]_. If you are using one of these alternate styles
+and generating documentation with `sphinx.ext.autodoc`, be sure to also enable
+`sphinx.ext.napoleon`.
+
 ``<type>`` is evaluated in the function's global namespace when `defopt.run`
 is called.
 
-You may mix annotations with types in your docstring, but if type information
-for a parameter is given in both, they must be the same.
-
-See `Standard types`_, Booleans_, Lists_, Choices_, Tuples_ and Parsers_ for
-more information on specific types.
-
-Type information can be automatically added to the help text by passing
-``show_types=True`` to `defopt.run`.
-
-A runnable example using annotations is available at
-`examples/annotations.py`_.
+See `Standard types`_, Booleans_, Lists_, Choices_, Tuples_, Unions_, and
+Parsers_ for more information on specific types.
 
 Subcommands
 -----------
@@ -163,8 +156,8 @@ Lists
 Lists are automatically converted to flags which take zero or more arguments.
 If the argument is positional, the flag is marked as required.
 
-When declaring that a parameter is a list, use the established convention of
-putting the contained type inside square brackets. ::
+When declaring that a parameter is a list in a docstring, use the established
+convention of putting the contained type inside square brackets. ::
 
     :param list[int] numbers: A sequence of numbers
 
@@ -257,7 +250,7 @@ You can now build ``StrWrapper`` objects directly from the command line. ::
 
     test.py foo
 
-Variable Positional Arguments
+Variable positional arguments
 -----------------------------
 
 If your function definition contains ``*args``, the parser will accept zero or
@@ -266,8 +259,8 @@ elements, not the container.
 
 .. code-block:: python
 
-    def main(*numbers):
-        """:param int numbers: Positional numeric arguments"""
+    def main(*numbers: int):
+        """:param numbers: Positional numeric arguments"""
 
 This will create a parser that accepts zero or more positional arguments which
 are individually parsed as integers. They are passed as they would be from code
@@ -275,20 +268,38 @@ and received as a tuple. ::
 
     test.py 1 2 3
 
-If the argument is a list type (see Lists_ and Annotations_), this will instead
-create a flag that can be specified multiple times, each time creating a new
-list.
+If the argument is a list type (see Lists_), this will instead create a flag
+that can be specified multiple times, each time creating a new list.
 
 Variable keyword arguments (``**kwargs``) are not supported.
 
 A runnable example is available at `examples/starargs.py`_.
 
-Private Arguments
+Private arguments
 -----------------
 
 Arguments whose name start with an underscore will not be added to the parser.
 
-Entry Points
+Help text
+---------
+
+Type information can be automatically added to the help text by passing
+``show_types=True`` to `defopt.run`.
+
+Exceptions
+----------
+
+Exception types can also be listed in the function's docstring, with ::
+
+    :raises <type>: <description>
+
+If the function call raises an exception whose type is mentioned in such a
+``:raises:`` clause, the exception message is printed and the program exits
+with status code 1, but the traceback is suppressed.
+
+A runnable example is available at `examples/exceptions.py`_.
+
+Entry points
 ------------
 
 To use your script as a console entry point with setuptools, you need to create
@@ -308,28 +319,6 @@ You can then reference this entry point in your ``setup.py`` file.
         entry_points={'console_scripts': ['name=test:entry_point']}
     )
 
-Annotations
------------
-
-.. code-block:: python
-
-    from typing import Iterable
-    def func(arg1: int, arg2: Iterable[float]):
-        """No further type information required."""
-
-Exceptions
-----------
-
-Exception types can also be listed in the function's docstring, with ::
-
-    :raises <type>: <description>
-
-If the function call raises an exception whose type is mentioned in such a
-``:raises:`` clause, the exception message is printed and the program exits
-with status code 1, but the traceback is suppressed.
-
-A runnable example is available at `examples/exceptions.py`_.
-
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _Google: http://google.github.io/styleguide/pyguide.html
 .. _Numpy: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
@@ -347,6 +336,3 @@ A runnable example is available at `examples/exceptions.py`_.
 .. [#] While Napoleon is included with Sphinx as `sphinx.ext.napoleon`, defopt
    depends on ``sphinxcontrib-napoleon`` so that end users of your command line
    tool are not required to install Sphinx and all of its dependencies.
-.. [#] Any of ``param``, ``parameter``, ``arg``, ``argument``, ``key``, and
-    ``keyword`` can be used interchangeably, as can ``type`` and ``kwtype``.
-    Consistency is recommended but not enforced.
