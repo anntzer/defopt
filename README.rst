@@ -1,6 +1,21 @@
 defopt
 ======
 
+|GitHub| |PyPI| |Read the Docs| |Travis|
+
+.. |GitHub|
+   image:: https://img.shields.io/badge/github-anntzer%2Fdefopt-brightgreen
+   :target: `GitHub repository`_
+.. |PyPI|
+   image:: https://img.shields.io/pypi/v/defopt.svg
+   :target: https://pypi.python.org/pypi/defopt
+.. |Read the Docs|
+   image:: https://readthedocs.org/projects/defopt/badge/?version=latest
+   :target: `Read the Docs`_
+.. |Travis|
+   image:: https://travis-ci.com/anntzer/defopt.svg?branch=master
+   :target: https://travis-ci.com/anntzer/defopt
+
 defopt is a lightweight, no-effort argument parser.
 
 defopt will:
@@ -120,12 +135,12 @@ Documentation
 
 Documentation is hosted on `Read the Docs`_.
 
+.. _GitHub repository: https://github.com/anntzer/defopt
+.. _Read the Docs: https://defopt.readthedocs.io/en/latest/
 .. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 .. _docopt: http://docopt.org/
 .. _click: http://click.palletsprojects.com/
 .. _argh: https://argh.readthedocs.io/en/latest/
 .. _documented: https://defopt.readthedocs.io/en/latest/features.html#docstring-styles
-.. _GitHub repository: https://github.com/anntzer/defopt
-.. _Read the Docs: https://defopt.readthedocs.io/en/latest/
 
 .. This document is included in docs/index.rst; table of contents appears here.
