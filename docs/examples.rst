@@ -1,4 +1,4 @@
-Example Documentation
+Example documentation
 =====================
 
 One of the great things about defopt is that the same docstrings it uses to
@@ -15,7 +15,7 @@ Annotations
     :undoc-members:
     :show-inheritance:
 
-Boolean Flags
+Boolean flags
 -------------
 
 .. automodule:: examples.booleans
@@ -27,6 +27,14 @@ Choices
 -------
 
 .. automodule:: examples.choices
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Exceptions
+----------
+
+.. automodule:: examples.exceptions
     :members:
     :undoc-members:
     :show-inheritance:
@@ -47,7 +55,15 @@ Parsers
     :undoc-members:
     :show-inheritance:
 
-Variable Positional Arguments
+Short flags
+-----------
+
+.. automodule:: examples.short
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Variable positional arguments
 -----------------------------
 
 .. automodule:: examples.starargs
@@ -55,19 +71,10 @@ Variable Positional Arguments
     :undoc-members:
     :show-inheritance:
 
-
-Docstring Styles
+Docstring styles
 ----------------
 
 .. automodule:: examples.styles
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-Short Flags
------------
-
-.. automodule:: examples.short
     :members:
     :undoc-members:
     :show-inheritance:

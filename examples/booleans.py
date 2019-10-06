@@ -1,4 +1,5 @@
-"""Example showing boolean flags in defopt.
+"""
+Example showing boolean flags in defopt.
 
 Optional boolean parameters are automatically converted to
 ``--name`` and ``--no-name`` flags which take no arguments
@@ -15,12 +16,13 @@ Command line usage::
 import defopt
 
 
-def main(message, *, upper=True, repeat=False):
-    """Example function with boolean flags.
+def main(message: str, *, upper: bool = True, repeat: bool = False):
+    """
+    Example function with boolean flags.
 
-    :param str message: Message to display
-    :param bool upper: Display the message in upper case
-    :param bool repeat: Display the message twice
+    :param message: Message to display
+    :param upper: Display the message in upper case
+    :param repeat: Display the message twice
     """
     if upper:
         message = message.upper()

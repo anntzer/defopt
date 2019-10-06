@@ -1,4 +1,5 @@
-"""Example showing ``*args`` handling in defopt.
+"""
+Example showing ``*args`` handling in defopt.
 
 Variable positional arguments can be specified any number of times
 and are received as a tuple.
@@ -20,7 +21,8 @@ import defopt
 
 
 def plain(*numbers):
-    """Example function which accepts multiple positional arguments.
+    """
+    Example function which accepts multiple positional arguments.
 
     The arguments are plain integers.
 
@@ -31,7 +33,8 @@ def plain(*numbers):
 
 
 def iterable(*groups):
-    """Example function which accepts multiple positional arguments.
+    """
+    Example function which accepts multiple positional arguments.
 
     The arguments are lists of integers.
 

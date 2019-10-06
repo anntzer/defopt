@@ -1,4 +1,5 @@
-"""Example showing parsers in defopt.
+"""
+Example showing parsers in defopt.
 
 If a type is not simple enough for defopt to parse on its own,
 you can explicitly specify parsers for types by passing a mapping
@@ -17,16 +18,18 @@ from datetime import datetime
 import defopt
 
 
-def main(date):
-    """Example function with a `datetime.datetime` argument.
+def main(date: datetime):
+    """
+    Example function with a `datetime.datetime` argument.
 
-    :param datetime date: Date to display
+    :param date: Date to display
     """
     print(date)
 
 
 def parse_date(string):
-    """Parse a `datetime.datetime` using a simple string format.
+    """
+    Parse a `datetime.datetime` using a simple string format.
 
     :param str string: String to parse
     :rtype: datetime

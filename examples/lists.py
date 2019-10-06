@@ -1,4 +1,5 @@
-"""Example showing lists in defopt.
+"""
+Example showing lists in defopt.
 
 Lists are automatically converted to required flags
 which accept zero or more arguments.
@@ -16,7 +17,8 @@ import defopt
 
 
 def main(numbers, multiplier):
-    """Example function with a list argument.
+    """
+    Example function with a list argument.
 
     :param list[float] numbers: Numbers to multiply
     :param float multiplier: Amount to multiply by

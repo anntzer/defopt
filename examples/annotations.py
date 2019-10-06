@@ -1,4 +1,5 @@
-"""Example showing annotations in defopt.
+"""
+Example showing annotations in defopt.
 
 Type hints specified in function annotations may be used
 instead of writing types in docstrings.

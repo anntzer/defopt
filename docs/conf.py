@@ -292,5 +292,5 @@ texinfo_documents = [
 
 autodoc_member_order = 'bysource'
 
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+intersphinx_mapping = {'python': ('https://docs.python.org/3.8', None),
                        'sphinx': ('http://www.sphinx-doc.org/en/latest/', None)}

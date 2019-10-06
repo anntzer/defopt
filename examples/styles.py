@@ -1,4 +1,5 @@
-"""Example showing supported docstring styles in defopt.
+"""
+Example showing supported docstring styles in defopt.
 
 You need to enable the `sphinx.ext.napoleon` extension
 to generate documentation for this module.
@@ -15,7 +16,8 @@ import defopt
 
 
 def sphinx(integer, *, farewell=None):
-    """Example function with a Sphinx-style docstring.
+    """
+    Example function with a Sphinx-style docstring.
 
     Squares a given integer.
 
@@ -40,7 +42,8 @@ def sphinx(integer, *, farewell=None):
 
 
 def google(integer, *, farewell=None):
-    """Example function with a Google-style docstring.
+    """
+    Example function with a Google-style docstring.
 
     Squares a given integer.
 
@@ -67,7 +70,8 @@ def google(integer, *, farewell=None):
 
 
 def numpy(integer, *, farewell=None):
-    """Example function with a Numpy-style docstring.
+    """
+    Example function with a Numpy-style docstring.
 
     Squares a given integer.
 

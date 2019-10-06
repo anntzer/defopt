@@ -1,4 +1,5 @@
-"""Example showing short flags in defopt.
+"""
+Example showing short flags in defopt.
 
 You can add alternative short flags to arguments by passing a
 dictionary to `defopt.run` which maps flag names to single letters.
@@ -15,10 +16,11 @@ Command line usage::
 import defopt
 
 
-def main(*, count=1):
-    """Example function which prints a message.
+def main(*, count: int = 1):
+    """
+    Example function which prints a message.
 
-    :param int count: Number of times to print the message
+    :param count: Number of times to print the message
     """
     for _ in range(count):
         print('hello!')
