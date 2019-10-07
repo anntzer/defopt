@@ -280,12 +280,6 @@ Private arguments
 
 Arguments whose name start with an underscore will not be added to the parser.
 
-Help text
----------
-
-Type information can be automatically added to the help text by passing
-``show_types=True`` to `defopt.run`.
-
 Exceptions
 ----------
 
@@ -298,6 +292,15 @@ If the function call raises an exception whose type is mentioned in such a
 with status code 1, but the traceback is suppressed.
 
 A runnable example is available at `examples/exceptions.py`_.
+
+Additional parser features
+--------------------------
+
+Type information can be automatically added to the help text by passing
+``show_types=True`` to `defopt.run`.
+
+Support for a ``--version`` flag can be added by passing ``version="..."`` to
+`defopt.run`.
 
 Entry points
 ------------

@@ -840,6 +840,22 @@ class TestHelp(unittest.TestCase):
         return parser.format_help()
 
 
+class TestVersion(unittest.TestCase):
+    def test_no_version(self):
+        with self.assertRaises(SystemExit), self._assert_stderr(''):
+            defopt.run(lambda: None, argv=['--version'])
+
+    def test_version(self):
+        with self.assertRaises(SystemExit), self._assert_stderr('foo 42\n'):
+            defopt.run(lambda: None, version='foo 42', argv=['--version'])
+
+    @contextlib.contextmanager
+    def _assert_stderr(self, s):
+        with contextlib.redirect_stderr(StringIO()) as file:
+            yield
+            self.assertEqual(file.getvalue(), s)
+
+
 class TestExamples(unittest.TestCase):
     def test_annotations(self):
         for command in [annotations.documented, annotations.undocumented]:

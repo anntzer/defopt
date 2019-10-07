@@ -62,6 +62,7 @@ def run(funcs: Union[Callable, List[Callable]], *,
         short: Optional[Dict[str, str]] = None,
         strict_kwonly: bool = True,
         show_types: bool = False,
+        version: Optional[str] = None,
         argparse_kwargs: dict = {},
         argv: Optional[List[str]] = None):
     """
@@ -90,6 +91,9 @@ def run(funcs: Union[Callable, List[Callable]], *,
     :param show_types:
         If `True`, display type names after parameter descriptions in the help
         text.
+    :param version:
+        If not None, add a ``--version`` flag which prints the given version
+        string and exits.
     :param argparse_kwargs:
         A mapping of keyword arguments that will be passed to the
         ArgumentParser constructor.  (If the ``formatter_class`` key is set, it
@@ -101,7 +105,8 @@ def run(funcs: Union[Callable, List[Callable]], *,
     """
     parser = _create_parser(
         funcs, parsers=parsers, short=short, strict_kwonly=strict_kwonly,
-        show_types=show_types, argparse_kwargs=argparse_kwargs)
+        show_types=show_types, version=version,
+        argparse_kwargs=argparse_kwargs)
     with _colorama_text():
         args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
@@ -119,10 +124,13 @@ def _create_parser(
         short=None,
         strict_kwonly=True,
         show_types=False,
+        version=None,
         argparse_kwargs={}):
     formatter_class = _Formatter if show_types else _NoTypeFormatter
     parser = ArgumentParser(
-        **{"formatter_class": formatter_class, **argparse_kwargs})
+        **{'formatter_class': formatter_class, **argparse_kwargs})
+    if version is not None:
+        parser.add_argument('--version', action='version', version=version)
     if callable(funcs):
         _populate_parser(funcs, parser, parsers, short, strict_kwonly)
     else:
