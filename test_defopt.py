@@ -656,6 +656,8 @@ class TestDoc(unittest.TestCase):
         Bar
         Baz
 
+        .. a comment
+
         - bar
         - baz
 

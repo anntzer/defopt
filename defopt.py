@@ -552,11 +552,16 @@ def _parse_docstring(doc):
             raise SkipNode
 
         def visit_comment(self, node):
+            self.paragraphs.append(comment_token)
+            # Comments report their line as the *end* line of the comment.
+            self.start_lines.append(
+                node.line - node.children[0].count("\n") - 1)
             raise SkipNode
 
         def visit_system_message(self, node):
             raise SkipNode
 
+    comment_token = object()
     visitor = Visitor(tree)
     tree.walkabout(visitor)
 
@@ -568,6 +573,8 @@ def _parse_docstring(doc):
                 visitor.start_lines,
                 visitor.paragraphs,
                 visitor.start_lines[1:] + [0]):
+            if paragraph is comment_token:
+                continue
             text.append(paragraph)
             # We insert a space before each newline to prevent argparse
             # from stripping consecutive newlines down to just two
