@@ -1,15 +1,17 @@
+import contextlib
 import inspect
 import subprocess
 import sys
 import typing
 import unittest
 from enum import Enum
+from io import StringIO
 from pathlib import Path
-from unittest import mock
 
 import defopt
 from examples import (
-    booleans, choices, exceptions, lists, parsers, short, starargs, styles)
+    annotations, booleans, choices, exceptions, lists, parsers, short,
+    starargs, styles)
 
 
 class Choice(Enum):
@@ -839,26 +841,22 @@ class TestHelp(unittest.TestCase):
 
 
 class TestExamples(unittest.TestCase):
-    @mock.patch('builtins.print')
-    def test_annotations(self, print):
-        from examples import annotations
+    def test_annotations(self):
         for command in [annotations.documented, annotations.undocumented]:
-            command([1, 2], 3)
-            print.assert_called_with([1, 8])
+            with self._assert_stdout('[1, 8]\n'):
+                command([1, 2], 3)
 
     def test_annotations_cli(self):
-        from examples import annotations
         for command in ['documented', 'undocumented']:
             args = [command, '--numbers', '1', '2', '--', '3']
             output = self._run_example(annotations, args)
             self.assertEqual(output, b'[1.0, 8.0]\n')
 
-    @mock.patch('builtins.print')
-    def test_booleans(self, print):
-        booleans.main('test', upper=False, repeat=True)
-        print.assert_has_calls([mock.call('test'), mock.call('test')])
-        booleans.main('test')
-        print.assert_called_with('TEST')
+    def test_booleans(self):
+        with self._assert_stdout('test\ntest\n'):
+            booleans.main('test', upper=False, repeat=True)
+        with self._assert_stdout('TEST\n'):
+            booleans.main('test')
 
     def test_booleans_cli(self):
         output = self._run_example(
@@ -868,18 +866,17 @@ class TestExamples(unittest.TestCase):
             booleans, ['test'])
         self.assertEqual(output, b'TEST\n')
 
-    @mock.patch('builtins.print')
-    def test_choices(self, print):
-        choices.choose_enum(choices.Choice.one)
-        print.assert_called_with('Choice.one (1)')
-        choices.choose_enum(choices.Choice.one, opt=choices.Choice.two)
-        print.assert_called_with('Choice.two (2.0)')
+    def test_choices(self):
+        with self._assert_stdout('Choice.one (1)\n'):
+            choices.choose_enum(choices.Choice.one)
+        with self._assert_stdout('Choice.one (1)\nChoice.two (2.0)\n'):
+            choices.choose_enum(choices.Choice.one, opt=choices.Choice.two)
         with self.assertRaises(AttributeError):
             choices.choose_enum('one')
-        choices.choose_literal('foo')
-        print.assert_called_with('foo')
-        choices.choose_literal('foo', opt='baz')
-        print.assert_called_with('baz')
+        with self._assert_stdout('foo\n'):
+            choices.choose_literal('foo')
+        with self._assert_stdout('foo\nbaz\n'):
+            choices.choose_literal('foo', opt='baz')
 
     def test_choices_cli(self):
         output = self._run_example(choices, ['choose-enum', 'one'])
@@ -908,12 +905,11 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b"Don't do this!", error.exception.output)
         self.assertNotIn(b"Traceback", error.exception.output)
 
-    @mock.patch('builtins.print')
-    def test_lists(self, print):
-        lists.main([1.2, 3.4], 2)
-        print.assert_called_with([2.4, 6.8])
-        lists.main([1, 2, 3], 2)
-        print.assert_called_with([2, 4, 6])
+    def test_lists(self):
+        with self._assert_stdout('[2.4, 6.8]\n'):
+            lists.main([1.2, 3.4], 2)
+        with self._assert_stdout('[2, 4, 6]\n'):
+            lists.main([1, 2, 3], 2)
 
     def test_lists_cli(self):
         output = self._run_example(
@@ -923,13 +919,12 @@ class TestExamples(unittest.TestCase):
             lists, ['--numbers', '1.2', '3.4', '--', '2'])
         self.assertEqual(output, b'[2.4, 6.8]\n')
 
-    @mock.patch('builtins.print')
-    def test_parsers(self, print):
+    def test_parsers(self):
         date = parsers.datetime(2015, 9, 13)
-        parsers.main(date)
-        print.assert_called_with(date)
-        parsers.main('junk')
-        print.assert_called_with('junk')
+        with self._assert_stdout('{}\n'.format(date)):
+            parsers.main(date)
+        with self._assert_stdout('junk\n'):
+            parsers.main('junk')
 
     def test_parsers_cli(self):
         output = self._run_example(parsers, ['2015-09-13'])
@@ -939,12 +934,11 @@ class TestExamples(unittest.TestCase):
         self.assertIn(b'datetime', error.exception.output)
         self.assertIn(b'junk', error.exception.output)
 
-    @mock.patch('builtins.print')
-    def test_short(self, print):
-        short.main()
-        print.assert_has_calls([mock.call('hello!')])
-        short.main(count=2)
-        print.assert_has_calls([mock.call('hello!'), mock.call('hello!')])
+    def test_short(self):
+        with self._assert_stdout('hello!\n'):
+            short.main()
+        with self._assert_stdout('hello!\nhello!\n'):
+            short.main(count=2)
 
     def test_short_cli(self):
         output = self._run_example(short, ['--count', '2'])
@@ -952,12 +946,11 @@ class TestExamples(unittest.TestCase):
         output = self._run_example(short, ['-C', '2'])
         self.assertEqual(output, b'hello!\nhello!\n')
 
-    @mock.patch('builtins.print')
-    def test_starargs(self, print):
-        starargs.plain(1, 2, 3)
-        print.assert_has_calls([mock.call(1), mock.call(2), mock.call(3)])
-        starargs.iterable([1, 2], [3, 4, 5])
-        print.assert_has_calls([mock.call([1, 2]), mock.call([3, 4, 5])])
+    def test_starargs(self):
+        with self._assert_stdout('1\n2\n3\n'):
+            starargs.plain(1, 2, 3)
+        with self._assert_stdout('[1, 2]\n[3, 4, 5]\n'):
+            starargs.iterable([1, 2], [3, 4, 5])
 
     def test_starargs_cli(self):
         output = self._run_example(starargs, ['plain', '1', '2', '3'])
@@ -966,19 +959,24 @@ class TestExamples(unittest.TestCase):
         output = self._run_example(starargs, args)
         self.assertEqual(output, b'[1, 2]\n[3, 4, 5]\n')
 
-    @mock.patch('builtins.print')
-    def test_styles(self, print):
+    def test_styles(self):
         for command in [styles.sphinx, styles.google, styles.numpy]:
-            command(2)
-            print.assert_called_with(4)
-            command(2, farewell='bye')
-            print.assert_called_with('bye')
+            with self._assert_stdout('4\n'):
+                command(2)
+            with self._assert_stdout('4\nbye\n'):
+                command(2, farewell='bye')
 
     def test_styles_cli(self):
         for style in ['sphinx', 'google', 'numpy']:
             args = [style, '2', '--farewell', 'bye']
             output = self._run_example(styles, args)
             self.assertEqual(output, b'4\nbye\n')
+
+    @contextlib.contextmanager
+    def _assert_stdout(self, s):
+        with contextlib.redirect_stdout(StringIO()) as file:
+            yield
+            self.assertEqual(file.getvalue(), s)
 
     def _run_example(self, example, argv):
         argv = [sys.executable, '-m', example.__name__] + argv
