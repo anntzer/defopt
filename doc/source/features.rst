@@ -329,6 +329,17 @@ You can then reference this entry point in your ``setup.py`` file.
         entry_points={'console_scripts': ['name=test:entry_point']}
     )
 
+Alternatively, arbitrary type-hinted functions can be directly run from the
+command line with
+
+.. code-block:: sh
+
+    $ python -m defopt dotted.name args ...
+
+which is equivalent to passing the ``dotted.name`` function to `defopt.run` and
+calling the resulting script with ``args ...``.  This may be useful if you do
+not want your script to have a hard dependency on `defopt`.
+
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _Google: http://google.github.io/styleguide/pyguide.html
 .. _Numpy: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt

@@ -10,6 +10,7 @@ from contextlib import ExitStack
 from enum import Enum
 from io import StringIO
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import defopt
 from defopt import __version__
@@ -1041,8 +1042,37 @@ class TestExamples(unittest.TestCase):
             self.assertEqual(file.getvalue(), s)
 
     def _run_example(self, example, argv):
-        argv = [sys.executable, '-m', example.__name__] + argv
-        output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
+        output = subprocess.check_output(
+            [sys.executable, '-m', example.__name__] + argv,
+            stderr=subprocess.STDOUT)
+        return output.replace(b'\r\n', b'\n')
+
+
+class TestRunAny(unittest.TestCase):  # TODO: Reuse TestExamples.
+    def test_lists_cli(self):
+        output = self._run_any(
+            'examples.lists.main', ['2', '--numbers', '1.2', '3.4'])
+        self.assertEqual(output, b'[2.4, 6.8]\n')
+        output = self._run_any(
+            'examples.lists.main', ['--numbers', '1.2', '3.4', '--', '2'])
+        self.assertEqual(output, b'[2.4, 6.8]\n')
+
+    def test_failed_imports(self):
+        with self.assertRaises(subprocess.CalledProcessError) as error:
+            self._run_any('does-not-exist', [])
+        self.assertIn(b"Failed to locate 'does-not-exist'",
+                      error.exception.output)
+        with TemporaryDirectory() as tmpdir:
+            Path(tmpdir, 'bad_module.py').write_text('1+')
+            with self.assertRaises(subprocess.CalledProcessError) as error:
+                self._run_any('bad_module', [], cwd=tmpdir)
+            self.assertRegex(error.exception.output,
+                             br'SyntaxError: invalid syntax\n\Z')
+
+    def _run_any(self, command, argv, **kwargs):
+        output = subprocess.check_output(
+            [sys.executable, '-m', 'defopt', command] + argv,
+            stderr=subprocess.STDOUT, **kwargs)
         return output.replace(b'\r\n', b'\n')
 
 

@@ -11,11 +11,13 @@ import functools
 import importlib
 import inspect
 import re
+import pydoc
 import sys
 import typing
 from argparse import (
-    SUPPRESS, Action, ArgumentError, ArgumentTypeError, ArgumentParser,
-    RawTextHelpFormatter)
+    REMAINDER, SUPPRESS,
+    Action, ArgumentParser, RawTextHelpFormatter,
+    ArgumentError, ArgumentTypeError)
 from collections import defaultdict, namedtuple, Counter
 from enum import Enum
 from pathlib import PurePath
@@ -840,3 +842,23 @@ def _make_store_tuple_action_class(make_tuple, member_types, parsers):
                 raise ArgumentError(self, str(exc))
             setattr(namespace, self.dest, value)
     return _StoreTupleAction
+
+
+if __name__ == '__main__':
+    def main(argv=None):
+        parser = ArgumentParser()
+        parser.add_argument('function')
+        parser.add_argument('args', nargs=REMAINDER)
+        args = parser.parse_args(argv)
+        try:
+            func = pydoc.locate(args.function)
+        except pydoc.ErrorDuringImport as exc:
+            raise exc.value from None
+        if func is None:
+            raise ImportError('Failed to locate {!r}'.format(args.function))
+        argparse_kwargs = (
+            {'prog': ' '.join(sys.argv[:2])} if argv is None else {})
+        retval = run(func, argv=args.args, argparse_kwargs=argparse_kwargs)
+        sys.displayhook(retval)
+
+    main()

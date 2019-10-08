@@ -20,6 +20,9 @@ next
 * Support varargs documented under ``*args`` instead of ``args``.
 * Support standard Sphinx roles in the Python domain (``:py:func:``,
   ``:func:``, etc.); they are just stripped out.
+* Arbitrary type-hinted functions can now by run with
+  ``python -mdefopt dotted.name args ...``, as if ``dotted.name`` was passed
+  to `defopt.run`.
 
 5.1.0 (2019-03-01)
 ------------------
