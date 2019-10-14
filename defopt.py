@@ -25,7 +25,6 @@ from docutils.nodes import NodeVisitor, SkipNode
 from docutils.parsers.rst.states import Body
 from docutils.utils import roman
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
-import typing_inspect as ti
 
 try:
     from typing import Literal
@@ -51,10 +50,30 @@ _Param = namedtuple('_Param', ('text', 'type'))
 _SUPPRESS_BOOL_DEFAULT = object()
 
 
-def _ti_get_args(tp):  # Make Py<=3.6 behave consistently with Py>=3.7.
-    if type(tp) is type(Literal):  # Py<=3.6.
-        return tp.__values__
-    return ti.get_args(tp, evaluate=True)  # evaluate=True default on Py>=3.7.
+if hasattr(typing, 'get_args'):
+    _ti_get_args = typing.get_args
+else:
+    def _ti_get_args(tp):
+        import typing_inspect as ti
+        if type(tp) is type(Literal):  # Py<=3.6.
+            return tp.__values__
+        return ti.get_args(tp, evaluate=True)  # evaluate=True default on Py>=3.7.
+
+
+if hasattr(typing, 'get_origin'):
+    _ti_get_origin = typing.get_origin
+else:
+    def _ti_get_origin(tp):
+        import typing_inspect as ti
+        if type(tp) is type(Literal):  # Py<=3.6.
+            return Literal
+        origin = ti.get_origin(tp)
+        return {  # Py<=3.6.
+            typing.List: list,
+            typing.Iterable: collections.abc.Iterable,
+            typing.Sequence: collections.abc.Sequence,
+            typing.Tuple: tuple,
+        }.get(origin, origin)
 
 
 def run(funcs: Union[Callable, List[Callable]], *,
@@ -281,7 +300,7 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
                 kwargs['action'] = 'append'
                 kwargs['default'] = []
         member_types = None
-        if ti.is_tuple_type(type_):
+        if _ti_get_origin(type_) is tuple:
             member_types = _ti_get_args(type_)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
@@ -303,12 +322,9 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
             kwargs['type'] = _get_parser(type_, parsers)
             if isinstance(type_, type) and issubclass(type_, Enum):
                 kwargs['metavar'] = '{' + ','.join(type_.__members__) + '}'
-            elif ti.get_origin(type_) is Literal:  # Py>=3.7.
+            elif _ti_get_origin(type_) is Literal:
                 kwargs['metavar'] = (
                     '{' + ','.join(map(str, _ti_get_args(type_))) + '}')
-            elif type(type_) is type(Literal):  # Py<=3.6.
-                kwargs['metavar'] = (
-                    '{' + ','.join(map(str, type_.__values__)) + '}')
         _add_argument(parser, name, short, **kwargs)
 
     parser.set_defaults(_func=func, _exc_types=exc_types)
@@ -327,10 +343,8 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
 
 
 def _is_list_like(type_):
-    return ti.get_origin(type_) in [
-        typing.List, typing.Iterable, typing.Sequence,  # Py<=3.6.
-        list, collections.abc.Iterable, collections.abc.Sequence,  # Py>=3.7
-    ]
+    return (_ti_get_origin(type_)
+            in [list, collections.abc.Iterable, collections.abc.Sequence])
 
 
 def _get_type(func, name):
@@ -385,7 +399,7 @@ def _get_type_from_hint(hint):
     if _is_list_like(hint):
         [type_] = _ti_get_args(hint)
         return List[type_]
-    elif ti.is_union_type(hint):
+    elif _ti_get_origin(hint) is Union:
         args = _ti_get_args(hint)
         if len(args) == 2:
             type_, none = args
@@ -563,7 +577,7 @@ def _parse_docstring(doc):
             self.paragraphs.append(comment_token)
             # Comments report their line as the *end* line of the comment.
             self.start_lines.append(
-                node.line - node.children[0].count("\n") - 1)
+                node.line - node.children[0].count('\n') - 1)
             raise SkipNode
 
         def visit_system_message(self, node):
@@ -624,17 +638,14 @@ def _find_parser(type_, parsers):
         return _make_enum_parser(type_)
     elif _is_constructible_from_str(type_):
         return type_
-    elif ti.is_union_type(type_):
+    elif _ti_get_origin(type_) is Union:
         return _make_union_parser(
             type_,
-            [_find_parser(subtype, parsers)
-             for subtype in _ti_get_args(type_)])
-    elif (ti.get_origin(type_) is Literal  # Py>=3.7.
-          or type(type_) is type(Literal)):  # Py<=3.6.
+            [_find_parser(arg, parsers) for arg in _ti_get_args(type_)])
+    elif _ti_get_origin(type_) is Literal:  # Py>=3.7.
         return _make_literal_parser(
             type_,
-            [_find_parser(type(arg), parsers)
-             for arg in _ti_get_args(type_)])
+            [_find_parser(type(arg), parsers) for arg in _ti_get_args(type_)])
     else:
         raise Exception('no parser found for type {}'.format(
             # typing types have no __name__.

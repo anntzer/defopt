@@ -19,12 +19,15 @@ setup(
     install_requires=[
         'docutils',
         'sphinxcontrib-napoleon>=0.7.0',
-        'typing_inspect>=0.3.1',
     ],
     extras_require={
-        ':python_version<"3.5"': ['typing>=3.7.4'],  # Version constraint matches typing_extensions.
-        ':python_version<"3.8"': ['typing_extensions>=3.7.4'],  # Literal support.
-        ':sys.platform=="win32"': ['colorama>=0.3.4'],
+        ':python_version<"3.8"': [
+            'typing_extensions>=3.7.4',  # Literal support.
+            'typing_inspect>=0.3.1',
+        ],
+        ':sys.platform=="win32"': [
+            'colorama>=0.3.4',
+        ],
     },
     classifiers=[
         'Programming Language :: Python',
