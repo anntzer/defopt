@@ -484,7 +484,6 @@ class TestUnion(unittest.TestCase):
             defopt.run(main, argv=['1'])
 
 
-@unittest.skipIf(defopt.Literal is None, 'Literal not available')
 class TestLiteral(unittest.TestCase):
     def test_literal(self):
         def main(foo):
@@ -970,16 +969,15 @@ class TestExamples(unittest.TestCase):
             self._run_example(choices, ['choose-enum', 'four'])
         self.assertIn(b'four', error.exception.output)
         self.assertIn(b'{one,two,three}', error.exception.output)
-        if defopt.Literal is not None:
-            output = self._run_example(choices, ['choose-literal', 'foo'])
-            self.assertEqual(output, b'foo\n')
-            output = self._run_example(
-                choices, ['choose-literal', 'foo', '--opt', 'baz'])
-            self.assertEqual(output, b'foo\nbaz\n')
-            with self.assertRaises(subprocess.CalledProcessError) as error:
-                self._run_example(choices, ['choose-literal', 'baz'])
-            self.assertIn(b'baz', error.exception.output)
-            self.assertIn(b'{foo,bar}', error.exception.output)
+        output = self._run_example(choices, ['choose-literal', 'foo'])
+        self.assertEqual(output, b'foo\n')
+        output = self._run_example(
+            choices, ['choose-literal', 'foo', '--opt', 'baz'])
+        self.assertEqual(output, b'foo\nbaz\n')
+        with self.assertRaises(subprocess.CalledProcessError) as error:
+            self._run_example(choices, ['choose-literal', 'baz'])
+        self.assertIn(b'baz', error.exception.output)
+        self.assertIn(b'{foo,bar}', error.exception.output)
 
     def test_exceptions(self):
         self._run_example(exceptions, ['1'])

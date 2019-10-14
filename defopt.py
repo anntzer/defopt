@@ -282,10 +282,10 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
             if inspect.isclass(type_.type) and issubclass(type_.type, Enum):
                 kwargs['metavar'] = (
                     '{' + ','.join(type_.type.__members__) + '}')
-            elif Literal and ti.get_origin(type_.type) is Literal:  # Py >= 3.7.
+            elif ti.get_origin(type_.type) is Literal:  # Py >= 3.7.
                 kwargs['metavar'] = (
                     '{' + ','.join(map(str, _ti_get_args(type_.type))) + '}')
-            elif Literal and type(type_.type) is type(Literal):  # Py <= 3.6.
+            elif type(type_.type) is type(Literal):  # Py <= 3.6.
                 kwargs['metavar'] = (
                     '{' + ','.join(map(str, type_.type.__values__)) + '}')
         _add_argument(parser, name, short, **kwargs)
@@ -608,8 +608,8 @@ def _find_parser(type_, parsers):
             type_,
             [_find_parser(subtype, parsers)
              for subtype in _ti_get_args(type_)])
-    elif Literal and (ti.get_origin(type_) is Literal  # Py >= 3.7.
-                      or type(type_) is type(Literal)):  # Py <= 3.6.
+    elif (ti.get_origin(type_) is Literal  # Py >= 3.7.
+          or type(type_) is type(Literal)):  # Py <= 3.6.
         return _make_literal_parser(
             type_,
             [_find_parser(type(arg), parsers)
