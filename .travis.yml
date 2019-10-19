@@ -1,14 +1,27 @@
 dist: xenial
-sudo: true
-language: python
-python:
-  - 3.5
-  - 3.6
-  - 3.7
-  - 3.8-dev
-install:
-  - pip install --upgrade pip setuptools coverage
-  - pip install .
-script:
-  - python -mcoverage run setup.py test
-  - python -mcoverage report
+language: generic
+install: |
+  wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh &&
+  bash miniconda.sh -b -p $HOME/miniconda &&
+  source "$HOME/miniconda/etc/profile.d/conda.sh" &&
+  hash -r &&
+  conda config --set always_yes yes &&
+  conda update -q conda &&
+  for pyver in $(python setup.py --classifiers | grep -Po 'Python :: \K.*'); do
+    conda create -q -n "py$pyver" python="$pyver" &&
+    conda activate "py$pyver" &&
+    pip install --upgrade pip setuptools coverage &&
+    pip install . &&
+    conda deactivate ||
+    exit 1
+  done
+script: |
+  for env in $(conda info -e | grep -o '^py\S*'); do
+    echo "Testing on $env" &&
+    conda activate "$env" &&
+    python -mcoverage run --append setup.py test &&
+    conda deactivate ||
+    exit 1
+  done &&
+  conda activate "$env" &&
+  python -mcoverage report --show-missing
