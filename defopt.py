@@ -23,7 +23,6 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from docutils.core import publish_doctree
 from docutils.nodes import NodeVisitor, SkipNode
 from docutils.parsers.rst.states import Body
-from docutils.utils import roman
 from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
 
 try:
@@ -516,18 +515,7 @@ def _parse_docstring(doc):
             fmt = {('(', ')'): 'parens',
                    ('', ')'): 'rparen',
                    ('', '.'): 'period'}[node['prefix'], node['suffix']]
-            try:
-                start = node['start']
-            except KeyError:
-                start = 1
-            else:
-                start = {
-                    'arabic': int,
-                    'loweralpha': lambda s: ord(s) - ord('a') + 1,
-                    'upperalpha': lambda s: ord(s) - ord('A') + 1,
-                    'lowerroman': lambda s: roman.fromRoman(s.upper()),
-                    'upperroman': lambda s: roman.fromRoman(s),
-                }[enumtype](start)
+            start = node.get('start', 1)
             enumerators = [Body(None).make_enumerator(i, enumtype, fmt)[0]
                            for i in range(start, start + len(node))]
             width = max(map(len, enumerators))
@@ -662,20 +650,21 @@ def _parse_bool(string):
 
 
 def _parse_slice(string):
-    exc = ValueError('{} is not a valid slice string'.format(string))
+    slices = []
+
+    class SliceVisitor(ast.NodeVisitor):
+        def visit_Slice(self, node):
+            start = ast.literal_eval(node.lower) if node.lower else None
+            stop = ast.literal_eval(node.upper) if node.upper else None
+            step = ast.literal_eval(node.step) if node.step else None
+            slices.append(slice(start, stop, step))
+
     try:
-        mod = ast.parse("_[{}]".format(string))
-    except SyntaxError:
-        raise exc
-    if not len(mod.body) == 1:
-        raise exc
-    sl = mod.body[0].value.slice
-    if not isinstance(sl, ast.Slice):
-        raise exc
-    start = ast.literal_eval(sl.lower) if sl.lower else None
-    stop = ast.literal_eval(sl.upper) if sl.upper else None
-    step = ast.literal_eval(sl.step) if sl.step else None
-    return slice(start, stop, step)
+        SliceVisitor().visit(ast.parse('_[{}]'.format(string)))
+        sl, = slices
+    except (SyntaxError, ValueError):
+        raise ValueError('{} is not a valid slice string'.format(string))
+    return sl
 
 
 def _make_enum_parser(enum):

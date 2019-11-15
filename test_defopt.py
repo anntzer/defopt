@@ -1,3 +1,4 @@
+import builtins
 import contextlib
 import inspect
 import subprocess
@@ -69,7 +70,6 @@ class TestDefopt(unittest.TestCase):
     def test_no_default(self):
         def main(a):
             """:type a: str"""
-            return a
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
 
@@ -104,10 +104,8 @@ class TestDefopt(unittest.TestCase):
             defopt.run(foo=None)
 
     def test_no_subparser_specified(self):
-        def sub1():
-            pass
-        def sub2():
-            pass
+        def sub1(): pass
+        def sub2(): pass
         with self.assertRaises(SystemExit):
             defopt.run([sub1, sub2], argv=[])
 
@@ -124,12 +122,8 @@ class TestDefopt(unittest.TestCase):
             defopt.run(bad, argv=['foo'])
 
     def test_return(self):
-        def one():
-            return 1
-
-        def none():
-            pass
-
+        def one(): return 1
+        def none(): pass
         self.assertEqual(defopt.run([one, none], argv=['one']), 1)
         self.assertEqual(defopt.run([one, none], argv=['none']), None)
 
@@ -348,7 +342,6 @@ class TestFlags(unittest.TestCase):
         with self.assertRaises(SystemExit):
             defopt.run(func, argv=['-b', '2'])
 
-
     def test_auto_short_help(self):
         def func(*, hello="world"):
             """:type hello: str"""
@@ -463,10 +456,7 @@ class TestExceptions(unittest.TestCase):
             :param str name: name
             :raises RuntimeError:
             """
-            if name == "RuntimeError":
-                raise RuntimeError("oops")
-            elif name == "ValueError":
-                raise ValueError("oops")
+            raise getattr(builtins, name)("oops")
 
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=["RuntimeError"])
@@ -669,8 +659,10 @@ class TestDoc(unittest.TestCase):
 
 
         1. bar
+        #. baz
 
-        2. baz
+        ii. bar
+        #.  baz
         """
         doc = defopt._parse_docstring(inspect.cleandoc(doc))
         # Use inspect.cleandoc and not textwrap.dedent, as we want to keep
@@ -689,8 +681,10 @@ class TestDoc(unittest.TestCase):
              
              
             1. bar 
+            2. baz 
              
-            2. baz"""))
+            ii.  bar 
+            iii. baz"""))
 
 
 class TestAnnotations(unittest.TestCase):
@@ -727,69 +721,56 @@ class TestHelp(unittest.TestCase):
     def test_type(self):
         def foo(bar):
             """:param int bar: baz"""
-            return bar
         self.assertIn('(type: int)', self._get_help(foo))
 
     def test_enum(self):
         def foo(bar):
             """:param Choice bar: baz"""
-            return bar
         self.assertIn('(type: Choice)', self._get_help(foo))
 
     def test_default(self):
         def foo(bar=1):
             """:param int bar: baz"""
-            return bar
         self.assertIn('(type: int, default: 1)', self._get_help(foo))
 
     def test_default_list(self):
         def foo(bar=[]):
             """:param typing.List[int] bar: baz"""
-            return bar
         self.assertIn('(type: int, default: [])', self._get_help(foo))
 
     def test_default_bool(self):
         def foo(bar=False):
             """:param bool bar: baz"""
-            return bar
         self.assertIn('(default: False)', self._get_help(foo))
 
     def test_keyword_only(self):
         def foo(*, bar):
             """:param int bar: baz"""
-            return bar
         self.assertNotIn('default', self._get_help(foo))
 
     def test_keyword_only_bool(self):
         def foo(*, bar):
             """:param bool bar: baz"""
-            return bar
         self.assertNotIn('default', self._get_help(foo))
 
     def test_tuple(self):
         def main(foo=None):
-            """
-            :param typing.Tuple[int,str] foo: help
-            """
+            """:param typing.Tuple[int,str] foo: help"""
         self.assertIn('--foo FOO FOO', self._get_help(main))
 
     def test_namedtuple(self):
         def main(foo=None):
-            """
-            :param Pair foo: help
-            """
+            """:param Pair foo: help"""
         self.assertIn('--foo first second', self._get_help(main))
 
     def test_var_positional(self):
         def foo(*bar):
             """:param int bar: baz"""
-            return bar
         self.assertNotIn('default', self._get_help(foo))
 
     def test_list_var_positional(self):
         def foo(*bar):
             """:param list[int] bar: baz"""
-            return bar
         self.assertNotIn('default', self._get_help(foo))
 
     def test_private(self):
@@ -800,7 +781,6 @@ class TestHelp(unittest.TestCase):
     def test_no_interpolation(self):
         def foo(bar):
             """:param int bar: %(prog)s"""
-            return bar
         self.assertIn('%(prog)s', self._get_help(foo))
         self.assertNotIn('%%', self._get_help(foo))
 
@@ -829,7 +809,6 @@ class TestHelp(unittest.TestCase):
     def test_hide_types(self):
         def foo(bar):
             """:param int bar: baz"""
-            return bar
         self.assertNotIn('type', self._get_help(foo, show_types=False))
 
     def _get_help(self, funcs, **kwargs):
@@ -842,18 +821,20 @@ class TestHelp(unittest.TestCase):
 
 class TestVersion(unittest.TestCase):
     def test_no_version(self):
-        with self.assertRaises(SystemExit), self._assert_stderr(''):
-            defopt.run(lambda: None, argv=['--version'])
+        with self.assertRaises(SystemExit), self._assert_stdout(''):
+            defopt.run([], argv=['--version'])
 
     def test_version(self):
-        with self.assertRaises(SystemExit), self._assert_stderr('foo 42\n'):
-            defopt.run(lambda: None, version='foo 42', argv=['--version'])
+        with self.assertRaises(SystemExit), self._assert_stdout('foo 42\n'):
+            defopt.run([], version='foo 42', argv=['--version'])
 
     @contextlib.contextmanager
-    def _assert_stderr(self, s):
-        with contextlib.redirect_stderr(StringIO()) as file:
-            yield
-            self.assertEqual(file.getvalue(), s)
+    def _assert_stdout(self, s):
+        with contextlib.redirect_stdout(StringIO()) as file:
+            try:
+                yield
+            finally:
+                self.assertEqual(file.getvalue(), s)
 
 
 class TestExamples(unittest.TestCase):
