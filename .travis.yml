@@ -19,7 +19,7 @@ script: |
   for env in $(conda info -e | grep -o '^py\S*'); do
     echo "Testing on $env" &&
     conda activate "$env" &&
-    python -mcoverage run --append setup.py test &&
+    python -mcoverage run --append --module unittest --buffer &&
     conda deactivate ||
     exit 1
   done &&

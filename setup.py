@@ -14,7 +14,6 @@ setup(
     url='https://github.com/anntzer/defopt',
     license='MIT',
     py_modules=['defopt'],
-    test_suite='test_defopt',
     python_requires='>=3.5',
     install_requires=[
         'docutils',
