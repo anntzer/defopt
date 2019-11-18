@@ -299,8 +299,11 @@ Additional parser features
 Type information can be automatically added to the help text by passing
 ``show_types=True`` to `defopt.run`.
 
-Support for a ``--version`` flag can be added by passing ``version="..."`` to
-`defopt.run`.
+By default, a ``--version`` flag will be added; the version string is
+autodetected from the module where the function is defined (and the flag
+is suppressed if the version detection fails).  Passing ``version="..."``
+to `defopt.run` forces the version string, and passing ``version=False``
+suppresses the flag.
 
 Entry points
 ------------

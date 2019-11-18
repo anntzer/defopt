@@ -14,7 +14,7 @@ next
 * Added `defopt.signature` to separate the signature-and-docstring parsing from
   the ArgumentParser construction.
 * Fixed removal of comments from help string.
-* Added support for ``version``.
+* Added support for ``--version``.
 
 5.1.0 (2019-03-01)
 ------------------

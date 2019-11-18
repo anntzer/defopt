@@ -8,6 +8,7 @@ import ast
 import collections.abc
 import contextlib
 import functools
+import importlib
 import inspect
 import re
 import sys
@@ -84,7 +85,7 @@ def run(funcs: Union[Callable, List[Callable]], *,
         short: Optional[Dict[str, str]] = None,
         strict_kwonly: bool = True,
         show_types: bool = False,
-        version: Optional[str] = None,
+        version: Union[str, None, bool] = None,
         argparse_kwargs: dict = {},
         argv: Optional[List[str]] = None):
     """
@@ -114,8 +115,16 @@ def run(funcs: Union[Callable, List[Callable]], *,
         If `True`, display type names after parameter descriptions in the help
         text.
     :param version:
-        If not None, add a ``--version`` flag which prints the given version
+        If a string, add a ``--version`` flag which prints the given version
         string and exits.
+        If ``True``, the version string is auto-detected by searching for a
+        ``__version__`` attribute on the module where the function is defined,
+        and its parent packages, if any.  Error out if such a version cannot be
+        found, or if multiple callables with different version strings are
+        passed.
+        If ``None`` (the default), behave as for ``True``, but don't add a
+        ``--version`` flag if no version string can be autodetected.
+        If ``False``, do not add a ``--version`` flag.
     :param argparse_kwargs:
         A mapping of keyword arguments that will be passed to the
         ArgumentParser constructor.  (If the ``formatter_class`` key is set, it
@@ -151,10 +160,10 @@ def _create_parser(
     formatter_class = _Formatter if show_types else _NoTypeFormatter
     parser = ArgumentParser(
         **{'formatter_class': formatter_class, **argparse_kwargs})
-    if version is not None:
-        parser.add_argument('--version', action='version', version=version)
+    version_sources = []
     if callable(funcs):
         _populate_parser(funcs, parser, parsers, short, strict_kwonly)
+        version_sources.append(funcs)
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
@@ -167,7 +176,45 @@ def _create_parser(
                 formatter_class=formatter_class,
                 help=_parse_docstring(inspect.getdoc(func)).first_line)
             _populate_parser(func, subparser, parsers, short, strict_kwonly)
+            version_sources.append(func)
+    if isinstance(version, str):
+        version_string = version
+    elif version is None or version:
+        version_string = _get_version(version_sources)
+        if version and version_string is None:
+            raise ValueError('Failed to autodetect version string')
+    else:
+        version_string = None
+    if version_string is not None:
+        parser.add_argument(
+            '{0}{0}version'.format(parser.prefix_chars[0]),
+            action='version', version=version_string)
     return parser
+
+
+def _get_version(funcs):
+    versions = {v for v in map(_get_version1, funcs) if v is not None}
+    return versions.pop() if len(versions) == 1 else None
+
+
+def _get_version1(func):
+    try:
+        module_name = func.__module__
+    except AttributeError:
+        return
+    if module_name == '__main__':
+        f_globals = getattr(func, '__globals__', {})
+        if f_globals.get('__spec__'):
+            module_name = f_globals['__spec__'].name
+        else:
+            return f_globals.get('__version__')
+    while True:
+        try:
+            return importlib.import_module(module_name).__version__
+        except AttributeError:
+            if '.' not in module_name:
+                return
+            module_name, _ = module_name.rsplit('.', 1)
 
 
 class _Formatter(RawTextHelpFormatter):

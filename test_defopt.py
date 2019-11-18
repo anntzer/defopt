@@ -1,15 +1,18 @@
 import builtins
 import contextlib
 import inspect
+import re
 import subprocess
 import sys
 import typing
 import unittest
+from contextlib import ExitStack
 from enum import Enum
 from io import StringIO
 from pathlib import Path
 
 import defopt
+from defopt import __version__
 from examples import (
     annotations, booleans, choices, exceptions, lists, parsers, short,
     starargs, styles)
@@ -821,20 +824,43 @@ class TestHelp(unittest.TestCase):
 
 class TestVersion(unittest.TestCase):
     def test_no_version(self):
-        with self.assertRaises(SystemExit), self._assert_stdout(''):
+        for funcs in [[], lambda: None, [lambda: None]]:
+            with self.assertRaises(SystemExit), \
+                 self._assert_streams(
+                     stdout=r'\A\Z',
+                     stderr='unrecognized arguments: --version'):
+                defopt.run([], version=False, argv=['--version'])
+
+    def test_auto_version(self):
+        with self.assertRaises(SystemExit), \
+             self._assert_streams(
+                 stdout=r'\A{}\n\Z'.format(re.escape(__version__))):
+            defopt.run(lambda: None, argv=['--version'])
+        with self.assertRaises(SystemExit), \
+             self._assert_streams(
+                 stdout=r'\A\Z',
+                 stderr='unrecognized arguments: --version'):
             defopt.run([], argv=['--version'])
 
-    def test_version(self):
-        with self.assertRaises(SystemExit), self._assert_stdout('foo 42\n'):
+    def test_manual_version(self):
+        with self.assertRaises(SystemExit), \
+             self._assert_streams(stdout=r'\Afoo 42\n\Z'):
             defopt.run([], version='foo 42', argv=['--version'])
 
     @contextlib.contextmanager
-    def _assert_stdout(self, s):
-        with contextlib.redirect_stdout(StringIO()) as file:
-            try:
-                yield
-            finally:
-                self.assertEqual(file.getvalue(), s)
+    def _assert_streams(self, *, stdout=None, stderr=None):
+        with ExitStack() as stack:
+            if stdout is not None:
+                r_stdout = stack.enter_context(
+                    contextlib.redirect_stdout(StringIO()))
+                stack.callback(
+                    lambda: self.assertRegex(r_stdout.getvalue(), stdout))
+            if stderr is not None:
+                r_stderr = stack.enter_context(
+                    contextlib.redirect_stderr(StringIO()))
+                stack.callback(
+                    lambda: self.assertRegex(r_stderr.getvalue(), stderr))
+            yield
 
 
 class TestExamples(unittest.TestCase):
