@@ -19,9 +19,10 @@ script: |
   for env in $(conda info -e | grep -o '^py\S*'); do
     echo "Testing on $env" &&
     conda activate "$env" &&
-    python -mcoverage run --append --module unittest --buffer &&
+    COVERAGE_FILE=".coverage.$env" python -mcoverage run --append --module unittest --buffer &&
     conda deactivate ||
     exit 1
   done &&
   conda activate "$env" &&
+  python -mcoverage combine .coverage* &&
   python -mcoverage report --show-missing

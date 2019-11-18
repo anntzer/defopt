@@ -7,14 +7,20 @@ with open('README.rst') as readme:
 
 setup(
     name='defopt',
-    version='5.1.0',
     description='Effortless argument parser',
     long_description=long_description,
     author='Antony Lee',
     url='https://github.com/anntzer/defopt',
     license='MIT',
-    py_modules=['defopt'],
+    package_dir={'': 'lib'},
+    py_modules=['defopt', '_defopt_version'],
     python_requires='>=3.5',
+    setup_requires=['setuptools_scm'],
+    use_scm_version=lambda: {  # xref __init__.py
+        "version_scheme": "post-release",
+        "local_scheme": "node-and-date",
+        "write_to": "lib/_defopt_version.py",
+    },
     install_requires=[
         'docutils',
         'sphinxcontrib-napoleon>=0.7.0',

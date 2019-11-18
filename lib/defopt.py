@@ -37,8 +37,12 @@ except ImportError:
     def _colorama_text(*args):
         yield
 
+try:
+    from _defopt_version import version as __version__
+except ImportError:
+    pass
+
 __all__ = ['run', 'signature']
-__version__ = '5.1.0'
 
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
 _TYPE_NAMES = ['type', 'kwtype']
