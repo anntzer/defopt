@@ -724,76 +724,93 @@ class TestHelp(unittest.TestCase):
     def test_type(self):
         def foo(bar):
             """:param int bar: baz"""
-        self.assertIn('(type: int)', self._get_help(foo))
+        self.assert_in_help('(type: int)', foo, 'dt')
+        self.assert_in_help('(type: int)', foo, 't')
+        self.assert_not_in_help('(', foo, 'd')
+        self.assert_not_in_help('(', foo, '')
 
-    def test_enum(self):
+    def test_enum_and_no_help(self):
         def foo(bar):
-            """:param Choice bar: baz"""
-        self.assertIn('(type: Choice)', self._get_help(foo))
+            """:param Choice bar:"""
+        self.assert_in_help('(type: Choice)', foo, 'dt')
+        self.assert_in_help('(type: Choice)', foo, 't')
+        self.assert_not_in_help('(', foo, 'd')
+        self.assert_not_in_help('(', foo, '')
 
     def test_default(self):
         def foo(bar=1):
             """:param int bar: baz"""
-        self.assertIn('(type: int, default: 1)', self._get_help(foo))
+        self.assert_in_help('(type: int, default: 1)', foo, 'dt')
+        self.assert_in_help('(type: int)', foo, 't')
+        self.assert_in_help('(default: 1)', foo, 'd')
+        self.assert_not_in_help('(', foo, '')
 
     def test_default_list(self):
         def foo(bar=[]):
             """:param typing.List[int] bar: baz"""
-        self.assertIn('(type: int, default: [])', self._get_help(foo))
+        self.assert_in_help('(type: int, default: [])', foo, 'dt')
+        self.assert_in_help('(type: int)', foo, 't')
+        self.assert_in_help('(default: [])', foo, 'd')
+        self.assert_not_in_help('(', foo, '')
 
     def test_default_bool(self):
         def foo(bar=False):
             """:param bool bar: baz"""
-        self.assertIn('(default: False)', self._get_help(foo))
+        self.assert_in_help('(default: False)', foo, 'dt')
+        self.assert_not_in_help('(', foo, 't')
+        self.assert_in_help('(default: False)', foo, 'd')
+        self.assert_not_in_help('(', foo, '')
 
     def test_keyword_only(self):
         def foo(*, bar):
             """:param int bar: baz"""
-        self.assertNotIn('default', self._get_help(foo))
+        self.assert_in_help('(type: int)', foo, 'dt')
+        self.assert_in_help('(type: int)', foo, 't')
+        self.assert_not_in_help('(', foo, 'd')
+        self.assert_not_in_help('(', foo, '')
 
     def test_keyword_only_bool(self):
         def foo(*, bar):
             """:param bool bar: baz"""
-        self.assertNotIn('default', self._get_help(foo))
+        self.assert_not_in_help('default', foo, 'dt')
 
     def test_tuple(self):
         def main(foo=None):
             """:param typing.Tuple[int,str] foo: help"""
-        self.assertIn('--foo FOO FOO', self._get_help(main))
+        self.assert_in_help('--foo FOO FOO', main, '')
 
     def test_namedtuple(self):
         def main(foo=None):
             """:param Pair foo: help"""
-        self.assertIn('--foo first second', self._get_help(main))
+        self.assert_in_help('--foo first second', main, '')
 
     def test_var_positional(self):
         def foo(*bar):
             """:param int bar: baz"""
-        self.assertNotIn('default', self._get_help(foo))
+        self.assert_not_in_help('default', foo, 'dt')
 
     def test_list_var_positional(self):
         def foo(*bar):
             """:param list[int] bar: baz"""
-        self.assertNotIn('default', self._get_help(foo))
+        self.assert_not_in_help('default', foo, 'dt')
 
     def test_private(self):
         def foo(bar, _baz=None):
             """:param int bar: bar help"""
-        self.assertNotIn('baz', self._get_help(foo))
+        self.assert_not_in_help('baz', foo, 'dt')
 
     def test_no_interpolation(self):
         def foo(bar):
             """:param int bar: %(prog)s"""
-        self.assertIn('%(prog)s', self._get_help(foo))
-        self.assertNotIn('%%', self._get_help(foo))
+        self.assert_in_help('%(prog)s', foo, '')
+        self.assert_not_in_help('%%', foo, '')
 
     def test_rst_ansi(self):
         def foo():
             """**bold** *italic* `underlined`"""
-        self.assertIn('\033[1mbold\033[0m '
-                      '\033[3mitalic\033[0m '
-                      '\033[4munderlined\033[0m',
-                      self._get_help(foo))
+        self.assert_in_help(
+            '\033[1mbold\033[0m \033[3mitalic\033[0m \033[4munderlined\033[0m',
+            foo, '')
 
     def test_multiple(self):
         def foo():
@@ -806,19 +823,21 @@ class TestHelp(unittest.TestCase):
             """summary-of-bar
 
             Implements BAR."""
-        self.assertIn('summary-of-foo', self._get_help([foo, bar]))
-        self.assertNotIn('FOO', self._get_help([foo, bar]))
 
-    def test_hide_types(self):
-        def foo(bar):
-            """:param int bar: baz"""
-        self.assertNotIn('type', self._get_help(foo, show_types=False))
+        self.assert_in_help('summary-of-foo', [foo, bar], '')
+        self.assert_not_in_help('FOO', [foo, bar], '')
 
-    def _get_help(self, funcs, **kwargs):
-        show_types = kwargs.pop('show_types', True)
-        assert not kwargs
+    def assert_in_help(self, s, funcs, flags):
+        self.assertIn(s, self._get_help(funcs, flags))
+
+    def assert_not_in_help(self, s, funcs, flags):
+        self.assertNotIn(s, self._get_help(funcs, flags))
+
+    def _get_help(self, funcs, flags):
+        self.assertLessEqual({*flags}, {'d', 't'})
         parser = defopt._create_parser(
-            funcs, show_types=show_types, strict_kwonly=False)
+            funcs, show_defaults='d' in flags, show_types='t' in flags,
+            strict_kwonly=False)
         return parser.format_help()
 
 

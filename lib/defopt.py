@@ -15,7 +15,7 @@ import sys
 import typing
 from argparse import (
     SUPPRESS, ArgumentError, ArgumentTypeError, ArgumentParser,
-    RawTextHelpFormatter, _AppendAction, _StoreAction)
+    RawTextHelpFormatter, _StoreAction, _StoreFalseAction)
 from collections import defaultdict, namedtuple, Counter
 from enum import Enum
 from pathlib import PurePath
@@ -80,10 +80,19 @@ else:
         }.get(origin, origin)
 
 
+class _DefaultList(list):
+    """
+    Marker type used to determine that a parameter corresponds to a varargs,
+    and thus should have its default value hidden.  Varargs are unpacked during
+    function call, so the caller won't see this type.
+    """
+
+
 def run(funcs: Union[Callable, List[Callable]], *,
         parsers: Dict[type, Callable[[str], Any]] = {},
         short: Optional[Dict[str, str]] = None,
         strict_kwonly: bool = True,
+        show_defaults: bool = True,
         show_types: bool = False,
         version: Union[str, None, bool] = None,
         argparse_kwargs: dict = {},
@@ -111,9 +120,10 @@ def run(funcs: Union[Callable, List[Callable]], *,
         keyword-only parameters to command line flags, and non-keyword-only
         parameters with a default to optional positional command line
         parameters.
+    :param show_defaults:
+        Whether parameter defaults are appneded to parameter descriptions.
     :param show_types:
-        If `True`, display type names after parameter descriptions in the help
-        text.
+        Whether parameter types are appended to parameter descriptions.
     :param version:
         If a string, add a ``--version`` flag which prints the given version
         string and exits.
@@ -127,8 +137,7 @@ def run(funcs: Union[Callable, List[Callable]], *,
         If ``False``, do not add a ``--version`` flag.
     :param argparse_kwargs:
         A mapping of keyword arguments that will be passed to the
-        ArgumentParser constructor.  (If the ``formatter_class`` key is set, it
-        will override the formatter implied by ``show_types``.)
+        ArgumentParser constructor.
     :param argv:
         Command line arguments to parse (default: ``sys.argv[1:]``).
     :return:
@@ -136,7 +145,7 @@ def run(funcs: Union[Callable, List[Callable]], *,
     """
     parser = _create_parser(
         funcs, parsers=parsers, short=short, strict_kwonly=strict_kwonly,
-        show_types=show_types, version=version,
+        show_defaults=show_defaults, show_types=show_types, version=version,
         argparse_kwargs=argparse_kwargs)
     with _colorama_text():
         args = parser.parse_args(argv)
@@ -154,15 +163,16 @@ def _create_parser(
         parsers={},
         short=None,
         strict_kwonly=True,
+        show_defaults=True,
         show_types=False,
         version=None,
         argparse_kwargs={}):
-    formatter_class = _Formatter if show_types else _NoTypeFormatter
     parser = ArgumentParser(
-        **{'formatter_class': formatter_class, **argparse_kwargs})
+        **{**{'formatter_class': RawTextHelpFormatter}, **argparse_kwargs})
     version_sources = []
     if callable(funcs):
-        _populate_parser(funcs, parser, parsers, short, strict_kwonly)
+        _populate_parser(funcs, parser, parsers, short,
+                         strict_kwonly, show_defaults, show_types)
         version_sources.append(funcs)
     else:
         subparsers = parser.add_subparsers()
@@ -173,9 +183,10 @@ def _create_parser(
                 name = func.__name__.replace('_', '-')
             subparser = subparsers.add_parser(
                 name,
-                formatter_class=formatter_class,
+                formatter_class=RawTextHelpFormatter,
                 help=_parse_docstring(inspect.getdoc(func)).first_line)
-            _populate_parser(func, subparser, parsers, short, strict_kwonly)
+            _populate_parser(func, subparser, parsers, short,
+                             strict_kwonly, show_defaults, show_types)
             version_sources.append(func)
     if isinstance(version, str):
         version_string = version
@@ -215,33 +226,6 @@ def _get_version1(func):
             if '.' not in module_name:
                 return
             module_name, _ = module_name.rsplit('.', 1)
-
-
-class _Formatter(RawTextHelpFormatter):
-    show_types = True
-
-    # Modified from ArgumentDefaultsHelpFormatter to add type information,
-    # and remove defaults for varargs (which use _AppendAction instead of
-    # _StoreAction).
-    def _get_help_string(self, action):
-        info = []
-        if self.show_types:
-            if action.type is not None and '%(type)' not in action.help:
-                info.append('type: %(type)s')
-        if (not isinstance(action, _AppendAction)
-                and '%(default)' not in action.help
-                and action.default is not SUPPRESS
-                and action.default is not _SUPPRESS_BOOL_DEFAULT
-                and action.option_strings):
-            info.append('default: %(default)s')
-        if info:
-            return action.help + '\n({})'.format(', '.join(info))
-        else:
-            return action.help
-
-
-class _NoTypeFormatter(_Formatter):
-    show_types = False
 
 
 class Parameter(inspect.Parameter):
@@ -285,7 +269,8 @@ def signature(func: Callable):
             if not param.name.startswith('_')])
 
 
-def _populate_parser(func, parser, parsers, short, strict_kwonly):
+def _populate_parser(func, parser, parsers, short,
+                     strict_kwonly, show_defaults, show_types):
     sig = signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
@@ -304,6 +289,7 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
         short = {name.replace('_', '-'): name[0] for name in sig.parameters
                  if name not in positionals and count_initials[name[0]] == 1}
 
+    actions = []
     for name, param in sig.parameters.items():
         kwargs = {}
         if param.doc is not None:
@@ -321,34 +307,36 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
                 # Work around lack of "required non-exclusive group" in
                 # argparse by checking for that case ourselves.
                 default = _SUPPRESS_BOOL_DEFAULT
-            _add_argument(parser, name, short,
-                          action='store_true',
-                          default=default,
-                          # Add help if available.
-                          **kwargs)
-            _add_argument(parser, 'no-' + name, short,
-                          action='store_false',
-                          dest=name)
+            actions.extend([
+                _add_argument(parser, name, short,
+                              action='store_true',
+                              default=default,
+                              # Add help if available.
+                              **kwargs),
+                _add_argument(parser, 'no-' + name, short,
+                              action='store_false',
+                              default=default,
+                              dest=name)])
             continue
+        # Always set a default, even for required parameters, so that we can
+        # later (ab)use default == SUPPRESS (!= None) to detect required
+        # parameters.
+        kwargs['default'] = default
         if positional:
             kwargs['_positional'] = True
             if param.default is not param.empty:
                 kwargs['nargs'] = '?'
-                kwargs['default'] = default
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['nargs'] = '*'
-                # This is purely to override the displayed default of None.
-                # Ideally we wouldn't want to show a default at all.
-                kwargs['default'] = []
+                kwargs['default'] = _DefaultList()
         else:
             kwargs['required'] = required
-            kwargs['default'] = default
         if _is_list_like(type_):
             type_, = _ti_get_args(type_)
             kwargs['nargs'] = '*'
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['action'] = 'append'
-                kwargs['default'] = []
+                kwargs['default'] = _DefaultList()
         member_types = None
         if _ti_get_origin(type_) is tuple:
             member_types = _ti_get_args(type_)
@@ -375,7 +363,10 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly):
             elif _ti_get_origin(type_) is Literal:
                 kwargs['metavar'] = (
                     '{' + ','.join(map(str, _ti_get_args(type_))) + '}')
-        _add_argument(parser, name, short, **kwargs)
+        actions.append(_add_argument(parser, name, short, **kwargs))
+    for action in actions:
+        _update_help_string(
+            action, show_defaults=show_defaults, show_types=show_types)
 
     parser.set_defaults(_func=func, _exc_types=exc_types)
 
@@ -390,6 +381,22 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
         if name in short:
             args.insert(0, prefix_char + short[name])
     return parser.add_argument(*args, **kwargs)
+
+
+def _update_help_string(action, *, show_defaults, show_types):
+    action_help = action.help or ''
+    info = []
+    if show_types and action.type is not None and '%(type)' not in action_help:
+        info.append('type: %(type)s')
+    if (show_defaults
+            and not isinstance(action, _StoreFalseAction)
+            and not isinstance(action.default, _DefaultList)
+            and '%(default)' not in action_help
+            and action.default is not SUPPRESS
+            and action.default is not _SUPPRESS_BOOL_DEFAULT):
+        info.append('default: %(default)s')
+    parts = [action.help, '({})'.format(', '.join(info)) if info else '']
+    action.help = '\n'.join(filter(None, parts)) or ''
 
 
 def _is_list_like(type_):

@@ -15,6 +15,8 @@ next
   the ArgumentParser construction.
 * Fixed removal of comments from help string.
 * Added support for ``--version``.
+* Fixed displaying of defaults for parameters with no help, and added
+  ``show_defaults``.
 
 5.1.0 (2019-03-01)
 ------------------

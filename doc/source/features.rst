@@ -297,7 +297,8 @@ Additional parser features
 --------------------------
 
 Type information can be automatically added to the help text by passing
-``show_types=True`` to `defopt.run`.
+``show_types=True`` to `defopt.run`.  Defaults are displayed by default (sic),
+but this can be turned off by passing ``show_defaults=False``.
 
 By default, a ``--version`` flag will be added; the version string is
 autodetected from the module where the function is defined (and the flag
