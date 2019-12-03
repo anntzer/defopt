@@ -14,8 +14,8 @@ import re
 import sys
 import typing
 from argparse import (
-    SUPPRESS, ArgumentError, ArgumentTypeError, ArgumentParser,
-    RawTextHelpFormatter, _StoreAction, _StoreFalseAction)
+    SUPPRESS, Action, ArgumentError, ArgumentTypeError, ArgumentParser,
+    RawTextHelpFormatter)
 from collections import defaultdict, namedtuple, Counter
 from enum import Enum
 from pathlib import PurePath
@@ -389,7 +389,7 @@ def _update_help_string(action, *, show_defaults, show_types):
     if show_types and action.type is not None and '%(type)' not in action_help:
         info.append('type: %(type)s')
     if (show_defaults
-            and not isinstance(action, _StoreFalseAction)
+            and action.const is not False  # i.e. action='store_false'.
             and not isinstance(action.default, _DefaultList)
             and '%(default)' not in action_help
             and action.default is not SUPPRESS
@@ -784,13 +784,12 @@ def _make_literal_parser(literal, parsers):
 
 
 def _make_store_tuple_action_class(make_tuple, member_types, parsers):
-    class _StoreTupleAction(_StoreAction):
+    class _StoreTupleAction(Action):
         def __call__(self, parser, namespace, values, option_string=None):
             try:
                 value = make_tuple(_get_parser(arg, parsers)(value)
                                    for arg, value in zip(member_types, values))
             except ArgumentTypeError as exc:
                 raise ArgumentError(self, str(exc))
-            return super(_StoreTupleAction, self).__call__(
-                parser, namespace, value, option_string)
+            setattr(namespace, self.dest, value)
     return _StoreTupleAction
