@@ -24,7 +24,14 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from docutils.core import publish_doctree
 from docutils.nodes import NodeVisitor, SkipNode
 from docutils.parsers.rst.states import Body
-from sphinxcontrib.napoleon.docstring import GoogleDocstring, NumpyDocstring
+
+try:
+    collections.Callable = collections.abc.Callable
+    from sphinxcontrib.napoleon.docstring import (
+        GoogleDocstring, NumpyDocstring)
+finally:
+    if sys.version_info >= (3, 7):
+        del collections.Callable
 
 try:
     from typing import Literal
