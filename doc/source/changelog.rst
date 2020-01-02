@@ -17,6 +17,7 @@ next
 * Added support for ``--version``.
 * Fixed displaying of defaults for parameters with no help, and added
   ``show_defaults``.
+* Support varargs documented under ``*args`` instead of ``args``.
 
 5.1.0 (2019-03-01)
 ------------------

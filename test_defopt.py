@@ -64,11 +64,12 @@ class TestDefopt(unittest.TestCase):
                        argv=['sub_2', '--baz', '1']), 1)
 
     def test_var_positional(self):
-        def main(*foo):
-            """:type foo: int"""
-            return foo
-        self.assertEqual(defopt.run(main, argv=['1', '2']), (1, 2))
-        self.assertEqual(defopt.run(main, argv=[]), ())
+        for doc in [
+                ":type foo: int", r":type \*foo: int", ":param int foo: doc"]:
+            def main(*foo): return foo
+            main.__doc__ = doc
+            self.assertEqual(defopt.run(main, argv=['1', '2']), (1, 2))
+            self.assertEqual(defopt.run(main, argv=[]), ())
 
     def test_no_default(self):
         def main(a):
@@ -785,9 +786,11 @@ class TestHelp(unittest.TestCase):
         self.assert_in_help('--foo first second', main, '')
 
     def test_var_positional(self):
-        def foo(*bar):
-            """:param int bar: baz"""
-        self.assert_not_in_help('default', foo, 'dt')
+        for doc in [
+                ":type bar: int", r":type \*bar: int", ":param int bar: baz"]:
+            def foo(*bar): pass
+            foo.__doc__ = doc
+            self.assert_not_in_help('default', foo, 'dt')
 
     def test_list_var_positional(self):
         def foo(*bar):

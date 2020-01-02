@@ -602,8 +602,10 @@ def _parse_docstring(doc):
             parts = field_name.split()
             if len(parts) == 2:
                 doctype, name = parts
+                name = name.lstrip('*')
             elif len(parts) == 3:
                 doctype, type_, name = parts
+                name = name.lstrip('*')
                 if doctype not in _PARAM_TYPES:
                     raise SkipNode
                 if 'type' in self.params[name]:
