@@ -541,16 +541,9 @@ class TestDoc(unittest.TestCase):
         doc = defopt._parse_docstring("""start `int` end""")
         self.assertEqual(doc.text, 'start \033[4mint\033[0m end')
 
-    @unittest.expectedFailure
-    def test_explicit_role_desired(self):
-        """Desired output for issue #1."""
+    def test_explicit_role(self):
         doc = defopt._parse_docstring("""start :py:class:`int` end""")
         self.assertEqual(doc.text, 'start int end')
-
-    def test_explicit_role_actual(self):
-        """Workaround output for issue #1."""
-        doc = defopt._parse_docstring("""start :py:class:`int` end""")
-        self.assertEqual(doc.text, 'start :py:class:`int` end')
 
     def test_sphinx(self):
         doc = """

@@ -18,6 +18,8 @@ next
 * Fixed displaying of defaults for parameters with no help, and added
   ``show_defaults``.
 * Support varargs documented under ``*args`` instead of ``args``.
+* Support standard Sphinx roles in the Python domain (``:py:func:``,
+  ``:func:``, etc.); they are just stripped out.
 
 5.1.0 (2019-03-01)
 ------------------

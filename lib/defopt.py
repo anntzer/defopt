@@ -21,8 +21,8 @@ from enum import Enum
 from pathlib import PurePath
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from docutils.core import publish_doctree
-from docutils.nodes import NodeVisitor, SkipNode
+import docutils.core
+from docutils.nodes import NodeVisitor, SkipNode, TextElement
 from docutils.parsers.rst.states import Body
 
 try:
@@ -493,6 +493,29 @@ def _call_function(parser, func, args):
     return func(*positionals, **keywords)
 
 
+def _passthrough_role(
+        name, rawtext, text, lineno, inliner, options={}, content=[]):
+    return [TextElement(rawtext, text)], []
+
+
+@contextlib.contextmanager
+def _sphinx_common_roles():
+    # See "Cross-referencing Python objects" section of
+    # http://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html
+    roles = [
+        'mod', 'func', 'data', 'const', 'class', 'meth', 'attr', 'exc', 'obj']
+    # No public unregistration API :(  Also done by sphinx.
+    role_map = docutils.parsers.rst.roles._roles
+    for role in roles:
+        role_map[role] = role_map['py:' + role] = _passthrough_role
+    try:
+        yield
+    finally:
+        for role in roles:
+            role_map.pop(role)
+            role_map.pop('py:' + role)
+
+
 @functools.lru_cache()
 def _parse_docstring(doc):
     """Extract documentation from a function's docstring."""
@@ -504,13 +527,18 @@ def _parse_docstring(doc):
     doc = str(GoogleDocstring(doc))
     doc = str(NumpyDocstring(doc))
 
-    tree = publish_doctree(doc)
+    with _sphinx_common_roles():
+        tree = docutils.core.publish_doctree(doc)
 
     class Visitor(NodeVisitor):
         optional = [
             'document', 'docinfo',
             'field_list', 'field_body',
-            'literal', 'problematic']
+            'literal', 'problematic',
+            # Introduced by our custom passthrough handlers, but the Visitor
+            # will recurse into the inner text node by itself.
+            'TextElement',
+        ]
 
         def __init__(self, document):
             NodeVisitor.__init__(self, document)
