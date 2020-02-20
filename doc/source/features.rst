@@ -208,6 +208,9 @@ argument with the parser for each of the members of the union, in the order
 they are given; the value returned by the first parser that does not raise a
 `ValueError` is used.
 
+``typing.Optional[type1]``, i.e. ``Union[type1, type(None)]``, is equivalent to
+``type1``.
+
 Collection types are not supported in unions; e.g. ``Union[type1, List[type2]]``
 is not supported.
 

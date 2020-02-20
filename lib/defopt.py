@@ -95,7 +95,7 @@ class _DefaultList(list):
     """
 
 
-def run(funcs: Union[Callable, List[Callable]], *,
+def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         parsers: Dict[type, Callable[[str], Any]] = {},
         short: Optional[Dict[str, str]] = None,
         strict_kwonly: bool = True,
@@ -107,9 +107,11 @@ def run(funcs: Union[Callable, List[Callable]], *,
     """
     Process command line arguments and run the given functions.
 
-    ``funcs`` can be a single callable, which is parsed and run; or it can be
-    a list of callables, in which case each one is given a subparser with its
-    name, and only the chosen callable is run.
+    ``funcs`` can be a single callable, which is parsed and run; or it can
+    be a list of callables or mappable of strs to callables, in which case
+    each one is given a subparser with its name (if ``funcs`` is a list) or
+    the corresponding key (if ``funcs`` is a mappable), and only the chosen
+    callable is run.
 
     :param funcs:
         Function or functions to process and run.
@@ -184,7 +186,7 @@ def _create_parser(
     else:
         subparsers = parser.add_subparsers()
         for func in funcs:
-            if isinstance(funcs, dict):
+            if isinstance(funcs, collections.abc.MutableMapping):
                 name, func = func, funcs[func]
             else:
                 name = func.__name__.replace('_', '-')
