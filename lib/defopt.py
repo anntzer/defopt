@@ -635,10 +635,11 @@ def _parse_docstring(doc):
             parts = field_name.split()
             if len(parts) == 2:
                 doctype, name = parts
-                name = name.lstrip('*')
+                # docutils>=0.16 represents \* as \0* in the doctree.
+                name = name.lstrip('*\0')
             elif len(parts) == 3:
                 doctype, type_, name = parts
-                name = name.lstrip('*')
+                name = name.lstrip('*\0')
                 if doctype not in _PARAM_TYPES:
                     raise SkipNode
                 if 'type' in self.params[name]:
