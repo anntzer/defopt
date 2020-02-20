@@ -146,6 +146,15 @@ class TestDefopt(unittest.TestCase):
             pass
         defopt.run(main, argv=[])
 
+    def test_private_without_default(self):
+        def main(_a: int):
+            pass
+        with self.assertRaisesRegex(ValueError,
+                                    # Older Pythons have no space post-colon.
+                                    r'Parameter _a of main\(_a: ?int\) is '
+                                    r'private but has no default'):
+            defopt.run(main, argv=[])
+
     def test_argparse_kwargs(self):
         def main(*, a=None):
             """:type a: str"""

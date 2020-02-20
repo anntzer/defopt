@@ -266,14 +266,19 @@ def signature(func: Callable):
     """
     full_sig = inspect.signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
-    return full_sig.replace(
-        parameters=[
-            Parameter(
+    parameters = []
+    for param in full_sig.parameters.values():
+        if param.name.startswith('_'):
+            if param.default is param.empty:
+                raise ValueError(
+                    'Parameter {} of {}{} is private but has no default'
+                    .format(param.name, func.__name__, full_sig))
+        else:
+            parameters.append(Parameter(
                 name=param.name, kind=param.kind, default=param.default,
                 annotation=_get_type(func, param.name),
-                doc=doc.params.get(param.name, _Param(None, None)).text)
-            for param in full_sig.parameters.values()
-            if not param.name.startswith('_')])
+                doc=doc.params.get(param.name, _Param(None, None)).text))
+    return full_sig.replace(parameters=parameters)
 
 
 def _populate_parser(func, parser, parsers, short,
