@@ -22,8 +22,8 @@ setup(
         "write_to": "lib/_defopt_version.py",
     },
     install_requires=[
-        'docutils',
-        'sphinxcontrib-napoleon>=0.7.0',
+        'docutils>=0.10',  # Empiric bound.
+        'sphinxcontrib-napoleon>=0.7.0',  # More consistent Raises blocks.
     ],
     extras_require={
         ':python_version<"3.8"': [

@@ -20,9 +20,14 @@ script: |
     echo "Testing on $env" &&
     conda activate "$env" &&
     COVERAGE_FILE=".coverage.$env" python -mcoverage run --append --module unittest --buffer &&
+    pip install docutils==0.10 sphinxcontrib-napoleon==0.7.0 &&  # Oldest supported versions.
+    if [[ "$env" < py38 ]]; then
+      pip install typing_extensions==3.7.4 typing_inspect==0.3.1  # Oldest supported versions.
+    fi &&
+    COVERAGE_FILE=".coverage.$env" python -mcoverage run --append --module unittest --buffer &&
     conda deactivate ||
     exit 1
   done &&
   conda activate "$env" &&
-  python -mcoverage combine .coverage* &&
+  python -mcoverage combine .coverage.* &&  # Unifies paths across envs.
   python -mcoverage report --show-missing
