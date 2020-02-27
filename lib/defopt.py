@@ -400,7 +400,11 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
 def _update_help_string(action, *, show_defaults, show_types):
     action_help = action.help or ''
     info = []
-    if show_types and action.type is not None and '%(type)' not in action_help:
+    if (show_types
+            and action.type is not None
+            and action.type.func not in [_make_enum_parser,
+                                         _make_literal_parser]
+            and '%(type)' not in action_help):
         info.append('type: %(type)s')
     if (show_defaults
             and action.const is not False  # i.e. action='store_false'.
@@ -408,7 +412,12 @@ def _update_help_string(action, *, show_defaults, show_types):
             and '%(default)' not in action_help
             and action.default is not SUPPRESS
             and action.default is not _SUPPRESS_BOOL_DEFAULT):
-        info.append('default: %(default)s')
+        info.append(
+            'default: {}'.format(action.default.name.replace('%', '%%'))
+            if action.type is not None
+               and action.type.func is _make_enum_parser
+               and isinstance(action.default, action.type.args)
+            else 'default: %(default)s')
     parts = [action.help, '({})'.format(', '.join(info)) if info else '']
     action.help = '\n'.join(filter(None, parts)) or ''
 
@@ -700,47 +709,40 @@ def _parse_docstring(doc):
 
 
 def _get_parser(type_, parsers):
-    parser = _find_parser(type_, parsers)
-
-    # Make a parser with the name the user expects to see in error messages.
-    def named_parser(string):
-        return parser(string)
-
-    # Unions and Literals don't have a __name__, but their str is fine.
-    named_parser.__name__ = getattr(type_, '__name__', str(type_))
-    return named_parser
-
-
-def _find_parser(type_, parsers):
     try:
-        return parsers[type_]
+        parser = functools.partial(parsers[type_])
     except KeyError:
-        pass
-    if (type_ in [str, int, float]
-            or isinstance(type_, type) and issubclass(type_, PurePath)):
-        return type_
-    elif type_ == bool:
-        return _parse_bool
-    elif type_ == slice:
-        return _parse_slice
-    elif type_ == list:
-        raise ValueError('unable to parse list (try list[type])')
-    elif isinstance(type_, type) and issubclass(type_, Enum):
-        return _make_enum_parser(type_)
-    elif _is_constructible_from_str(type_):
-        return type_
-    elif _ti_get_origin(type_) is Union:
-        return _make_union_parser(
-            type_,
-            [_find_parser(arg, parsers) for arg in _ti_get_args(type_)])
-    elif _ti_get_origin(type_) is Literal:  # Py>=3.7.
-        return _make_literal_parser(
-            type_,
-            [_find_parser(type(arg), parsers) for arg in _ti_get_args(type_)])
-    else:
-        raise Exception('no parser found for type {}'.format(
-            # typing types have no __name__.
-            getattr(type_, '__name__', repr(type_))))
+        if (type_ in [str, int, float]
+                or isinstance(type_, type) and issubclass(type_, PurePath)):
+            parser = functools.partial(type_)
+        elif type_ == bool:
+            parser = functools.partial(_parse_bool)
+        elif type_ == slice:
+            parser = functools.partial(_parse_slice)
+        elif type_ == list:
+            raise ValueError('unable to parse list (try list[type])')
+        elif isinstance(type_, type) and issubclass(type_, Enum):
+            parser = _make_enum_parser(type_)
+        elif _is_constructible_from_str(type_):
+            parser = functools.partial(type_)
+        elif _ti_get_origin(type_) is Union:
+            parser = _make_union_parser(
+                type_,
+                [_get_parser(arg, parsers) for arg in _ti_get_args(type_)])
+        elif _ti_get_origin(type_) is Literal:  # Py>=3.7.
+            parser = _make_literal_parser(
+                type_,
+                [_get_parser(type(arg), parsers)
+                 for arg in _ti_get_args(type_)])
+        else:
+            raise Exception('no parser found for type {}'.format(
+                # typing types have no __name__.
+                getattr(type_, '__name__', repr(type_))))
+    # Set the name that the user expects to see in error messages (we always
+    # return a temporary partial object so it's safe to set its __name__).
+    # Unions and Literals don't have a __name__, but their str is fine.
+    parser.__name__ = getattr(type_, '__name__', str(type_))
+    return parser
 
 
 def _parse_bool(string):
@@ -770,15 +772,15 @@ def _parse_slice(string):
     return sl
 
 
-def _make_enum_parser(enum):
-    def parser(value):
-        try:
-            return enum[value]
-        except KeyError:
-            raise ArgumentTypeError(
-                'invalid choice: {!r} (choose from {})'.format(
-                    value, ', '.join(map(repr, enum.__members__))))
-    return parser
+def _make_enum_parser(enum, value=None):
+    if value is None:
+        return functools.partial(_make_enum_parser, enum)
+    try:
+        return enum[value]
+    except KeyError:
+        raise ArgumentTypeError(
+            'invalid choice: {!r} (choose from {})'.format(
+                value, ', '.join(map(repr, enum.__members__))))
 
 
 def _is_constructible_from_str(type_):
@@ -801,31 +803,31 @@ def _is_constructible_from_str(type_):
     return False
 
 
-def _make_union_parser(union, parsers):
-    def parser(value):
-        for p in parsers:
-            try:
-                return p(value)
-            except (ValueError, ArgumentTypeError):
-                pass
-        raise ValueError(
-            '{} could not be parsed as any of {}'.format(value, union))
-    return parser
+def _make_union_parser(union, parsers, value=None):
+    if value is None:
+        return functools.partial(_make_union_parser, union, parsers)
+    for p in parsers:
+        try:
+            return p(value)
+        except (ValueError, ArgumentTypeError):
+            pass
+    raise ValueError(
+        '{} could not be parsed as any of {}'.format(value, union))
 
 
-def _make_literal_parser(literal, parsers):
-    def parser(value):
-        for arg, p in zip(_ti_get_args(literal), parsers):
-            try:
-                parsed = p(value)
-            except ValueError:
-                pass
-            if parsed == arg:
-                return arg
-        raise ArgumentTypeError(
-            'invalid choice: {!r} (choose from {})'.format(
-                value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
-    return parser
+def _make_literal_parser(literal, parsers, value=None):
+    if value is None:
+        return functools.partial(_make_literal_parser, literal, parsers)
+    for arg, p in zip(_ti_get_args(literal), parsers):
+        try:
+            parsed = p(value)
+        except ValueError:
+            pass
+        if parsed == arg:
+            return arg
+    raise ArgumentTypeError(
+        'invalid choice: {!r} (choose from {})'.format(
+            value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
 
 
 def _make_store_tuple_action_class(make_tuple, member_types, parsers):

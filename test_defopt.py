@@ -18,11 +18,7 @@ from examples import (
     starargs, styles)
 
 
-class Choice(Enum):
-    one = 1
-    two = 2
-
-
+Choice = Enum('Choice', [('one', 1), ('two', 2), ('%', 0.01)])
 Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
 
 
@@ -735,8 +731,8 @@ class TestHelp(unittest.TestCase):
     def test_enum_and_no_help(self):
         def foo(bar):
             """:param Choice bar:"""
-        self.assert_in_help('(type: Choice)', foo, 'dt')
-        self.assert_in_help('(type: Choice)', foo, 't')
+        self.assert_not_in_help('(', foo, 'dt')
+        self.assert_not_in_help('(', foo, 't')
         self.assert_not_in_help('(', foo, 'd')
         self.assert_not_in_help('(', foo, '')
 
@@ -776,6 +772,25 @@ class TestHelp(unittest.TestCase):
         def foo(*, bar):
             """:param bool bar: baz"""
         self.assert_not_in_help('default', foo, 'dt')
+
+    def test_keyword_only_enum_percent_escape(self):
+        def foo(*, bar=Choice['%']):
+            """:param Choice bar:"""
+        self.assert_not_in_help('Choice', foo, 'dt')
+        self.assert_in_help('{one,two,%}', foo, 'dt')
+        self.assert_not_in_help('Choice', foo, 't')
+        self.assert_not_in_help('Choice', foo, 'd')
+        self.assert_in_help('{one,two,%}', foo, 'd')
+        self.assert_not_in_help('Choice', foo, '')
+        # ("{one,two,%}" always shows up at least in the usage line.)
+
+    def test_keyword_only_literal_percent_escape(self):
+        def foo(*, bar):
+            """:param defopt.Literal["1%","everything"] bar: 1%"""
+        self.assert_not_in_help('Literal', foo, 'dt')
+        self.assert_not_in_help('Literal', foo, 't')
+        self.assert_not_in_help('Literal', foo, 'd')
+        self.assert_not_in_help('Literal', foo, '')
 
     def test_tuple(self):
         def main(foo=None):
