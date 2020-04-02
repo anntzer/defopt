@@ -23,6 +23,8 @@ next
 * Arbitrary type-hinted functions can now by run with
   ``python -mdefopt dotted.name args ...``, as if ``dotted.name`` was passed
   to `defopt.run`.
+* Support more RST constructs: doctest blocks, rubrics (used by Napoleon for
+  sectioning).
 
 5.1.0 (2019-03-01)
 ------------------

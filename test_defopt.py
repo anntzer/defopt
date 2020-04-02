@@ -560,6 +560,10 @@ class TestDoc(unittest.TestCase):
         :keyword float arg3: Description of arg3
         :returns: Description of return value.
         :rtype: str
+
+        .. rubric:: examples
+
+        >>> print("hello, world")
         """
         doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self._check_doc(doc)
@@ -574,10 +578,15 @@ class TestDoc(unittest.TestCase):
         Args:
           arg1(int): Description of arg1
           arg2(str): Description of arg2
+
         Keyword Arguments:
           arg3(float): Description of arg3
+
         Returns:
           str: Description of return value.
+
+        Examples:
+          >>> print("hello, world")
         """
         doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self._check_doc(doc)
@@ -595,21 +604,29 @@ class TestDoc(unittest.TestCase):
             Description of arg1
         arg2 : str
             Description of arg2
+
         Keyword Arguments
         -----------------
         arg3 : float
             Description of arg3
+
         Returns
         -------
         str
             Description of return value.
+
+        Examples
+        --------
+        >>> print("hello, world")
         """
         doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self._check_doc(doc)
 
     def _check_doc(self, doc):
-        self.assertEqual(
-            doc.text, 'One line summary. \n \nExtended description.')
+        self.assertRegex(
+            doc.text,
+            r'\AOne line summary\. \n \nExtended description\.( \n)+'
+            r'examples: \n>>> print\("hello, world"\)\Z')
         self.assertEqual(len(doc.params), 3)
         self.assertEqual(doc.params['arg1'].text, 'Description of arg1')
         self.assertEqual(doc.params['arg1'].type, 'int')

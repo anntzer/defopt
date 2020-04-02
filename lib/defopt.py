@@ -584,8 +584,8 @@ def _parse_docstring(doc):
             self.paragraphs.append(text)
             self._current_paragraph = None
 
-        visit_block_quote = visit_paragraph
-        depart_block_quote = depart_paragraph
+        visit_block_quote = visit_doctest_block = visit_paragraph
+        depart_block_quote = depart_doctest_block = depart_paragraph
 
         def visit_Text(self, node):
             self._current_paragraph.append(node)
@@ -606,6 +606,16 @@ def _parse_docstring(doc):
 
         depart_emphasis = depart_strong = depart_title_reference = \
             _depart_markup
+
+        def visit_rubric(self, node):
+            self.visit_paragraph(node)
+
+        def depart_rubric(self, node):
+            # Style consistent with "usage:", "positional arguments:", etc.
+            self._current_paragraph[:] = [
+                (t.lower() if t == t.title() else t) + ":"
+                for t in self._current_paragraph]
+            self.depart_paragraph(node)
 
         def visit_literal_block(self, node):
             text, = node
@@ -703,6 +713,7 @@ def _parse_docstring(doc):
             # We insert a space before each newline to prevent argparse
             # from stripping consecutive newlines down to just two
             # (http://bugs.python.org/issue31330).
+            # FIXME: but napoleon inserts far too many newlines :/
             text.append(' \n' * (next_start - start - paragraph.count('\n')))
         parsed = _Doc(text[0], ''.join(text), tuples, visitor.raises)
     else:
