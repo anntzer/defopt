@@ -105,8 +105,8 @@ class TestDefopt(unittest.TestCase):
             defopt.run(foo=None)
 
     def test_no_subparser_specified(self):
-        def sub1(): pass
-        def sub2(): pass
+        def sub1(): assert False
+        def sub2(): assert False
         with self.assertRaises(SystemExit):
             defopt.run([sub1, sub2], argv=[])
 
@@ -139,13 +139,11 @@ class TestDefopt(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['1', '--d-e-f', '2']), (1, 2))
 
     def test_private_with_default(self):
-        def main(_a=None):
-            pass
+        def main(_a=None): pass
         defopt.run(main, argv=[])
 
     def test_private_without_default(self):
-        def main(_a: int):
-            pass
+        def main(_a: int): assert False
         with self.assertRaisesRegex(ValueError,
                                     # Older Pythons have no space post-colon.
                                     r'Parameter _a of main\(_a: ?int\) is '
@@ -806,7 +804,7 @@ class TestHelp(unittest.TestCase):
     def test_var_positional(self):
         for doc in [
                 ":type bar: int", r":type \*bar: int", ":param int bar: baz"]:
-            def foo(*bar): pass
+            def foo(*bar): assert False
             foo.__doc__ = doc
             self.assert_not_in_help('default', foo, 'dt')
 
