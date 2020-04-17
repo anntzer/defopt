@@ -482,14 +482,14 @@ def _get_type_from_hint(hint):
         [type_] = _ti_get_args(hint)
         return List[type_]
     elif _ti_get_origin(hint) is Union:
-        args = _ti_get_args(hint)
-        if len(args) == 2:
-            type_, none = args
-            if none == type(None):  # For Union[type, NoneType], just use type.
-                return type_
+        # Flatten Union[type, NoneType] (== Optional[type]) to type.
+        # get_type_hints also appends NoneType to unions for parameters
+        # defaulting to None.
+        args = [arg for arg in _ti_get_args(hint) if arg is not type(None)]
         if any(_is_list_like(subtype) for subtype in args):
             raise ValueError(
                 'unsupported union including container type: {}'.format(hint))
+        return args[0] if len(args) == 1 else Union[tuple(args)]
     return hint
 
 

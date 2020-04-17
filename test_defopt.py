@@ -418,7 +418,7 @@ class TestTuple(unittest.TestCase):
 
 class TestUnion(unittest.TestCase):
     def test_union(self):
-        def main(foo, bar):
+        def main(foo, bar = None):
             """
             :param typing.Union[int,str] foo: foo
             :param bar: bar
