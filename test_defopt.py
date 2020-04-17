@@ -1082,7 +1082,3 @@ class TestDefaultsPreserved(unittest.TestCase):
         params = inspect.signature(defopt.run).parameters
         self.assertEqual(params['parsers'].default, {})
         self.assertEqual(params['argparse_kwargs'].default, {})
-
-
-if __name__ == "__main__":
-    unittest.main()
