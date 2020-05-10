@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+6.0 (2020-05-11)
+----------------
 * Added support for Union and Literal types.
 * Assume that types annotated as constructible from a single str are their own
   parser.
