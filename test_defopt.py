@@ -416,7 +416,7 @@ class TestTuple(unittest.TestCase):
 
 class TestUnion(unittest.TestCase):
     def test_union(self):
-        def main(foo, bar = None):
+        def main(foo, bar=None):
             """
             :param typing.Union[int,str] foo: foo
             :param bar: bar
@@ -445,6 +445,13 @@ class TestUnion(unittest.TestCase):
             """
         with self.assertRaises(ValueError):
             defopt.run(main, argv=['1'])
+
+    def test_not_bad_union(self):
+        # get_type_hints reports a type of Union[List[int], NoneType] so check
+        # that this doesn't get reported as "unsupported union including
+        # container type".
+        def main(foo: typing.List[int] = None): return foo
+        self.assertEqual(defopt.run(main, argv=['--foo', '1']), [1])
 
 
 class TestLiteral(unittest.TestCase):

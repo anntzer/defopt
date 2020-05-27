@@ -486,10 +486,14 @@ def _get_type_from_hint(hint):
         # get_type_hints also appends NoneType to unions for parameters
         # defaulting to None.
         args = [arg for arg in _ti_get_args(hint) if arg is not type(None)]
-        if any(_is_list_like(subtype) for subtype in args):
-            raise ValueError(
-                'unsupported union including container type: {}'.format(hint))
-        return args[0] if len(args) == 1 else Union[tuple(args)]
+        if len(args) > 1:
+            if any(_is_list_like(subtype) for subtype in args):
+                raise ValueError(
+                    'unsupported union including container type: {}'
+                    .format(hint))
+            return Union[tuple(args)]
+        else:
+            return args[0]
     return hint
 
 
