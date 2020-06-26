@@ -6,7 +6,7 @@ Features
 Types
 -----
 
-Argument types are read from your function's type hints (see
+Argument types are read from the function's type hints (see
 `examples/annotations.py`_) or docstring.  If type information for a parameter
 is given both as type hint and in the docstring, the types must match.
 
@@ -31,8 +31,8 @@ Docstrings can use the standard Sphinx_-style
        ``kwtype``.  Consistency is recommended but not enforced.
 
 or Google_- and Numpy_-style docstrings (see `examples/styles.py`_), which are
-converted using Napoleon_ [#]_. If you are using one of these alternate styles
-and generating documentation with `sphinx.ext.autodoc`, be sure to also enable
+converted using Napoleon_ [#]_. If using one of these alternate styles and
+generating documentation with `sphinx.ext.autodoc`, be sure to also enable
 `sphinx.ext.napoleon`.
 
 ``<type>`` is evaluated in the function's global namespace when `defopt.run`
@@ -40,6 +40,10 @@ is called.
 
 See `Standard types`_, Booleans_, Lists_, Choices_, Tuples_, Unions_, and
 Parsers_ for more information on specific types.
+
+.. [#] While Napoleon is included with Sphinx as `sphinx.ext.napoleon`, defopt
+   depends on ``sphinxcontrib-napoleon`` so that end users of the command line
+   tool are not required to install Sphinx and all of its dependencies.
 
 Subcommands
 -----------
@@ -91,14 +95,15 @@ Flags
 -----
 
 Python positional-or-keyword parameters are converted to CLI positional
-parameters, with their name unmodified.  Python keyword-only parameters are
+arguments, with their name unmodified [#]_. Python keyword-only parameters are
 converted to CLI flags, with underscores replaced by hyphens.  Additionally,
 one-letter short flags are generated for all flags that do not share their
 initial with other flags.
 
-Parameters that have a default (regardless of whether they are
-positional-or-keyword or keyword-only) are optional; those that do not have a
-default are required. ::
+Optional Python parameters (i.e. with a default) are converted to optional CLI
+arguments (regardless of whether the Python parameter is positional-or-keyword
+or keyword-only); required Python parameters (i.e. with no default) are
+converted to required CLI arguments. ::
 
     usage: test.py [-h] [-k KWONLY] positional_no_default [positional_with_default]
 
@@ -110,9 +115,11 @@ default are required. ::
       -h, --help            show this help message and exit
       -k KWONLY, --kwonly KWONLY
 
-Additionally, one can make all parameters which have a default, regardless
-of whether they are keyword-only or not, also map to CLI flags, by passing
-``strict_kwonly=False`` to `defopt.run`.
+Alternatively, one can make all optional Python parameters, regardless of
+whether they are keyword-only or not, also map to CLI flags, by passing
+``strict_kwonly=False`` to `defopt.run`.  (This behavior is similar to the
+informal approach previously commonly found on Python 2, which was to consider
+required parameters as positional and optional parameters as keyword.)
 
 Auto-generated short flags can be overridden by passing a dictionary to
 `defopt.run` which maps flag names to single letters:
@@ -130,13 +137,16 @@ A runnable example is available at `examples/short.py`_.
 Passing an empty dictionary suppresses automatic short flag generation, without
 adding new flags.
 
+.. [#] As an exception, sequence parameters are always converted to flags, as
+    described below.
+
 Booleans
 --------
 
 Boolean keyword-only parameters (or, as above, parameters with defaults, if
 ``strict_kwonly=False``) are automatically converted to two separate flags:
-``--name`` which stores `True` and ``--no-name`` which stores `False`. Your
-help text and the default will be displayed next to the ``--name`` flag::
+``--name`` which stores `True` and ``--no-name`` which stores `False`.  The
+help text and the default are displayed next to the ``--name`` flag::
 
     --flag      Set "flag" to True
                 (default: False)
@@ -147,14 +157,11 @@ specified as one of ``1/t/true`` or ``0/f/false`` (case insensitive).
 
 A runnable example is available at `examples/booleans.py`_.
 
-If ``strict_kwonly`` is unset, then all boolean parameters with a default or
-that are keyword-only are converted in such a way.
-
 Lists
 -----
 
-Lists are automatically converted to flags which take zero or more arguments.
-If the argument is positional, the flag is marked as required.
+Lists are automatically converted to flags (regardless of whether they are
+positional-or-keyword, or keyword-only) which take zero or more arguments.
 
 When declaring that a parameter is a list in a docstring, use the established
 convention of putting the contained type inside square brackets. ::
@@ -164,7 +171,7 @@ convention of putting the contained type inside square brackets. ::
 `typing.List`, `typing.Sequence` and `typing.Iterable` are all treated in the
 same way as `list`.
 
-You can now specify your list on the command line using multiple arguments. ::
+The list can now be specified on the command line using multiple arguments. ::
 
     test.py --numbers 1 2 3
 
@@ -173,13 +180,13 @@ A runnable example is available at `examples/lists.py`_.
 Choices
 -------
 
-If one of your argument types is a subclass of `enum.Enum`, this is handled
-specially on the command line to produce more helpful output. ::
+Subclasses of `enum.Enum` are handled specially on the command line to produce
+more helpful output. ::
 
     positional arguments:
       {red,blue,yellow}  Your favorite color
 
-This also produces a more helpful message when you choose an invalid option. ::
+This also produces a more helpful message when an invalid option is chosen. ::
 
     test.py: error: argument color: invalid choice: 'black'
                                     (choose from 'red', 'blue', 'yellow')
@@ -217,8 +224,8 @@ is not supported.
 Parsers
 -------
 
-You can use arbitrary argument types as long as you provide functions to parse
-them from strings.
+Arbitrary argument types can be used as long as functions to parse them from
+strings are provided.
 
 .. code-block:: python
 
@@ -228,7 +235,7 @@ them from strings.
 
     defopt.run(..., parsers={Person: parse_person})
 
-You can now build ``Person`` objects directly from the command line. ::
+``Person`` objects can be now built directly from the command line. ::
 
     test.py --person "VAN ROSSUM, Guido"
 
@@ -249,14 +256,14 @@ its own parser.
 
     defopt.run(main)
 
-You can now build ``StrWrapper`` objects directly from the command line. ::
+``StrWrapper`` objects can now be built directly from the command line. ::
 
     test.py foo
 
 Variable positional arguments
 -----------------------------
 
-If your function definition contains ``*args``, the parser will accept zero or
+If the function definition contains ``*args``, the parser will accept zero or
 more positional arguments. When specifying a type, specify the type of the
 elements, not the container.
 
@@ -312,7 +319,7 @@ suppresses the flag.
 Entry points
 ------------
 
-To use your script as a console entry point with setuptools, you need to create
+To use a script as a console entry point with setuptools, one needs to create
 a function that can be called without arguments.
 
 .. code-block:: python
@@ -320,7 +327,7 @@ a function that can be called without arguments.
     def entry_point():
         defopt.run(main)
 
-You can then reference this entry point in your ``setup.py`` file.
+This entry point can now be referenced in the ``setup.py`` file.
 
 .. code-block:: python
 
@@ -337,8 +344,8 @@ command line with
     $ python -m defopt dotted.name args ...
 
 which is equivalent to passing the ``dotted.name`` function to `defopt.run` and
-calling the resulting script with ``args ...``.  This may be useful if you do
-not want your script to have a hard dependency on `defopt`.
+calling the resulting script with ``args ...``.  This may be useful to make the
+script importable independently of `defopt`.
 
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _Google: http://google.github.io/styleguide/pyguide.html
@@ -353,7 +360,3 @@ not want your script to have a hard dependency on `defopt`.
 .. _examples/short.py: https://github.com/anntzer/defopt/blob/master/examples/short.py
 .. _examples/starargs.py: https://github.com/anntzer/defopt/blob/master/examples/starargs.py
 .. _examples/styles.py: https://github.com/anntzer/defopt/blob/master/examples/styles.py
-
-.. [#] While Napoleon is included with Sphinx as `sphinx.ext.napoleon`, defopt
-   depends on ``sphinxcontrib-napoleon`` so that end users of your command line
-   tool are not required to install Sphinx and all of its dependencies.
