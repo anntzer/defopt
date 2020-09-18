@@ -9,6 +9,7 @@ setup(
     name='defopt',
     description='Effortless argument parser',
     long_description=long_description,
+    long_description_content_type='text/x-rst',
     author='Antony Lee',
     url='https://github.com/anntzer/defopt',
     license='MIT',
