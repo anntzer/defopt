@@ -1,12 +1,12 @@
 Changelog
 =========
 
-6.1 (2020-09-18)
-----
+6.0.1 (2020-09-18)
+------------------
 * Fixed support for container types defaulting to None.
 
-6.0 (2020-05-11)
-----------------
+6.0.0 (2020-05-11)
+------------------
 * Added support for Union and Literal types.
 * Assume that types annotated as constructible from a single str are their own
   parser.
