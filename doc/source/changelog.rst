@@ -1,6 +1,10 @@
 Changelog
 =========
 
+next
+----
+* Don't get tripped by Attributes sections.
+
 6.0.1 (2020-09-18)
 ------------------
 * Fixed support for container types defaulting to None.

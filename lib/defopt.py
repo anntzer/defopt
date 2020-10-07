@@ -29,8 +29,7 @@ from docutils.parsers.rst.states import Body
 
 try:
     collections.Callable = collections.abc.Callable
-    from sphinxcontrib.napoleon.docstring import (
-        GoogleDocstring, NumpyDocstring)
+    from sphinxcontrib.napoleon import Config, GoogleDocstring, NumpyDocstring
 finally:
     if sys.version_info >= (3, 7):
         del collections.Callable
@@ -546,8 +545,11 @@ def _parse_docstring(doc):
 
     # Convert Google- or Numpy-style docstrings to RST.
     # (Should do nothing if not in either style.)
-    doc = str(GoogleDocstring(doc))
-    doc = str(NumpyDocstring(doc))
+    # use_ivar avoids generating an unhandled .. attribute:: directive for
+    # Attribute blocks, preferring a benign :ivar: field.
+    cfg = Config(napoleon_use_ivar=True)
+    doc = str(GoogleDocstring(doc, cfg))
+    doc = str(NumpyDocstring(doc, cfg))
 
     with _sphinx_common_roles():
         tree = docutils.core.publish_doctree(doc)
@@ -563,7 +565,7 @@ def _parse_docstring(doc):
         ]
 
         def __init__(self, document):
-            NodeVisitor.__init__(self, document)
+            super().__init__(document)
             self.paragraphs = []
             self.start_lines = []
             self.params = defaultdict(dict)

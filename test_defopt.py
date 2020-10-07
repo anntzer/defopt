@@ -23,7 +23,15 @@ Choice = Enum('Choice', [('one', 1), ('two', 2), ('%', 0.01)])
 Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
 
 
+# Also check that the Attributes section doesn't trip docutils.
 class ConstructibleFromStr:
+    """
+    Attributes
+    ----------
+    s : str
+        The s.
+    """
+
     def __init__(self, s):
         """:type s: str"""
         self.s = s
