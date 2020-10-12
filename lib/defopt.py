@@ -359,12 +359,11 @@ def _populate_parser(func, parser, parsers, short,
             kwargs['action'] = _make_store_tuple_action_class(
                 tuple, member_types, parsers)
         elif (isinstance(type_, type) and issubclass(type_, tuple)
-              and hasattr(type_, '_fields')
-              and hasattr(type_, '_field_types')):
+              and hasattr(type_, '_fields')):
             # Before Py3.6, `_field_types` does not preserve order, so retrieve
             # the order from `_fields`.
-            member_types = tuple(type_._field_types[field]
-                                 for field in type_._fields)
+            hints = typing.get_type_hints(type_)
+            member_types = tuple(hints[field] for field in type_._fields)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
                 lambda args, type_=type_: type_(*args),

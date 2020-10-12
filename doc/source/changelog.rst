@@ -4,6 +4,7 @@ Changelog
 next
 ----
 * Don't get tripped by Attributes sections.
+* Added support for Python 3.9.
 
 6.0.1 (2020-09-18)
 ------------------
