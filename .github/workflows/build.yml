@@ -1,0 +1,42 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install
+      run: |
+        eval "$($CONDA/bin/conda shell.bash hook)" &&
+        conda config --set always_yes yes &&
+        conda update -q conda &&
+        for pyver in $(python setup.py --classifiers | grep -Po 'Python :: \K.*'); do
+          (
+            conda create -q -n "py$pyver" -c conda-forge python="$pyver" &&
+            conda activate "py$pyver" &&
+            python --version &&
+            python -mpip install --upgrade pip setuptools coverage &&
+            python -mpip install .
+          ) || exit 1
+        done
+    - name: Test
+      run: |
+        eval "$($CONDA/bin/conda shell.bash hook)" &&
+        for env in $(conda info -e | grep -o '^py\S*'); do
+          (
+            echo "Testing on $env" &&
+            conda activate "$env" &&
+            COVERAGE_FILE=".coverage.$env" python -mcoverage run --append --module unittest --buffer &&
+            # Oldest supported versions.
+            python -mpip install docutils==0.10 sphinxcontrib-napoleon==0.7.0 &&
+            if [[ "$env" < py38 ]]; then
+              python -mpip install typing_extensions==3.7.4 typing_inspect==0.3.1
+            fi &&
+            COVERAGE_FILE=".coverage.$env" python -mcoverage run --append --module unittest --buffer
+          ) || exit 1
+        done &&
+        conda activate "$env" &&
+        python -mcoverage combine .coverage.* &&  # Unifies paths across envs.
+        python -mcoverage report --show-missing

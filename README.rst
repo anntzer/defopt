@@ -1,20 +1,21 @@
 defopt
 ======
 
-|GitHub| |PyPI| |Read the Docs| |Travis|
+| |GitHub| |PyPI|
+| |Read the Docs| |Build|
 
 .. |GitHub|
    image:: https://img.shields.io/badge/github-anntzer%2Fdefopt-brightgreen
    :target: `GitHub repository`_
 .. |PyPI|
-   image:: https://img.shields.io/pypi/v/defopt.svg
+   image:: https://img.shields.io/pypi/v/defopt.svg?color=brightgreen
    :target: https://pypi.python.org/pypi/defopt
 .. |Read the Docs|
-   image:: https://readthedocs.org/projects/defopt/badge/?version=latest
+   image:: https://img.shields.io/readthedocs/defopt
    :target: `Read the Docs`_
-.. |Travis|
-   image:: https://travis-ci.com/anntzer/defopt.svg?branch=master
-   :target: https://travis-ci.com/anntzer/defopt
+.. |Build|
+   image:: https://img.shields.io/github/workflow/status/anntzer/defopt/build
+   :target: https://github.com/anntzer/defopt/actions
 
 defopt is a lightweight, no-effort argument parser.
 
