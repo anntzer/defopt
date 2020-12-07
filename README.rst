@@ -1,7 +1,7 @@
 defopt
 ======
 
-| |GitHub| |PyPI|
+| |GitHub| |PyPI| |conda-forge|
 | |Read the Docs| |Build|
 
 .. |GitHub|
@@ -10,6 +10,9 @@ defopt
 .. |PyPI|
    image:: https://img.shields.io/pypi/v/defopt.svg?color=brightgreen
    :target: https://pypi.python.org/pypi/defopt
+.. |conda-forge|
+   image:: https://img.shields.io/conda/v/conda-forge/defopt.svg?label=conda-forge&color=brightgreen
+   :target: https://anaconda.org/conda-forge/defopt
 .. |Read the Docs|
    image:: https://img.shields.io/readthedocs/defopt
    :target: `Read the Docs`_
