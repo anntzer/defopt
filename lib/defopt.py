@@ -40,6 +40,9 @@ except ImportError:
     from typing_extensions import Literal
 
 try:
+    # colorama is a dependency on Windows to support ANSI escapes (from rst
+    # markup).  It is optional on Unices, but can still useful be there as it
+    # strips out ANSI escapes when the output is piped.
     from colorama import colorama_text as _colorama_text
 except ImportError:
     @contextlib.contextmanager
