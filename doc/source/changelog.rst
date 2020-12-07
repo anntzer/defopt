@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+6.0.2 (2020-12-08)
+------------------
 * Don't get tripped by Attributes sections.
 * Added support for Python 3.9.
 
