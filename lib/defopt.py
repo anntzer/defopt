@@ -135,6 +135,7 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         strict_kwonly: bool = True,
         show_defaults: bool = True,
         show_types: bool = False,
+        no_negated_flags: bool = False,
         version: Union[str, None, bool] = None,
         argparse_kwargs: dict = {},
         argv: Optional[List[str]] = None):
@@ -167,6 +168,10 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         Whether parameter defaults are appneded to parameter descriptions.
     :param show_types:
         Whether parameter types are appended to parameter descriptions.
+    :param no_negated_flags:
+        If `False` (default), for any non-positional bool options, two flags
+        are created: ``--foo`` and ``--no-foo``. If `True`, the ``--no-foo``
+        is not created for every such option that has a default value `False`.
     :param version:
         If a string, add a ``--version`` flag which prints the given version
         string and exits.
@@ -188,8 +193,9 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     """
     parser = _create_parser(
         funcs, parsers=parsers, short=short, strict_kwonly=strict_kwonly,
-        show_defaults=show_defaults, show_types=show_types, version=version,
-        argparse_kwargs=argparse_kwargs)
+        show_defaults=show_defaults, show_types=show_types,
+        no_negated_flags=no_negated_flags,
+        version=version, argparse_kwargs=argparse_kwargs)
     with _colorama_text():
         args = parser.parse_args(argv)
     # Workaround for http://bugs.python.org/issue9253#msg186387
@@ -208,14 +214,15 @@ def _create_parser(
         strict_kwonly=True,
         show_defaults=True,
         show_types=False,
+        no_negated_flags=False,
         version=None,
         argparse_kwargs={}):
     parser = ArgumentParser(
         **{**{'formatter_class': RawTextHelpFormatter}, **argparse_kwargs})
     version_sources = []
     if callable(funcs):
-        _populate_parser(funcs, parser, parsers, short,
-                         strict_kwonly, show_defaults, show_types)
+        _populate_parser(funcs, parser, parsers, short, strict_kwonly,
+                         show_defaults, show_types, no_negated_flags)
         version_sources.append(funcs)
     else:
         subparsers = parser.add_subparsers()
@@ -228,8 +235,8 @@ def _create_parser(
                 name,
                 formatter_class=RawTextHelpFormatter,
                 help=_parse_docstring(inspect.getdoc(func)).first_line)
-            _populate_parser(func, subparser, parsers, short,
-                             strict_kwonly, show_defaults, show_types)
+            _populate_parser(func, subparser, parsers, short, strict_kwonly,
+                             show_defaults, show_types, no_negated_flags)
             version_sources.append(func)
     if isinstance(version, str):
         version_string = version
@@ -317,8 +324,8 @@ def signature(func: Callable):
     return full_sig.replace(parameters=parameters)
 
 
-def _populate_parser(func, parser, parsers, short,
-                     strict_kwonly, show_defaults, show_types):
+def _populate_parser(func, parser, parsers, short, strict_kwonly,
+                     show_defaults, show_types, no_negated_flags):
     sig = signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
@@ -350,11 +357,22 @@ def _populate_parser(func, parser, parsers, short,
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
         if type_ == bool and not positional:
-            # Special case: just add parameterless --name and --no-name flags.
-            actions.append(_add_argument(parser, name, short,
-                                         action=_BooleanOptionalAction,
-                                         default=default, required=required,
-                                         **kwargs))  # Add help if available.
+            if no_negated_flags and default is False:
+                actions.append(
+                    _add_argument(parser, name, short,
+                                  action='store_true',
+                                  default=default,
+                                  # Add help if available.
+                                  **kwargs))
+            else:
+                # Special case:
+                # just add parameterless --name and --no-name flags.
+                actions.append(_add_argument(parser, name, short,
+                                             action=_BooleanOptionalAction,
+                                             default=default,
+                                             required=required,
+                                             # Add help if available.
+                                             **kwargs))
             continue
         # Always set a default, even for required parameters, so that we can
         # later (ab)use default == SUPPRESS (!= None) to detect required

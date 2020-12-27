@@ -791,6 +791,15 @@ class TestHelp(unittest.TestCase):
         self.assert_in_help('(default: False)', foo, 'd')
         self.assert_not_in_help('(', foo, '')
 
+    def test_no_negated_flags(self):
+        def main(*, foo=False, bar=True):
+            """
+            :param bool foo: Foo
+            :param bool bar: Bar
+            """
+        self.assert_not_in_help('--no-foo', main, 'n')
+        self.assert_in_help('--no-bar', main, 'n')
+
     def test_keyword_only(self):
         def foo(*, bar):
             """:param int bar: baz"""
@@ -885,10 +894,10 @@ class TestHelp(unittest.TestCase):
         self.assertNotIn(s, self._get_help(funcs, flags))
 
     def _get_help(self, funcs, flags):
-        self.assertLessEqual({*flags}, {'d', 't'})
+        self.assertLessEqual({*flags}, {'d', 't', 'n'})
         parser = defopt._create_parser(
             funcs, show_defaults='d' in flags, show_types='t' in flags,
-            strict_kwonly=False)
+            no_negated_flags='n' in flags, strict_kwonly=False)
         return parser.format_help()
 
 
