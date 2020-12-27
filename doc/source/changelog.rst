@@ -1,6 +1,11 @@
 Changelog
 =========
 
+next
+----
+* Boolean flags are now implemented using a variant of
+  ``argparse.BooleanOptionalAction``.
+
 6.0.2 (2020-12-08)
 ------------------
 * Don't get tripped by Attributes sections.

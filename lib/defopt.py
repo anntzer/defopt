@@ -62,15 +62,13 @@ _TYPE_NAMES = ['type', 'kwtype']
 _Doc = namedtuple('_Doc', ('first_line', 'text', 'params', 'raises'))
 _Param = namedtuple('_Param', ('text', 'type'))
 
-_SUPPRESS_BOOL_DEFAULT = object()
-
 
 if hasattr(typing, 'get_args'):
     _ti_get_args = typing.get_args
 else:
     def _ti_get_args(tp):
         import typing_inspect as ti
-        if type(tp) is type(Literal):  # Py<=3.6.
+        if type(tp) is type(Literal):  # Py<3.7.
             return tp.__values__
         return ti.get_args(tp, evaluate=True)  # evaluate=True default on Py>=3.7.
 
@@ -80,15 +78,47 @@ if hasattr(typing, 'get_origin'):
 else:
     def _ti_get_origin(tp):
         import typing_inspect as ti
-        if type(tp) is type(Literal):  # Py<=3.6.
+        if type(tp) is type(Literal):  # Py<3.7.
             return Literal
         origin = ti.get_origin(tp)
-        return {  # Py<=3.6.
+        return {  # Py<3.7.
             typing.List: list,
             typing.Iterable: collections.abc.Iterable,
             typing.Sequence: collections.abc.Sequence,
             typing.Tuple: tuple,
         }.get(origin, origin)
+
+
+# Modified from Py3.9's version, plus:
+# - a fix to bpo#38956 (by omitting the extraneous help string),
+# - support for short aliases for --no-foo, by moving negative flag generation
+#   to _add_argument (where the negative aliases are available),
+# - a hack (_CustomString) to simulate format_usage on Py<3.9 (_CustomString
+#   relies on an Py<3.9 implementation detail: the usage string is built using
+#   '%s' % option_strings[0] (so there is an additional call to str()) whereas
+#   the option invocation help directly joins the strings).
+
+
+class _CustomString(str):
+    def __str__(self):
+        return self.action.format_usage()
+
+
+class _BooleanOptionalAction(Action):
+    def __init__(self, option_strings, **kwargs):
+        self.negative_option_strings = []  # set by _add_argument
+        if option_strings:
+            cs = option_strings[0] = _CustomString(option_strings[0])
+            cs.action = self
+        super().__init__(option_strings, nargs=0, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if option_string in self.option_strings:
+            setattr(namespace, self.dest,
+                    option_string not in self.negative_option_strings)
+
+    def format_usage(self):
+        return ' | '.join(self.option_strings)
 
 
 class _DefaultList(list):
@@ -321,20 +351,10 @@ def _populate_parser(func, parser, parsers, short,
         positional = name in positionals
         if type_ == bool and not positional:
             # Special case: just add parameterless --name and --no-name flags.
-            if default == SUPPRESS:
-                # Work around lack of "required non-exclusive group" in
-                # argparse by checking for that case ourselves.
-                default = _SUPPRESS_BOOL_DEFAULT
-            actions.extend([
-                _add_argument(parser, name, short,
-                              action='store_true',
-                              default=default,
-                              # Add help if available.
-                              **kwargs),
-                _add_argument(parser, 'no-' + name, short,
-                              action='store_false',
-                              default=default,
-                              dest=name)])
+            actions.append(_add_argument(parser, name, short,
+                                         action=_BooleanOptionalAction,
+                                         default=default, required=required,
+                                         **kwargs))  # Add help if available.
             continue
         # Always set a default, even for required parameters, so that we can
         # later (ab)use default == SUPPRESS (!= None) to detect required
@@ -389,6 +409,7 @@ def _populate_parser(func, parser, parsers, short,
 
 
 def _add_argument(parser, name, short, _positional=False, **kwargs):
+    negative_option_strings = []
     if _positional:
         args = [name]
     else:
@@ -397,7 +418,17 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
         args = [prefix_char * 2 + name]
         if name in short:
             args.insert(0, prefix_char + short[name])
-    return parser.add_argument(*args, **kwargs)
+        if kwargs.get('action') == _BooleanOptionalAction:
+            no_name = 'no-' + name
+            if no_name in short:
+                args.append(prefix_char + short[no_name])
+                negative_option_strings.append(args[-1])
+            args.append(prefix_char * 2 + no_name)
+            negative_option_strings.append(args[-1])
+    action = parser.add_argument(*args, **kwargs)
+    if negative_option_strings:
+        action.negative_option_strings = negative_option_strings
+    return action
 
 
 def _update_help_string(action, *, show_defaults, show_types):
@@ -413,8 +444,7 @@ def _update_help_string(action, *, show_defaults, show_types):
             and action.const is not False  # i.e. action='store_false'.
             and not isinstance(action.default, _DefaultList)
             and '%(default)' not in action_help
-            and action.default is not SUPPRESS
-            and action.default is not _SUPPRESS_BOOL_DEFAULT):
+            and action.default is not SUPPRESS):
         info.append(
             'default: {}'.format(action.default.name.replace('%', '%%'))
             if action.type is not None
@@ -504,9 +534,6 @@ def _call_function(parser, func, args):
     sig = signature(func)
     for name, param in sig.parameters.items():
         arg = getattr(args, name)
-        if arg is _SUPPRESS_BOOL_DEFAULT:
-            parser.error('one of the arguments --{0} --no-{0} is required'
-                         .format(name))
         if param.kind in [param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD]:
             positionals.append(arg)
         elif param.kind == param.VAR_POSITIONAL:
