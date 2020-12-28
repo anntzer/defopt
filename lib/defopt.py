@@ -70,7 +70,7 @@ else:
         import typing_inspect as ti
         if type(tp) is type(Literal):  # Py<3.7.
             return tp.__values__
-        return ti.get_args(tp, evaluate=True)  # evaluate=True default on Py>=3.7.
+        return ti.get_args(tp, evaluate=True)  # =True is default on Py>=3.7.
 
 
 if hasattr(typing, 'get_origin'):

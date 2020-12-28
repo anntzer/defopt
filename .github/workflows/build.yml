@@ -40,3 +40,7 @@ jobs:
         conda activate "$env" &&
         python -mcoverage combine .coverage.* &&  # Unifies paths across envs.
         python -mcoverage report --show-missing
+    - name: Style
+      run: |
+        shopt -s globstar &&
+        ! grep -E '.{80}' **/*.py
