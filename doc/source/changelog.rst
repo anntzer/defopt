@@ -5,6 +5,7 @@ next
 ----
 * Boolean flags are now implemented using a variant of
   ``argparse.BooleanOptionalAction``.
+* Added ``no_negated_flags``.
 
 6.0.2 (2020-12-08)
 ------------------

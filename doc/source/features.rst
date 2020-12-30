@@ -155,6 +155,10 @@ help text and the default are displayed next to the ``--name`` flag::
 Note that this does not apply to mandatory boolean parameters; these must be
 specified as one of ``1/t/true`` or ``0/f/false`` (case insensitive).
 
+If ``no_negated_flags=True`` is passed to `defopt.run`, no negated flags
+(``--no-name``) are generated for boolean arguments that have `False`
+as their default value.
+
 A runnable example is available at `examples/booleans.py`_.
 
 Lists
