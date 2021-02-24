@@ -50,7 +50,7 @@ next
 
 5.0.0 (2018-10-18)
 ------------------
-* Added default parser for ``slice``.
+* Added default parser for `slice`.
 * Removed support for passing multiple functions positionally.
 * Added support for Python 3.7.
 * Removed support for Python 3.3.
@@ -74,7 +74,7 @@ next
 
 * Added ``show_types`` option to automatically display variable types
   (Thanks to @anntzer)
-* Added default parser for ``pathlib.Path`` when it is available
+* Added default parser for `pathlib.Path` when it is available
   (Thanks to @anntzer)
 * Added annotations example to the generated documentation
 
@@ -88,7 +88,7 @@ next
 
 Thanks to @anntzer for contributing the features in this release.
 
-* Changed ``defopt.run`` to take multiple functions as a single list
+* Changed `defopt.run` to take multiple functions as a single list
 * Deprecated passing multiple functions positionally
 * Added subcommand summaries to the help message for multiple functions
 * Added automatic short flags where they are unambiguous
@@ -122,7 +122,7 @@ Thanks to @anntzer for contributing the features in this release.
 1.3.0 (2016-03-21)
 ------------------
 
-* Added ``parsers`` argument to ``defopt.run``
+* Added ``parsers`` argument to `defopt.run`
 * Deprecated ``defopt.parser``
 
 1.2.0 (2016-02-25)
@@ -137,7 +137,7 @@ Thanks to @anntzer for contributing the features in this release.
 ------------------
 
 * Added support for Google- and Numpy-style docstrings
-* Changed ``defopt.run`` to return the value from the called function
+* Changed `defopt.run` to return the value from the called function
 
 1.0.1 (2016-02-14)
 ------------------
@@ -147,7 +147,7 @@ Thanks to @anntzer for contributing the features in this release.
 1.0.0 (2016-02-14)
 ------------------
 
-* Removed decorator interface and added simpler ``defopt.run`` interface
+* Removed decorator interface and added simpler `defopt.run` interface
 * Added full documentation hosted on Read the Docs
 * Added more informative exceptions for type lookup failures
 * Fixed bug where ``defopt.parser`` was not returning the input function
