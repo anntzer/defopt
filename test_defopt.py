@@ -193,7 +193,6 @@ class TestParsers(unittest.TestCase):
         with self.assertRaises(ValueError):
             parser('foo')
 
-    @unittest.skipIf(Path is None, 'pathlib not installed')
     def test_parse_path(self):
         def main(value):
             """:type value: Path"""
