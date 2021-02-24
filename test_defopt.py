@@ -185,6 +185,20 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(
             defopt.run(main, parsers={int: parser}, argv=['1']), 2)
 
+    def test_overridden_none_parser(self):
+        def parser(string):
+            if string == ':none:':
+                return None
+            else:
+                raise ValueError("Not :none:")
+
+        def main(value):
+            """:type value: typing.Optional[int]"""
+            return value
+        self.assertEqual(
+            defopt.run(main, parsers={type(None): parser}, argv=[':none:']),
+            None)
+
     def test_parse_bool(self):
         parser = defopt._get_parser(bool, {})
         self.assertEqual(parser('t'), True)
@@ -728,7 +742,9 @@ class TestAnnotations(unittest.TestCase):
                          typing.List[int])
 
     def test_optional(self):
-        self.assertEqual(defopt._get_type_from_hint(typing.Optional[int]), int)
+        self.assertEqual(
+            defopt._get_type_from_hint(typing.Optional[typing.List[int]]),
+            typing.List[int])
 
     def test_conflicting(self):
         def foo(bar: int):

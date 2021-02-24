@@ -531,18 +531,14 @@ def _get_type_from_hint(hint):
         [type_] = _ti_get_args(hint)
         return List[type_]
     elif _ti_get_origin(hint) is Union:
-        # Flatten Union[type, NoneType] (== Optional[type]) to type.
-        # get_type_hints also appends NoneType to unions for parameters
-        # defaulting to None.
-        args = [arg for arg in _ti_get_args(hint) if arg is not type(None)]
-        if len(args) > 1:
-            if any(_is_list_like(subtype) for subtype in args):
+        args = _ti_get_args(hint)
+        if any(_is_list_like(subtype) for subtype in args):
+            non_none = [arg for arg in args if arg is not type(None)]
+            if len(non_none) != 1:
                 raise ValueError(
                     'unsupported union including container type: {}'
                     .format(hint))
-            return Union[tuple(args)]
-        else:
-            return args[0]
+            return non_none[0]
     return hint
 
 
@@ -785,6 +781,8 @@ def _get_parser(type_, parsers):
             parser = functools.partial(_parse_bool)
         elif type_ == slice:
             parser = functools.partial(_parse_slice)
+        elif type_ == type(None):
+            parser = functools.partial(_parse_none)
         elif type_ == list:
             raise ValueError('unable to parse list (try list[type])')
         elif isinstance(type_, type) and issubclass(type_, Enum):
@@ -838,6 +836,10 @@ def _parse_slice(string):
     return sl
 
 
+def _parse_none(string):
+    raise ValueError('No string can be converted to None')
+
+
 def _make_enum_parser(enum, value=None):
     if value is None:
         return functools.partial(_make_enum_parser, enum)
@@ -875,7 +877,7 @@ def _make_union_parser(union, parsers, value=None):
     for p in parsers:
         try:
             return p(value)
-        except (ValueError, ArgumentTypeError):
+        except (ValueError, ArgumentTypeError) as e:
             pass
     raise ValueError(
         '{} could not be parsed as any of {}'.format(value, union))
