@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+6.1.0 (2021-02-25)
+------------------
 * Boolean flags are now implemented using a variant of
   ``argparse.BooleanOptionalAction``.
 * Added ``no_negated_flags``.
