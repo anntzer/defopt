@@ -1,6 +1,10 @@
 Changelog
 =========
 
+next
+----
+* Fixed bad interaction between custom None parsers and tuple parsers.
+
 6.1.0 (2021-02-25)
 ------------------
 * Boolean flags are now implemented using a variant of

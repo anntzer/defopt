@@ -415,8 +415,7 @@ class TestTuple(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['1', '2']), (1, '2'))
 
     def test_tupleenum(self):
-        def main(foo):
-            """:param typing.Tuple[Choice] foo: foo"""
+        def main(foo: typing.Tuple[Choice] = None):
             return foo
         self.assertEqual(defopt.run(main, argv=['one']), (Choice.one,))
 

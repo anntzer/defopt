@@ -495,6 +495,13 @@ def _get_type(func, name):
     except KeyError:
         hint_type = None
     else:
+        param = inspect.signature(func).parameters[name]
+        if (param.default is None
+                and param.annotation != hint
+                and Optional[param.annotation] == hint):
+            # `f(x: tuple[int, int] = None)` means we support a tuple, but not
+            # None (to constrain the number of arguments).
+            hint = param.annotation
         hint_type = _get_type_from_hint(hint)
 
     chosen = [x is not None for x in [doc_type, hint_type]]
