@@ -358,22 +358,12 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly,
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
         if type_ == bool and not positional:
-            if no_negated_flags and default is False:
-                actions.append(
-                    _add_argument(parser, name, short,
-                                  action='store_true',
-                                  default=default,
-                                  # Add help if available.
-                                  **kwargs))
-            else:
-                # Special case:
-                # just add parameterless --name and --no-name flags.
-                actions.append(_add_argument(parser, name, short,
-                                             action=_BooleanOptionalAction,
-                                             default=default,
-                                             required=required,
-                                             # Add help if available.
-                                             **kwargs))
+            action = ('store_true' if no_negated_flags and default is False
+                      else _BooleanOptionalAction)  # --name/--no-name
+            actions.append(_add_argument(
+                parser, name, short, action=action, default=default,
+                required=required,  # Always False if `default is False`.
+                **kwargs))  # Add help if available.
             continue
         # Always set a default, even for required parameters, so that we can
         # later (ab)use default == SUPPRESS (!= None) to detect required
