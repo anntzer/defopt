@@ -198,7 +198,8 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         version=version, argparse_kwargs=argparse_kwargs)
     with _colorama_text():
         args = parser.parse_args(argv)
-    # Workaround for http://bugs.python.org/issue9253#msg186387
+    # Workaround for http://bugs.python.org/issue9253#msg186387 (and
+    # https://bugs.python.org/issue29298, which prevents using required=True).
     if not hasattr(args, '_func'):
         parser.error('too few arguments')
     try:
