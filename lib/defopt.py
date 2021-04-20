@@ -156,7 +156,7 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     :param short:
         Dictionary mapping parameter names (after conversion of underscores to
         dashes) to letters, to use as alternative short flags.  Defaults to
-        ``None``, which means to generate short flags for any non-ambiguous
+        `None`, which means to generate short flags for any non-ambiguous
         option.  Set to ``{}`` to completely disable short flags.
     :param strict_kwonly:
         If `False`, all parameters with a default are converted into
@@ -175,17 +175,17 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     :param version:
         If a string, add a ``--version`` flag which prints the given version
         string and exits.
-        If ``True``, the version string is auto-detected by searching for a
+        If `True`, the version string is auto-detected by searching for a
         ``__version__`` attribute on the module where the function is defined,
         and its parent packages, if any.  Error out if such a version cannot be
         found, or if multiple callables with different version strings are
         passed.
-        If ``None`` (the default), behave as for ``True``, but don't add a
+        If `None` (the default), behave as for `True`, but don't add a
         ``--version`` flag if no version string can be autodetected.
-        If ``False``, do not add a ``--version`` flag.
+        If `False`, do not add a ``--version`` flag.
     :param argparse_kwargs:
         A mapping of keyword arguments that will be passed to the
-        ArgumentParser constructor.
+        `~argparse.ArgumentParser` constructor.
     :param argv:
         Command line arguments to parse (default: ``sys.argv[1:]``).
     :return:
@@ -875,7 +875,7 @@ def _make_union_parser(union, parsers, value=None):
     for p in parsers:
         try:
             return p(value)
-        except (ValueError, ArgumentTypeError) as e:
+        except (ValueError, ArgumentTypeError):
             pass
     raise ValueError(
         '{} could not be parsed as any of {}'.format(value, union))
