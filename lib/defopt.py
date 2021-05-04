@@ -197,14 +197,20 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         no_negated_flags=no_negated_flags,
         version=version, argparse_kwargs=argparse_kwargs)
     with _colorama_text():
-        args = parser.parse_args(argv)
-    # Workaround for http://bugs.python.org/issue9253#msg186387 (and
-    # https://bugs.python.org/issue29298, which prevents using required=True).
-    if not hasattr(args, '_func'):
-        parser.error('too few arguments')
+        parsed_argv = vars(parser.parse_args(argv))
     try:
-        return _call_function(parser, args._func, args)
-    except args._exc_types as e:
+        func = parsed_argv.pop('_func')
+    except KeyError:
+        # Workaround for http://bugs.python.org/issue9253#msg186387 (and
+        # https://bugs.python.org/issue29298 which blocks using required=True).
+        parser.error('too few arguments')
+    exc_types = parsed_argv.pop('_exc_types')
+    ba = signature(func).bind_partial()
+    ba.arguments.update(parsed_argv)
+    # The function call should occur here to minimize effects on the traceback.
+    try:
+        return func(*ba.args, **ba.kwargs)
+    except exc_types as e:
         sys.exit(e)
 
 
@@ -538,21 +544,6 @@ def _get_type_from_hint(hint):
                     .format(hint))
             return non_none[0]
     return hint
-
-
-def _call_function(parser, func, args):
-    positionals = []
-    keywords = {}
-    sig = signature(func)
-    for name, param in sig.parameters.items():
-        arg = getattr(args, name)
-        if param.kind in [param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD]:
-            positionals.append(arg)
-        elif param.kind == param.VAR_POSITIONAL:
-            positionals.extend(arg)
-        else:
-            keywords[name] = arg
-    return func(*positionals, **keywords)
 
 
 def _passthrough_role(
