@@ -1,2 +1,1 @@
-sphinx
-sphinx-autodoc-typehints
+sphinx>=4.4

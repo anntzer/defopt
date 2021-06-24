@@ -7,12 +7,11 @@ import defopt
 
 # -- General configuration ------------------------------------------------
 
-needs_sphinx = '1.5.2'
+needs_sphinx = '4.4.0'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
-    'sphinx_autodoc_typehints',
 ]
 
 source_suffix = '.rst'
@@ -85,6 +84,8 @@ texinfo_documents = [(
 # -- Misc. configuration --------------------------------------------------
 
 autodoc_member_order = 'bysource'
+autodoc_typehints = 'description'
+autodoc_typehints_format = 'short'
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),

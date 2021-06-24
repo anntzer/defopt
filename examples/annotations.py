@@ -31,9 +31,6 @@ def documented(numbers: Iterable[float], exponent: int) -> None:
     """
     Example function using annotations.
 
-    The types are inserted into the generated documentation
-    by ``sphinx-autodoc-typehints``.
-
     :param numbers: Numbers to multiply
     :param exponent: Power to raise each element to
     """
