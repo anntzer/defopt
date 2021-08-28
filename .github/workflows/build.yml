@@ -35,7 +35,7 @@ jobs:
             # Oldest supported versions.
             python -mpip install docutils==0.10 sphinxcontrib-napoleon==0.7.0 &&
             if [[ "$env" < py38 ]]; then
-              python -mpip install typing_extensions==3.7.4 typing_inspect==0.3.1
+              python -mpip install typing_extensions==3.7.4 typing_inspect==0.5.0
             fi &&
             COVERAGE_FILE=".coverage.$env" python -mcoverage run --append --module unittest --buffer
           ) || exit 1

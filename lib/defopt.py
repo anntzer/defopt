@@ -45,9 +45,7 @@ try:
     # strips out ANSI escapes when the output is piped.
     from colorama import colorama_text as _colorama_text
 except ImportError:
-    @contextlib.contextmanager
-    def _colorama_text(*args):
-        yield
+    _colorama_text = getattr(contextlib, "nullcontext", contextlib.ExitStack)
 
 try:
     from _defopt_version import version as __version__
@@ -66,11 +64,9 @@ _Param = namedtuple('_Param', ('text', 'type'))
 if hasattr(typing, 'get_args'):
     _ti_get_args = typing.get_args
 else:
-    def _ti_get_args(tp):
-        import typing_inspect as ti
-        if type(tp) is type(Literal):  # Py<3.7.
-            return tp.__values__
-        return ti.get_args(tp, evaluate=True)  # =True is default on Py>=3.7.
+    import typing_inspect as _ti
+    # evaluate=True is default on Py>=3.7.
+    _ti_get_args = functools.partial(_ti.get_args, evaluate=True)
 
 
 if hasattr(typing, 'get_origin'):
@@ -78,7 +74,7 @@ if hasattr(typing, 'get_origin'):
 else:
     def _ti_get_origin(tp):
         import typing_inspect as ti
-        if type(tp) is type(Literal):  # Py<3.7.
+        if ti.is_literal_type(tp):  # ti.get_origin returns None for Literals.
             return Literal
         origin = ti.get_origin(tp)
         return {  # Py<3.7.
@@ -782,7 +778,7 @@ def _get_parser(type_, parsers):
             parser = _make_union_parser(
                 type_,
                 [_get_parser(arg, parsers) for arg in _ti_get_args(type_)])
-        elif _ti_get_origin(type_) is Literal:  # Py>=3.7.
+        elif _ti_get_origin(type_) is Literal:
             parser = _make_literal_parser(
                 type_,
                 [_get_parser(type(arg), parsers)

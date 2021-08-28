@@ -29,8 +29,8 @@ setup(
     ],
     extras_require={
         ':python_version<"3.8"': [
-            'typing_extensions>=3.7.4',  # Literal support.
-            'typing_inspect>=0.3.1',
+            # Literal support, and requires typing_extensions.
+            'typing_inspect>=0.5.0',
         ],
         ':sys.platform=="win32"': [
             'colorama>=0.3.4',
