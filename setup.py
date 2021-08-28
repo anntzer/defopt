@@ -16,11 +16,12 @@ setup(
     package_dir={'': 'lib'},
     py_modules=['defopt', '_defopt_version'],
     python_requires='>=3.5',
-    setup_requires=['setuptools_scm'],
-    use_scm_version=lambda: {  # xref __init__.py
+    setup_requires=['setuptools_scm>=3.3'],  # fallback_version support.
+    use_scm_version=lambda: {
         "version_scheme": "post-release",
         "local_scheme": "node-and-date",
         "write_to": "lib/_defopt_version.py",
+        "fallback_version": "0+unknown",
     },
     install_requires=[
         'docutils>=0.10',  # Empiric bound.
