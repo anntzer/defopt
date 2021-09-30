@@ -775,14 +775,21 @@ def _get_parser(type_, parsers):
         elif _is_constructible_from_str(type_):
             parser = functools.partial(type_)
         elif _ti_get_origin(type_) is Union:
+            args = _ti_get_args(type_)
+            if type(None) in args:
+                # If None is in the Union, parse it first.  This only matters
+                # if there's a custom parser for None, in which case the user
+                # should normally have picked values that they *want* to be
+                # parsed as None as opposed to anything else, e.g. strs, even
+                # if that was possible.
+                args = (type(None),
+                        *[arg for arg in args if arg is not type(None)])
             parser = _make_union_parser(
-                type_,
-                [_get_parser(arg, parsers) for arg in _ti_get_args(type_)])
+                type_, [_get_parser(arg, parsers) for arg in args])
         elif _ti_get_origin(type_) is Literal:
+            args = _ti_get_args(type_)
             parser = _make_literal_parser(
-                type_,
-                [_get_parser(type(arg), parsers)
-                 for arg in _ti_get_args(type_)])
+                type_, [_get_parser(type(arg), parsers) for arg in args])
         else:
             raise Exception('no parser found for type {}'.format(
                 # typing types have no __name__.

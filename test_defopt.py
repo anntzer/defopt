@@ -178,7 +178,6 @@ class TestParsers(unittest.TestCase):
     def test_overridden_parser(self):
         def parser(string):
             return int(string) * 2
-
         def main(value):
             """:type value: int"""
             return value
@@ -187,17 +186,20 @@ class TestParsers(unittest.TestCase):
 
     def test_overridden_none_parser(self):
         def parser(string):
-            if string == ':none:':
+            if string == 'nil':
                 return None
             else:
-                raise ValueError("Not :none:")
-
-        def main(value):
-            """:type value: typing.Optional[int]"""
-            return value
+                raise ValueError("Not nil")
+        def main(ints, strs):
+            """
+            :type ints: typing.List[typing.Optional[int]]
+            :type strs: typing.List[typing.Optional[str]]
+            """
+            return ints, strs
         self.assertEqual(
-            defopt.run(main, parsers={type(None): parser}, argv=[':none:']),
-            None)
+            defopt.run(main, parsers={type(None): parser},
+                       argv=['-i', 'nil', '0', '-s', 'nil', 's']),
+            ([None, 0], [None, 's']))
 
     def test_parse_bool(self):
         parser = defopt._get_parser(bool, {})

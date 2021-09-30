@@ -4,6 +4,7 @@ Changelog
 next
 ----
 * Fixed bad interaction between custom None parsers and tuple parsers.
+* Give preference to None parsers in Unions.
 
 6.1.0 (2021-02-25)
 ------------------

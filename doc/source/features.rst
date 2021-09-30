@@ -221,12 +221,21 @@ they are given; the value returned by the first parser that does not raise a
 
 ``typing.Optional[type1]``, i.e. ``Union[type1, type(None)]``, is normally
 equivalent to ``type1``.  This is implemented using a parser for ``type(None)``
-that raises ``ValueError`` on all inputs, and can thus be overloaded by
-setting a custom parser for ``type(None)``.
+that raises ``ValueError`` on all inputs, and can thus be overloaded by setting
+a custom parser for ``type(None)``.  As an exception to the "try parsers in
+order" rule given above, a parser for ``type(None)`` will always be tried
+first; this is so that e.g. ``Optional[str]`` can parse some user-chosen values
+as ``None`` and the others as ``str``.
 
 Collection types are not supported in unions; e.g. ``Union[List[type1]]``
 is not supported (with the exception of ``Optional[List[type1]]``, which is
 *always* equivalent to ``List[type1]``.
+
+Note that unfortunately, in certain circumstances, Python will reorder
+members of a union.  Most notably, ``List[Union[A, B]]`` caches the union
+type, so a later ``List[Union[B, A]]`` will be silently converted to
+``List[Union[A, B]]``, which matters if some inputs are accepted by both the
+parser for ``A`` and the parser for ``B``.
 
 Parsers
 -------
