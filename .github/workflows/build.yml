@@ -5,44 +5,57 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.5", "3.6", "3.7", "3.8", "3.9"]
     steps:
     - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
     - name: Install
       run: |
-        eval "$($CONDA/bin/conda shell.bash hook)" &&
-        conda config --set always_yes yes &&
-        conda config --prepend channels conda-forge &&
-        conda config --set channel_priority strict
-        conda update -q conda &&
-        conda install pip &&
-        for pyver in $(python setup.py --classifiers | grep -Po 'Python :: \K.*'); do
-          (
-            conda create -q -n "py$pyver" python="$pyver" &&
-            conda activate "py$pyver" &&
-            python --version &&
-            python -mpip install --upgrade pip setuptools coverage &&
-            python -mpip install .
-          ) || exit 1
-        done
+        python -mpip install --upgrade pip setuptools wheel coverage &&
+        python -mpip install . &&
+        python -mpip list
     - name: Test
       run: |
-        eval "$($CONDA/bin/conda shell.bash hook)" &&
-        for env in $(conda info -e | grep -o '^py\S*'); do
-          (
-            echo "Testing on $env" &&
-            conda activate "$env" &&
-            COVERAGE_FILE=".coverage.$env" python -mcoverage run --append --module unittest --buffer &&
-            # Oldest supported versions.
-            python -mpip install docutils==0.10 sphinxcontrib-napoleon==0.7.0 &&
-            if [[ "$env" < py38 ]]; then
-              python -mpip install typing_extensions==3.7.4 typing_inspect==0.5.0
-            fi &&
-            COVERAGE_FILE=".coverage.$env" python -mcoverage run --append --module unittest --buffer
-          ) || exit 1
-        done &&
-        conda activate "$env" &&
+        pyver="$(python -c 'import sys; print("{0.major}.{0.minor}".format(sys.version_info))')" &&
+        COVERAGE_FILE=".coverage.$pyver" python -mcoverage run --append --module unittest --buffer &&
+        # Oldest supported versions.
+        python -mpip install docutils==0.10 sphinxcontrib-napoleon==0.7.0 &&
+        if [[ "$pyver" = 3.5 || "$pyver" = 3.6 || "$pyver" = 3.7 ]]; then
+          python -mpip install typing_extensions==3.7.4 typing_inspect==0.5.0
+        fi &&
+        COVERAGE_FILE=".coverage.$pyver" python -mcoverage run --append --module unittest --buffer
+    - name: Upload coverage
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage
+        path: .coverage.*
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: "3.9"
+    - name: Download coverage
+      uses: actions/download-artifact@v2
+      with:
+        name: coverage
+    - name: Coverage
+      run: |
+        python -mpip install --upgrade coverage &&
         python -mcoverage combine .coverage.* &&  # Unifies paths across envs.
         python -mcoverage report --show-missing
+
+  style:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
     - name: Style
       run: |
         shopt -s globstar &&
