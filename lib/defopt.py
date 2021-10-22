@@ -21,7 +21,7 @@ from argparse import (
 from collections import defaultdict, namedtuple, Counter
 from enum import Enum
 from pathlib import PurePath
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import docutils.core
 from docutils.nodes import NodeVisitor, SkipNode, TextElement
@@ -554,15 +554,14 @@ def _get_type_from_doc(name, globalns):
             raise ValueError(
                 'unsupported union including container type: {}'.format(name))
         return Union[tuple(subtype for subtype in subtypes)]
-    # Support for legacy list syntax "list[type]".
-    # (This intentionally won't catch `List` or `typing.List`)
-    match = re.match(r'([a-z]\w+)\[([\w\.]+)\]', name)
+    # Support for sphinx-specific "list[type]", "tuple[type]" syntax; only
+    # needed for Py<3.9.
+    # (This intentionally won't catch `List` or `typing.List`.)
+    match = re.match(r'(list|tuple)\[([\w\.]+)\]', name)
     if match:
         container, type_ = match.groups()
-        if container != 'list':
-            raise ValueError(
-                'unsupported container type: {}'.format(container))
-        return List[eval(type_, globalns)]
+        container = {'list': List, 'tuple': Tuple}[container]
+        return container[eval(type_, globalns)]
     return _get_type_from_hint(eval(name, globalns))
 
 
