@@ -227,19 +227,19 @@ class TestParsers(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'no parser'):
             defopt._get_parser(object, parsers={type: type})
 
-    def test_list(self):
-        def main(foo):
-            """:type foo: list[float]"""
-            return foo
-        self.assertEqual(
-            defopt.run(main, argv=['--foo', '1.1', '2.2']), [1.1, 2.2])
+    def test_containers(self):
+        def main(foo, bar):
+            """
+            :type foo: tuple[float]
+            :type bar: list[float]
+            """
+            return foo, bar
+        self.assertEqual(defopt.run(main, argv=['1.1', '--bar', '2.2', '3.3']),
+                         ((1.1,), [2.2, 3.3]))
 
     def test_list_kwarg(self):
         def main(foo=None):
-            """Test function
-
-            :type foo: list[float]
-            """
+            """:type foo: list[float]"""
             return foo
         self.assertEqual(
             defopt.run(main, argv=['--foo', '1.1', '2.2']), [1.1, 2.2])
@@ -675,10 +675,6 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(
             defopt._get_type_from_doc('typing.Iterable[int]', globalns),
             typing.List[int])
-
-    def test_other(self):
-        with self.assertRaisesRegex(ValueError, 'unsupported.*tuple'):
-            defopt._get_type_from_doc('tuple[int]', {})
 
     def test_literal_block(self):
         doc = """
