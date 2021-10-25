@@ -35,6 +35,10 @@ finally:
         del collections.Callable
 
 try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
+try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
@@ -59,6 +63,7 @@ _TYPE_NAMES = ['type', 'kwtype']
 
 _Doc = namedtuple('_Doc', ('first_line', 'text', 'params', 'raises'))
 _Param = namedtuple('_Param', ('text', 'type'))
+class _Raises(tuple): pass
 
 
 if hasattr(typing, 'get_args'):
@@ -200,13 +205,17 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         # Workaround for http://bugs.python.org/issue9253#msg186387 (and
         # https://bugs.python.org/issue29298 which blocks using required=True).
         parser.error('too few arguments')
-    exc_types = parsed_argv.pop('_exc_types')
-    ba = signature(func).bind_partial()
+    sig = signature(func)
+    raises, = [
+        # typing_inspect does not allow fetching metadata; see e.g. ti#82.
+        arg for arg in getattr(sig.return_annotation, "__metadata__", [])
+        if isinstance(arg, _Raises)]
+    ba = sig.bind_partial()
     ba.arguments.update(parsed_argv)
     # The function call should occur here to minimize effects on the traceback.
     try:
         return func(*ba.args, **ba.kwargs)
-    except exc_types as e:
+    except raises as e:
         sys.exit(e)
 
 
@@ -303,12 +312,14 @@ def signature(func: Callable):
     differences:
 
     - Private parameters (starting with an underscore) are not listed.
-    - Parameter annotations are also read from ``func``'s docstring (if a
-      parameter's type is specified both in the signature and the docstring,
-      both types must match).
+    - Parameter types are also read from ``func``'s docstring (if a parameter's
+      type is specified both in the signature and the docstring, both types
+      must match).
     - The docstring for each parameter is available as the
       `~inspect.Parameter`'s ``.doc`` attribute (in fact, a subclass of
       `~inspect.Parameter` is used).
+    - The return type is `~typing.Annotated` with the documented raisable
+      exception types, in wrapped in a private tuple subclass.
     """
     full_sig = inspect.signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
@@ -324,7 +335,11 @@ def signature(func: Callable):
                 name=param.name, kind=param.kind, default=param.default,
                 annotation=_get_type(func, param.name),
                 doc=doc.params.get(param.name, _Param(None, None)).text))
-    return full_sig.replace(parameters=parameters)
+    exc_types = _Raises(_get_type_from_doc(name, func.__globals__)
+                        for name in doc.raises)
+    return_annotation = Annotated[full_sig.return_annotation, exc_types]
+    return full_sig.replace(
+        parameters=parameters, return_annotation=return_annotation)
 
 
 def _populate_parser(func, parser, parsers, short, strict_kwonly,
@@ -333,8 +348,6 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly,
     doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
 
-    exc_types = tuple(_get_type_from_doc(name, func.__globals__)
-                      for name in doc.raises)
     positionals = {name for name, param in sig.parameters.items()
                    if ((param.default is param.empty or strict_kwonly)
                        and not _is_list_like(param.annotation)
@@ -416,7 +429,7 @@ def _populate_parser(func, parser, parsers, short, strict_kwonly,
         _update_help_string(
             action, show_defaults=show_defaults, show_types=show_types)
 
-    parser.set_defaults(_func=func, _exc_types=exc_types)
+    parser.set_defaults(_func=func)
 
 
 def _add_argument(parser, name, short, _positional=False, **kwargs):

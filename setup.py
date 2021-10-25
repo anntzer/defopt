@@ -28,8 +28,9 @@ setup(
         'sphinxcontrib-napoleon>=0.7.0',  # More consistent Raises blocks.
     ],
     extras_require={
-        ':python_version<"3.8"': [
-            # Literal support, and requires typing_extensions.
+        ':python_version<"3.9"': [
+            # Literal support, and requires typing_extensions (which also
+            # brings in Annotated, on Py3.8).
             'typing_inspect>=0.5.0',
         ],
         ':sys.platform=="win32"': [
