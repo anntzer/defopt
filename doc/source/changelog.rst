@@ -5,6 +5,8 @@ next
 ----
 * Fixed bad interaction between custom None parsers and tuple parsers.
 * Give preference to None parsers in Unions.
+* `defopt.signature` annotates the return type with the documented raisable
+  exception types.
 
 6.1.0 (2021-02-25)
 ------------------
