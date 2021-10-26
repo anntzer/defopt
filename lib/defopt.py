@@ -56,7 +56,7 @@ try:
 except ImportError:
     pass
 
-__all__ = ['run', 'signature']
+__all__ = ['run', 'signature', 'bind']
 
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
 _TYPE_NAMES = ['type', 'kwtype']
@@ -130,6 +130,43 @@ class _DefaultList(list):
     """
 
 
+def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
+         parsers: Dict[type, Callable[[str], Any]] = {},
+         short: Optional[Dict[str, str]] = None,
+         strict_kwonly: bool = True,
+         show_defaults: bool = True,
+         show_types: bool = False,
+         no_negated_flags: bool = False,
+         version: Union[str, None, bool] = None,
+         argparse_kwargs: dict = {},
+         argv: Optional[List[str]] = None):
+    """
+    Process command-line arguments and bind arguments.
+
+    This function takes the same parameters as `defopt.run`, but returns a
+    pair, which consists of a `~typing.Callable` *func* and a
+    `~inspect.BoundArguments` *ba*, such that `defopt.run` would call
+    ``func(*ba.args, **ba.kwargs)`` (modulo exception handling).
+    """
+    parser = _create_parser(
+        funcs, parsers=parsers, short=short, strict_kwonly=strict_kwonly,
+        show_defaults=show_defaults, show_types=show_types,
+        no_negated_flags=no_negated_flags,
+        version=version, argparse_kwargs=argparse_kwargs)
+    with _colorama_text():
+        parsed_argv = vars(parser.parse_args(argv))
+    try:
+        func = parsed_argv.pop('_func')
+    except KeyError:
+        # Workaround for http://bugs.python.org/issue9253#msg186387 (and
+        # https://bugs.python.org/issue29298 which blocks using required=True).
+        parser.error('too few arguments')
+    sig = signature(func)
+    ba = sig.bind_partial()
+    ba.arguments.update(parsed_argv)
+    return func, ba
+
+
 def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         parsers: Dict[type, Callable[[str], Any]] = {},
         short: Optional[Dict[str, str]] = None,
@@ -141,7 +178,7 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         argparse_kwargs: dict = {},
         argv: Optional[List[str]] = None):
     """
-    Process command line arguments and run the given functions.
+    Process command-line arguments and run the given functions.
 
     ``funcs`` can be a single callable, which is parsed and run; or it can
     be a list of callables or mappable of strs to callables, in which case
@@ -192,26 +229,16 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     :return:
         The value returned by the function that was run.
     """
-    parser = _create_parser(
+    func, ba = bind(
         funcs, parsers=parsers, short=short, strict_kwonly=strict_kwonly,
         show_defaults=show_defaults, show_types=show_types,
-        no_negated_flags=no_negated_flags,
-        version=version, argparse_kwargs=argparse_kwargs)
-    with _colorama_text():
-        parsed_argv = vars(parser.parse_args(argv))
-    try:
-        func = parsed_argv.pop('_func')
-    except KeyError:
-        # Workaround for http://bugs.python.org/issue9253#msg186387 (and
-        # https://bugs.python.org/issue29298 which blocks using required=True).
-        parser.error('too few arguments')
+        no_negated_flags=no_negated_flags, version=version,
+        argparse_kwargs=argparse_kwargs, argv=argv)
     sig = signature(func)
     raises, = [
         # typing_inspect does not allow fetching metadata; see e.g. ti#82.
         arg for arg in getattr(sig.return_annotation, "__metadata__", [])
         if isinstance(arg, _Raises)]
-    ba = sig.bind_partial()
-    ba.arguments.update(parsed_argv)
     # The function call should occur here to minimize effects on the traceback.
     try:
         return func(*ba.args, **ba.kwargs)
