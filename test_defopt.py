@@ -377,6 +377,12 @@ class TestFlags(unittest.TestCase):
         def func(*, hello="world"):
             """:type hello: str"""
         defopt.run(func, argv=[])
+        with self.assertRaises(SystemExit):
+            defopt.run(func, argv=["-h", ""])
+        self.assertEqual(
+            defopt.run(
+                func, argparse_kwargs={"add_help": False}, argv=["-h", ""]),
+            None)
 
 
 class TestEnums(unittest.TestCase):
@@ -937,6 +943,12 @@ class TestVersion(unittest.TestCase):
         with self.assertRaises(SystemExit), \
              self._assert_streams(stdout=r'\Afoo 42\n\Z'):
             defopt.run([], version='foo 42', argv=['--version'])
+
+    def test_no_version(self):
+        def moduleless(): pass
+        moduleless.__module__ = None
+        with self.assertRaises(ValueError):
+            defopt.run([moduleless], version=True)
 
     @contextlib.contextmanager
     def _assert_streams(self, *, stdout=None, stderr=None):
