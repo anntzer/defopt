@@ -298,9 +298,8 @@ def _get_version(funcs):
 
 
 def _get_version1(func):
-    try:
-        module_name = func.__module__
-    except AttributeError:
+    module_name = getattr(func, "__module__", None)
+    if not module_name:
         return
     if module_name == '__main__':
         f_globals = getattr(func, '__globals__', {})
