@@ -210,8 +210,8 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         parameters with a default to optional positional command line
         parameters.
     :param strict_kwonly:
-        If `False`, all parameters with a default are converted into
-        command-line flags. The default behavior (`True`) is to convert
+        Deprecated. If `False`, all parameters with a default are converted
+        into command-line flags. The default behavior (`True`) is to convert
         keyword-only parameters to command line flags, and non-keyword-only
         parameters with a default to optional positional command line
         parameters.
