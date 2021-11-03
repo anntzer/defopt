@@ -307,6 +307,14 @@ class TestParsers(unittest.TestCase):
         def main(foo='default'):
             """:type foo: bool"""
             return foo
+        self.assertIs(defopt.run(main, options='has_default',
+                                 argv=[]), 'default')
+        self.assertIs(defopt.run(main, options='has_default',
+                                 argv=['--foo']), True)
+        self.assertIs(defopt.run(main, options='has_default',
+                                 argv=['--no-foo']), False)
+        self.assertIs(defopt.run(main, options='has_default',
+                                 argv=['--foo', '--no-foo']), False)
         self.assertIs(defopt.run(main, strict_kwonly=False,
                                  argv=[]), 'default')
         self.assertIs(defopt.run(main, strict_kwonly=False,
@@ -322,6 +330,21 @@ class TestParsers(unittest.TestCase):
             return foo
         self.assertIs(defopt.run(main, argv=['--foo']), True)
         self.assertIs(defopt.run(main, argv=['--no-foo']), False)
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=[])
+
+    def test_options(self):
+        def main(foo):
+            """:type foo: bool"""
+            return foo
+        self.assertIs(defopt.run(main, options='all', argv=['--foo']), True)
+        self.assertIs(defopt.run(main, options='all', argv=['--no-foo']), False)
+        with self.assertRaises(SystemExit):
+            defopt.run(main, options='all', argv=['1'])
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=['--foo'])
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=['--no-foo'])
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
 
@@ -346,7 +369,7 @@ class TestFlags(unittest.TestCase):
             """:type foo: int"""
             return foo
         self.assertEqual(
-            defopt.run(func, short={'foo': 'f'}, strict_kwonly=False,
+            defopt.run(func, short={'foo': 'f'}, options='has_default',
                        argv=['-f', '2']),
             2)
 
@@ -915,7 +938,7 @@ class TestHelp(unittest.TestCase):
         self.assertLessEqual({*flags}, {'d', 't', 'n'})
         parser = defopt._create_parser(
             funcs, show_defaults='d' in flags, show_types='t' in flags,
-            no_negated_flags='n' in flags, strict_kwonly=False)
+            no_negated_flags='n' in flags, options='has_default')
         return parser.format_help()
 
 
