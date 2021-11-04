@@ -3,6 +3,7 @@ Changelog
 
 next
 ----
+* Bumped docutils dependency to >=0.12, for setuptools compatibility.
 * Added support for Python 3.10.
 * Fixed bad interaction between custom None parsers and tuple parsers.
 * Give preference to None parsers in Unions.
