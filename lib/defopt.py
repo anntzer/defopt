@@ -137,7 +137,7 @@ _unset = "UNSET"
 def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
          parsers: Dict[type, Callable[[str], Any]] = {},
          short: Optional[Dict[str, str]] = None,
-         options: str = _unset,
+         cli_options: str = _unset,
          strict_kwonly=_unset,
          show_defaults: bool = True,
          show_types: bool = False,
@@ -154,7 +154,7 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     ``func(*ba.args, **ba.kwargs)`` (modulo exception handling).
     """
     parser = _create_parser(
-        funcs, parsers=parsers, short=short, options=options,
+        funcs, parsers=parsers, short=short, cli_options=cli_options,
         strict_kwonly=strict_kwonly, show_defaults=show_defaults,
         show_types=show_types, no_negated_flags=no_negated_flags,
         version=version, argparse_kwargs=argparse_kwargs)
@@ -175,7 +175,7 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
 def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         parsers: Dict[type, Callable[[str], Any]] = {},
         short: Optional[Dict[str, str]] = None,
-        options: str = _unset,
+        cli_options: str = _unset,
         strict_kwonly=_unset,
         show_defaults: bool = True,
         show_types: bool = False,
@@ -202,7 +202,7 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         dashes) to letters, to use as alternative short flags.  Defaults to
         `None`, which means to generate short flags for any non-ambiguous
         option.  Set to ``{}`` to completely disable short flags.
-    :param options:
+    :param cli_options:
         If ``all``, all parameters are converted into command-line flags.  If
         ``has_default``, all parameters with a default are converted into
         command-line flags.  The default behavior (``kwonly``) is to convert
@@ -243,7 +243,7 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         The value returned by the function that was run.
     """
     func, ba = bind(
-        funcs, parsers=parsers, short=short, options=options,
+        funcs, parsers=parsers, short=short, cli_options=cli_options,
         strict_kwonly=strict_kwonly, show_defaults=show_defaults,
         show_types=show_types, no_negated_flags=no_negated_flags,
         version=version, argparse_kwargs=argparse_kwargs, argv=argv)
@@ -263,7 +263,7 @@ def _create_parser(
         funcs, *,
         parsers={},
         short=None,
-        options=_unset,
+        cli_options=_unset,
         strict_kwonly=_unset,
         show_defaults=True,
         show_types=False,
@@ -274,7 +274,7 @@ def _create_parser(
         **{**{'formatter_class': RawTextHelpFormatter}, **argparse_kwargs})
     version_sources = []
     if callable(funcs):
-        _populate_parser(funcs, parser, parsers, short, options, strict_kwonly,
+        _populate_parser(funcs, parser, parsers, short, cli_options, strict_kwonly,
                          show_defaults, show_types, no_negated_flags)
         version_sources.append(funcs)
     else:
@@ -288,7 +288,7 @@ def _create_parser(
                 name,
                 formatter_class=RawTextHelpFormatter,
                 help=_parse_docstring(inspect.getdoc(func)).first_line)
-            _populate_parser(func, subparser, parsers, short, options, strict_kwonly,
+            _populate_parser(func, subparser, parsers, short, cli_options, strict_kwonly,
                              show_defaults, show_types, no_negated_flags)
             version_sources.append(func)
     if isinstance(version, str):
@@ -382,24 +382,24 @@ def signature(func: Callable):
         parameters=parameters, return_annotation=return_annotation)
 
 
-def _populate_parser(func, parser, parsers, short, options, strict_kwonly,
+def _populate_parser(func, parser, parsers, short, cli_options, strict_kwonly,
                      show_defaults, show_types, no_negated_flags):
     if strict_kwonly is _unset:
-        if options is _unset:
-            options = 'kwonly'
+        if cli_options is _unset:
+            cli_options = 'kwonly'
     else:
-        if options is not _unset:
-            raise ValueError('Cannot pass both "options" and "strict_kwonly"')
+        if cli_options is not _unset:
+            raise ValueError('Cannot pass both "cli_options" and "strict_kwonly"')
         msg = 'strict_kwonly is deprecated and will be removed in an upcoming release'
         warnings.warn(msg, DeprecationWarning)
-        options = 'kwonly' if strict_kwonly else 'has_default'
+        cli_options = 'kwonly' if strict_kwonly else 'has_default'
     sig = signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
 
     positionals = {name for name, param in sig.parameters.items()
-                   if (((param.default is param.empty and options == 'has_default')
-                        or options == 'kwonly')
+                   if (((param.default is param.empty and cli_options == 'has_default')
+                        or cli_options == 'kwonly')
                        and not _is_list_like(param.annotation)
                        and param.kind != param.KEYWORD_ONLY)}
     if short is None:
