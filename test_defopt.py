@@ -315,14 +315,18 @@ class TestParsers(unittest.TestCase):
                                  argv=['--no-foo']), False)
         self.assertIs(defopt.run(main, cli_options='has_default',
                                  argv=['--foo', '--no-foo']), False)
-        self.assertIs(defopt.run(main, strict_kwonly=False,
-                                 argv=[]), 'default')
-        self.assertIs(defopt.run(main, strict_kwonly=False,
-                                 argv=['--foo']), True)
-        self.assertIs(defopt.run(main, strict_kwonly=False,
-                                 argv=['--no-foo']), False)
-        self.assertIs(defopt.run(main, strict_kwonly=False,
-                                 argv=['--foo', '--no-foo']), False)
+        with self.assertWarns(DeprecationWarning):
+            self.assertIs(defopt.run(main, strict_kwonly=False,
+                                     argv=[]), 'default')
+        with self.assertWarns(DeprecationWarning):
+            self.assertIs(defopt.run(main, strict_kwonly=False,
+                                     argv=['--foo']), True)
+        with self.assertWarns(DeprecationWarning):
+            self.assertIs(defopt.run(main, strict_kwonly=False,
+                                     argv=['--no-foo']), False)
+        with self.assertWarns(DeprecationWarning):
+            self.assertIs(defopt.run(main, strict_kwonly=False,
+                                     argv=['--foo', '--no-foo']), False)
 
     def test_bool_keyword_only(self):
         def main(*, foo):
