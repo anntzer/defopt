@@ -398,8 +398,8 @@ def _populate_parser(func, parser, parsers, short, cli_options, strict_kwonly,
     parser.description = doc.text
 
     positionals = {name for name, param in sig.parameters.items()
-                   if (((param.default is param.empty and cli_options == 'has_default')
-                        or cli_options == 'kwonly')
+                   if ((cli_options == 'kwonly' or
+                        (param.default is param.empty and cli_options == 'has_default'))
                        and not _is_list_like(param.annotation)
                        and param.kind != param.KEYWORD_ONLY)}
     if short is None:
