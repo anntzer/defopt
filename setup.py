@@ -24,7 +24,7 @@ setup(
         "fallback_version": "0+unknown",
     },
     install_requires=[
-        'docutils>=0.10',  # Empiric bound.
+        'docutils>=0.12',  # First with wheels, for better setuptools compat.
         'sphinxcontrib-napoleon>=0.7.0',  # More consistent Raises blocks.
     ],
     extras_require={
