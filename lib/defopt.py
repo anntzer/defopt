@@ -153,11 +153,20 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     `~inspect.BoundArguments` *ba*, such that `defopt.run` would call
     ``func(*ba.args, **ba.kwargs)`` (modulo exception handling).
     """
+    if strict_kwonly == _unset:
+        if cli_options == _unset:
+            cli_options = 'kwonly'
+    else:
+        if cli_options != _unset:
+            raise ValueError('Cannot pass both "cli_options" and "strict_kwonly"')
+        msg = 'strict_kwonly is deprecated and will be removed in an upcoming release'
+        warnings.warn(msg, DeprecationWarning)
+        cli_options = 'kwonly' if strict_kwonly else 'has_default'
     parser = _create_parser(
         funcs, parsers=parsers, short=short, cli_options=cli_options,
-        strict_kwonly=strict_kwonly, show_defaults=show_defaults,
-        show_types=show_types, no_negated_flags=no_negated_flags,
-        version=version, argparse_kwargs=argparse_kwargs)
+        show_defaults=show_defaults, show_types=show_types,
+        no_negated_flags=no_negated_flags, version=version,
+        argparse_kwargs=argparse_kwargs)
     with _colorama_text():
         parsed_argv = vars(parser.parse_args(argv))
     try:
@@ -263,8 +272,7 @@ def _create_parser(
         funcs, *,
         parsers={},
         short=None,
-        cli_options=_unset,
-        strict_kwonly=_unset,
+        cli_options='kwonly',
         show_defaults=True,
         show_types=False,
         no_negated_flags=False,
@@ -274,7 +282,7 @@ def _create_parser(
         **{**{'formatter_class': RawTextHelpFormatter}, **argparse_kwargs})
     version_sources = []
     if callable(funcs):
-        _populate_parser(funcs, parser, parsers, short, cli_options, strict_kwonly,
+        _populate_parser(funcs, parser, parsers, short, cli_options,
                          show_defaults, show_types, no_negated_flags)
         version_sources.append(funcs)
     else:
@@ -288,7 +296,7 @@ def _create_parser(
                 name,
                 formatter_class=RawTextHelpFormatter,
                 help=_parse_docstring(inspect.getdoc(func)).first_line)
-            _populate_parser(func, subparser, parsers, short, cli_options, strict_kwonly,
+            _populate_parser(func, subparser, parsers, short, cli_options,
                              show_defaults, show_types, no_negated_flags)
             version_sources.append(func)
     if isinstance(version, str):
@@ -382,17 +390,8 @@ def signature(func: Callable):
         parameters=parameters, return_annotation=return_annotation)
 
 
-def _populate_parser(func, parser, parsers, short, cli_options, strict_kwonly,
+def _populate_parser(func, parser, parsers, short, cli_options,
                      show_defaults, show_types, no_negated_flags):
-    if strict_kwonly is _unset:
-        if cli_options is _unset:
-            cli_options = 'kwonly'
-    else:
-        if cli_options is not _unset:
-            raise ValueError('Cannot pass both "cli_options" and "strict_kwonly"')
-        msg = 'strict_kwonly is deprecated and will be removed in an upcoming release'
-        warnings.warn(msg, DeprecationWarning)
-        cli_options = 'kwonly' if strict_kwonly else 'has_default'
     sig = signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
