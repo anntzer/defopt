@@ -49,7 +49,7 @@ try:
     # strips out ANSI escapes when the output is piped.
     from colorama import colorama_text as _colorama_text
 except ImportError:
-    _colorama_text = getattr(contextlib, "nullcontext", contextlib.ExitStack)
+    _colorama_text = getattr(contextlib, 'nullcontext', contextlib.ExitStack)
 
 try:
     from _defopt_version import version as __version__
@@ -237,7 +237,7 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     sig = signature(func)
     raises, = [
         # typing_inspect does not allow fetching metadata; see e.g. ti#82.
-        arg for arg in getattr(sig.return_annotation, "__metadata__", [])
+        arg for arg in getattr(sig.return_annotation, '__metadata__', [])
         if isinstance(arg, _Raises)]
     # The function call should occur here to minimize effects on the traceback.
     try:
@@ -298,7 +298,7 @@ def _get_version(funcs):
 
 
 def _get_version1(func):
-    module_name = getattr(func, "__module__", None)
+    module_name = getattr(func, '__module__', None)
     if not module_name:
         return
     if module_name == '__main__':
@@ -553,7 +553,7 @@ def _get_type_from_doc(name, globalns):
             raise ValueError(
                 'unsupported union including container type: {}'.format(name))
         return Union[tuple(subtype for subtype in subtypes)]
-    # Support for sphinx-specific "list[type]", "tuple[type]" syntax; only
+    # Support for sphinx-specific `list[type]`, `tuple[type]` syntax; only
     # needed for Py<3.9.
     # (This intentionally won't catch `List` or `typing.List`.)
     match = re.match(r'(list|tuple)\[([\w\.]+)\]', name)
@@ -685,7 +685,7 @@ def _parse_docstring(doc):
         def depart_rubric(self, node):
             # Style consistent with "usage:", "positional arguments:", etc.
             self._current_paragraph[:] = [
-                (t.lower() if t == t.title() else t) + ":"
+                (t.lower() if t == t.title() else t) + ':'
                 for t in self._current_paragraph]
             self.depart_paragraph(node)
 
