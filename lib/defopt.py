@@ -203,14 +203,14 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         `None`, which means to generate short flags for any non-ambiguous
         option.  Set to ``{}`` to completely disable short flags.
     :param options:
-        If `all`, all parameters are converted into command-line flags. If
-        `has_default`, all parameters with a default are converted into
-        command-line flags. The default behavior (`kwonly`) is to convert
+        If ``all``, all parameters are converted into command-line flags.  If
+        ``has_default``, all parameters with a default are converted into
+        command-line flags.  The default behavior (``kwonly``) is to convert
         keyword-only parameters to command line flags, and non-keyword-only
         parameters with a default to optional positional command line
         parameters.
     :param strict_kwonly:
-        Deprecated. If `False`, all parameters with a default are converted
+        Deprecated.  If `False`, all parameters with a default are converted
         into command-line flags. The default behavior (`True`) is to convert
         keyword-only parameters to command line flags, and non-keyword-only
         parameters with a default to optional positional command line
