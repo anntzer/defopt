@@ -14,6 +14,7 @@ import re
 import pydoc
 import sys
 import typing
+import warnings
 from argparse import (
     REMAINDER, SUPPRESS,
     Action, ArgumentParser, RawTextHelpFormatter,
@@ -130,10 +131,14 @@ class _DefaultList(list):
     """
 
 
+_unset = 'UNSET'
+
+
 def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
          parsers: Dict[type, Callable[[str], Any]] = {},
          short: Optional[Dict[str, str]] = None,
-         strict_kwonly: bool = True,
+         cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
+         strict_kwonly=_unset,
          show_defaults: bool = True,
          show_types: bool = False,
          no_negated_flags: bool = False,
@@ -148,11 +153,22 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     `~inspect.BoundArguments` *ba*, such that `defopt.run` would call
     ``func(*ba.args, **ba.kwargs)`` (modulo exception handling).
     """
+    if strict_kwonly == _unset:
+        if cli_options == _unset:
+            cli_options = 'kwonly'
+    else:
+        if cli_options != _unset:
+            raise ValueError(
+                "Cannot pass both 'cli_options' and 'strict_kwonly'")
+        warnings.warn(
+            'strict_kwonly is deprecated and will be removed in an upcoming '
+            'release', DeprecationWarning)
+        cli_options = 'kwonly' if strict_kwonly else 'has_default'
     parser = _create_parser(
-        funcs, parsers=parsers, short=short, strict_kwonly=strict_kwonly,
+        funcs, parsers=parsers, short=short, cli_options=cli_options,
         show_defaults=show_defaults, show_types=show_types,
-        no_negated_flags=no_negated_flags,
-        version=version, argparse_kwargs=argparse_kwargs)
+        no_negated_flags=no_negated_flags, version=version,
+        argparse_kwargs=argparse_kwargs)
     with _colorama_text():
         parsed_argv = vars(parser.parse_args(argv))
     try:
@@ -170,7 +186,8 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
 def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         parsers: Dict[type, Callable[[str], Any]] = {},
         short: Optional[Dict[str, str]] = None,
-        strict_kwonly: bool = True,
+        cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
+        strict_kwonly=_unset,
         show_defaults: bool = True,
         show_types: bool = False,
         no_negated_flags: bool = False,
@@ -196,14 +213,20 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         dashes) to letters, to use as alternative short flags.  Defaults to
         `None`, which means to generate short flags for any non-ambiguous
         option.  Set to ``{}`` to completely disable short flags.
+    :param cli_options:
+        The default behavior ('kwonly') is to convert keyword-only parameters
+        to command line flags, and non-keyword-only parameters with a default
+        to optional positional command line parameters. 'all' turns all
+        parameters into command-line flags. 'has_default' turns a parameter
+        into a command-line flag if and only if it has a default value.
     :param strict_kwonly:
-        If `False`, all parameters with a default are converted into
-        command-line flags.  The default behavior (`True`) is to convert
+        Deprecated.  If `False`, all parameters with a default are converted
+        into command-line flags. The default behavior (`True`) is to convert
         keyword-only parameters to command line flags, and non-keyword-only
         parameters with a default to optional positional command line
         parameters.
     :param show_defaults:
-        Whether parameter defaults are appneded to parameter descriptions.
+        Whether parameter defaults are appended to parameter descriptions.
     :param show_types:
         Whether parameter types are appended to parameter descriptions.
     :param no_negated_flags:
@@ -230,10 +253,10 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         The value returned by the function that was run.
     """
     func, ba = bind(
-        funcs, parsers=parsers, short=short, strict_kwonly=strict_kwonly,
-        show_defaults=show_defaults, show_types=show_types,
-        no_negated_flags=no_negated_flags, version=version,
-        argparse_kwargs=argparse_kwargs, argv=argv)
+        funcs, parsers=parsers, short=short, cli_options=cli_options,
+        strict_kwonly=strict_kwonly, show_defaults=show_defaults,
+        show_types=show_types, no_negated_flags=no_negated_flags,
+        version=version, argparse_kwargs=argparse_kwargs, argv=argv)
     sig = signature(func)
     raises, = [
         # typing_inspect does not allow fetching metadata; see e.g. ti#82.
@@ -280,7 +303,7 @@ def _create_parser(
         funcs, *,
         parsers={},
         short=None,
-        strict_kwonly=True,
+        cli_options='kwonly',
         show_defaults=True,
         show_types=False,
         no_negated_flags=False,
@@ -290,13 +313,13 @@ def _create_parser(
         **{**{'formatter_class': RawTextHelpFormatter}, **argparse_kwargs})
     version_sources = []
     if callable(funcs):
-        _populate_parser(funcs, parser, parsers, short, strict_kwonly,
+        _populate_parser(funcs, parser, parsers, short, cli_options,
                          show_defaults, show_types, no_negated_flags)
         version_sources.append(funcs)
     else:
         subparsers = parser.add_subparsers()
         for func, subparser in _recurse_functions(funcs, subparsers):
-            _populate_parser(func, subparser, parsers, short, strict_kwonly,
+            _populate_parser(func, subparser, parsers, short, cli_options,
                              show_defaults, show_types, no_negated_flags)
             version_sources.append(func)
     if isinstance(version, str):
@@ -390,16 +413,18 @@ def signature(func: Callable):
         parameters=parameters, return_annotation=return_annotation)
 
 
-def _populate_parser(func, parser, parsers, short, strict_kwonly,
+def _populate_parser(func, parser, parsers, short, cli_options,
                      show_defaults, show_types, no_negated_flags):
     sig = signature(func)
     doc = _parse_docstring(inspect.getdoc(func))
     parser.description = doc.text
 
-    positionals = {name for name, param in sig.parameters.items()
-                   if ((param.default is param.empty or strict_kwonly)
-                       and not _is_list_like(param.annotation)
-                       and param.kind != param.KEYWORD_ONLY)}
+    positionals = {
+        name for name, param in sig.parameters.items()
+        if ((cli_options == 'kwonly' or
+             (param.default is param.empty and cli_options == 'has_default'))
+            and not _is_list_like(param.annotation)
+            and param.kind != param.KEYWORD_ONLY)}
     if short is None:
         count_initials = Counter(name[0] for name in sig.parameters
                                  if name not in positionals)
@@ -575,7 +600,7 @@ def _get_type_from_doc(name, globalns):
             raise ValueError(
                 'unsupported union including container type: {}'.format(name))
         return Union[tuple(subtype for subtype in subtypes)]
-    # Support for sphinx-specific `list[type]`, `tuple[type]` syntax; only
+    # Support for sphinx-specific "list[type]", "tuple[type]" syntax; only
     # needed for Py<3.9.
     # (This intentionally won't catch `List` or `typing.List`.)
     match = re.match(r'(list|tuple)\[([\w\.]+)\]', name)
