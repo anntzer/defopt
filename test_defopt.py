@@ -68,6 +68,133 @@ class TestDefopt(unittest.TestCase):
             defopt.run({"sub1": sub, "sub_2": sub_with_dash},
                        argv=['sub_2', '--baz', '1']), 1)
 
+    def test_nested_lists_invalid(self):
+        def sub1(*bar):
+            """:type bar: float"""
+            return bar
+        def subsub1(*, baz=None):
+            """:type baz: int"""
+            return baz
+        def subsub2(*foo):
+            """:type foo: float"""
+            return foo
+        with self.assertRaises(ValueError):
+            defopt.run([sub1, [subsub1, subsub2]], argv=['sub1', '1.2'])
+
+    def test_nested_subcommands1(self):
+        def sub1(*bar):
+            """:type bar: float"""
+            return bar
+        def subsub1(*, baz=None):
+            """:type baz: int"""
+            return baz
+        def subsub2(*foo):
+            """:type foo: float"""
+            return foo
+        self.assertEqual(
+            defopt.run({"sub-1": [sub1], "sub-2": [subsub1, subsub2]},
+                       argv=['sub-1', 'sub1', '1.2']), (1.2,))
+        self.assertEqual(
+            defopt.run({"sub-1": [sub1], "sub-2": [subsub1, subsub2]},
+                       argv=['sub-2', 'subsub1', '--baz', '1']), 1)
+        self.assertEqual(
+            defopt.run({"sub-1": [sub1], "sub-2": [subsub1, subsub2]},
+                       argv=['sub-2', 'subsub2', '1.5']), (1.5,))
+
+    def test_nested_subcommands2(self):
+        def sub1(*bar):
+            """:type bar: float"""
+            return bar
+        def subsub1(*, baz=None):
+            """:type baz: int"""
+            return baz
+        def subsub2(*foo):
+            """:type foo: float"""
+            return foo
+        self.assertEqual(
+            defopt.run({"sub-1": sub1, "sub-2": [subsub1, subsub2]},
+                       argv=['sub-1', '1.2']), (1.2,))
+        self.assertEqual(
+            defopt.run({"sub1": sub1, "sub-2": [subsub1, subsub2]},
+                       argv=['sub-2', 'subsub1', '--baz', '1']), 1)
+        self.assertEqual(
+            defopt.run({"sub1": sub1, "sub-2": [subsub1, subsub2]},
+                       argv=['sub-2', 'subsub2', '1.5']), (1.5,))
+
+    def test_nested_subcommands3(self):
+        def sub1(*bar):
+            """:type bar: float"""
+            return bar
+        def subsub1(*, baz=None):
+            """:type baz: int"""
+            return baz
+        def subsub2(*foo):
+            """:type foo: float"""
+            return foo
+        self.assertEqual(
+            defopt.run({"sub-1": sub1,
+                        "sub-2": {'subsub1': subsub1, 'subsub2': subsub2}},
+                       argv=['sub-1', '1.2']), (1.2,))
+        self.assertEqual(
+            defopt.run({"sub-1": sub1,
+                        "sub-2": {'subsub1': subsub1, 'subsub2': subsub2}},
+                       argv=['sub-2', 'subsub1', '--baz', '1']), 1)
+        self.assertEqual(
+            defopt.run({"sub-1": sub1,
+                        "sub-2": {'subsub1': subsub1, 'subsub2': subsub2}},
+                       argv=['sub-2', 'subsub2', '1.5']), (1.5,))
+
+    def test_nested_subcommands_deep(self):
+        def sub(*bar):
+            """:type bar: float"""
+            return bar
+        self.assertEqual(
+            defopt.run({'a': {'b': {'c': {'d': {'e': sub}}}}},
+                       argv=['a', 'b', 'c', 'd', 'e', '1.2']), (1.2,))
+        self.assertEqual(
+            defopt.run({'a': {'b': {'c': {'d': {'e': [sub]}}}}},
+                       argv=['a', 'b', 'c', 'd', 'e', 'sub', '1.2']), (1.2,))
+
+    def test_nested_subcommands_mixed_invalid1(self):
+        def sub1(*bar):
+            """:type bar: float"""
+            return bar
+        def subsub1(*, baz=None):
+            """:type baz: int"""
+            return baz
+        def subsub2(*foo):
+            """:type foo: float"""
+            return foo
+        with self.assertRaises(ValueError):
+            defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
+                        argv=['sub1', '1.2'])
+        with self.assertRaises(ValueError):
+                defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
+                        argv=['sub2', 'subsub1', '--baz', '1'])
+        with self.assertRaises(ValueError):
+                defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
+                        argv=['sub2', 'subsub2', '1.1'])
+
+    def test_nested_subcommands_mixed_invalid2(self):
+        def sub(*bar):
+            """:type bar: float"""
+            return bar
+        def subsub_with_dash(*, baz=None):
+            """:type baz: int"""
+            return baz
+        def subsub(*foo):
+            """:type foo: float"""
+            return foo
+        with self.assertRaises(ValueError):
+            defopt.run([sub, {'subsub1': subsub_with_dash, 'subsub2': subsub}],
+                       argv=['sub', '1.2'])
+        with self.assertRaises(ValueError):
+            defopt.run([sub, {'subsub1': subsub_with_dash, 'subsub2': subsub}],
+                       argv=['subsub1', '--baz', '1'])
+        with self.assertRaises(ValueError):
+            defopt.run([sub, {'subsub1': subsub_with_dash, 'subsub2': subsub}],
+                       argv=['subsub2', '1.5'])
+
     def test_var_positional(self):
         for doc in [
                 ":type foo: int", r":type \*foo: int", ":param int foo: doc"]:

@@ -79,4 +79,12 @@ Docstring styles
     :undoc-members:
     :show-inheritance:
 
+Nested subcommands
+------------------
+
+.. automodule:: examples.nested
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. _examples: https://github.com/anntzer/defopt/tree/master/examples
