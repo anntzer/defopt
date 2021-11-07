@@ -390,4 +390,4 @@ script importable independently of `defopt`.
 .. _examples/short.py: https://github.com/anntzer/defopt/blob/master/examples/short.py
 .. _examples/starargs.py: https://github.com/anntzer/defopt/blob/master/examples/starargs.py
 .. _examples/styles.py: https://github.com/anntzer/defopt/blob/master/examples/styles.py
-.. _examples/nested.py https://github.com/anntzer/defopt/blob/master/examples/nested.py
+.. _examples/nested.py: https://github.com/anntzer/defopt/blob/master/examples/nested.py
