@@ -79,6 +79,20 @@ Command line usage will use the new names ::
     positional arguments:
       {friendly_func,func2}
 
+Nested Subcommands
+------------------
+
+By using dictionaries, the subcommands can also be nested.
+
+.. code-block:: python
+
+    defopt.run({'func1': func1, 'sub': [func2, func3]})
+
+The nested subcommands are accessed e.g. by ``test.py sub func2``.  The
+subcommands can be nested to an arbitrary level by using nested dictionaries.
+
+A runnable example is available at `examples/nested.py`_.
+
 Standard types
 --------------
 
@@ -376,3 +390,4 @@ script importable independently of `defopt`.
 .. _examples/short.py: https://github.com/anntzer/defopt/blob/master/examples/short.py
 .. _examples/starargs.py: https://github.com/anntzer/defopt/blob/master/examples/starargs.py
 .. _examples/styles.py: https://github.com/anntzer/defopt/blob/master/examples/styles.py
+.. _examples/nested.py https://github.com/anntzer/defopt/blob/master/examples/nested.py

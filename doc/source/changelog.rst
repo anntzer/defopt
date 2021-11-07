@@ -11,6 +11,7 @@ next
   exception types.
 * Added `defopt.bind` to allow preprocessing arguments before performing the
   call.
+* Added the ability to use nested subcommands.
 
 6.1.0 (2021-02-25)
 ------------------
