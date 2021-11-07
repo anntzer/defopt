@@ -246,6 +246,36 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         sys.exit(e)
 
 
+def _recurse_functions(funcs, subparsers):
+    if not isinstance(funcs, collections.abc.Mapping): 
+        # If this iterable is not a maping, then convert it to one using the
+        # function name itself as the key, but replacing _ with -.
+        try:
+            funcs = {func.__name__.replace('_', '-'): func for func in funcs}
+        except AttributeError as exc:
+            # Do not allow a mapping inside of a list
+            raise ValueError(
+                'Use dictionaries (mappings) for nesting; other iterables may '
+                'only contain functions (callables).'
+            ) from exc 
+
+    for name, func in funcs.items():
+        if callable(func):
+            # If this item is callable, then add it to the current
+            # subparser using this name.
+            subparser = subparsers.add_parser(
+                name,
+                formatter_class=RawTextHelpFormatter,
+                help=_parse_docstring(inspect.getdoc(func)).first_line)
+            yield func, subparser
+        else:
+            # If this item is not callable, then add this name as a new
+            # subparser and recurse the the items.
+            nestedsubparser = subparsers.add_parser(name)
+            nestedsubparsers = nestedsubparser.add_subparsers()
+            yield from _recurse_functions(func, nestedsubparsers)
+
+
 def _create_parser(
         funcs, *,
         parsers={},
@@ -265,15 +295,7 @@ def _create_parser(
         version_sources.append(funcs)
     else:
         subparsers = parser.add_subparsers()
-        for func in funcs:
-            if isinstance(funcs, collections.abc.MutableMapping):
-                name, func = func, funcs[func]
-            else:
-                name = func.__name__.replace('_', '-')
-            subparser = subparsers.add_parser(
-                name,
-                formatter_class=RawTextHelpFormatter,
-                help=_parse_docstring(inspect.getdoc(func)).first_line)
+        for func, subparser in _recurse_functions(funcs, subparsers):
             _populate_parser(func, subparser, parsers, short, strict_kwonly,
                              show_defaults, show_types, no_negated_flags)
             version_sources.append(func)
