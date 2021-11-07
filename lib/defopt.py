@@ -137,7 +137,7 @@ _unset = "UNSET"
 def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
          parsers: Dict[type, Callable[[str], Any]] = {},
          short: Optional[Dict[str, str]] = None,
-         cli_options: str = _unset,
+         cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
          strict_kwonly=_unset,
          show_defaults: bool = True,
          show_types: bool = False,
@@ -184,7 +184,7 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
 def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         parsers: Dict[type, Callable[[str], Any]] = {},
         short: Optional[Dict[str, str]] = None,
-        cli_options: str = _unset,
+        cli_options:  Literal['kwonly', 'all', 'has_default'] = _unset,
         strict_kwonly=_unset,
         show_defaults: bool = True,
         show_types: bool = False,
@@ -212,12 +212,11 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         `None`, which means to generate short flags for any non-ambiguous
         option.  Set to ``{}`` to completely disable short flags.
     :param cli_options:
-        If ``all``, all parameters are converted into command-line flags.  If
-        ``has_default``, all parameters with a default are converted into
-        command-line flags.  The default behavior (``kwonly``) is to convert
-        keyword-only parameters to command line flags, and non-keyword-only
-        parameters with a default to optional positional command line
-        parameters.
+        The default behavior ('kwonly') is to convert keyword-only parameters
+        to command line flags, and non-keyword-only parameters with a default to
+        optional positional command line parameters.  'all' turns all parameters
+        into command-line flags.  'has_default' turns a parameter into a
+        command-line flag if and only if it has a default value.
     :param strict_kwonly:
         Deprecated.  If `False`, all parameters with a default are converted
         into command-line flags. The default behavior (`True`) is to convert
