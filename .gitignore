@@ -15,3 +15,8 @@ htmlcov/
 oprofile_data/
 .coverage
 .gdb_history
+.venv/
+.coverage*
+.python-version
+.vscode/
+.nox/
