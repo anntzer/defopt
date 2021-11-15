@@ -29,12 +29,7 @@ import docutils.core
 from docutils.nodes import NodeVisitor, SkipNode, TextElement
 from docutils.parsers.rst.states import Body
 
-try:
-    collections.Callable = collections.abc.Callable
-    from sphinxcontrib.napoleon import Config, GoogleDocstring, NumpyDocstring
-finally:
-    if sys.version_info >= (3, 7):
-        del collections.Callable
+from _defopt_napoleon import Config, GoogleDocstring, NumpyDocstring
 
 try:
     from typing import Annotated

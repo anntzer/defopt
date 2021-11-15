@@ -14,7 +14,7 @@ setup(
     url='https://github.com/anntzer/defopt',
     license='MIT',
     package_dir={'': 'lib'},
-    py_modules=['defopt', '_defopt_version'],
+    py_modules=['defopt', '_defopt_version', '_defopt_napoleon'],
     python_requires='>=3.5',
     setup_requires=['setuptools_scm>=3.3'],  # fallback_version support.
     use_scm_version=lambda: {
@@ -25,7 +25,6 @@ setup(
     },
     install_requires=[
         'docutils>=0.12',  # First with wheels, for better setuptools compat.
-        'sphinxcontrib-napoleon>=0.7.0',  # More consistent Raises blocks.
     ],
     extras_require={
         ':python_version<"3.9"': [

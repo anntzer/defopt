@@ -31,7 +31,8 @@ Docstrings can use the standard Sphinx_-style
        ``kwtype``.  Consistency is recommended but not enforced.
 
 or Google_- and Numpy_-style docstrings (see `examples/styles.py`_), which are
-converted using Napoleon_ [#]_. If using one of these alternate styles and
+converted using Napoleon_ [#]_ (or rather, a vendored copy thereof, due to the
+cessation of upstream maintenance). If using one of these alternate styles and
 generating documentation with `sphinx.ext.autodoc`, be sure to also enable
 `sphinx.ext.napoleon`.
 
