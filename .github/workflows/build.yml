@@ -22,9 +22,10 @@ jobs:
     - name: Test
       run: |
         pyver="$(python -c 'import sys; print("{0.major}.{0.minor}".format(sys.version_info))')" &&
+        python -mpip install sphinx
         COVERAGE_FILE=".coverage.$pyver" python -mcoverage run --append --module unittest --buffer &&
         # Oldest supported versions.
-        python -mpip install docutils==0.12 sphinxcontrib-napoleon==0.7.0 &&
+        python -mpip install docutils==0.12 &&
         if [[ "$pyver" = 3.5 || "$pyver" = 3.6 || "$pyver" = 3.7 ]]; then
           python -mpip install typing_extensions==3.7.4 typing_inspect==0.5.0
         fi &&

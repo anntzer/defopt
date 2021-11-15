@@ -134,6 +134,10 @@ Development
 For source code, examples, questions, feature requests and bug reports, visit
 the `GitHub repository`_.
 
+Note that defopt currently includes a vendored copy of sphinxcontrib-napoleon_,
+due to the current lack of upstream maintenance.  No changes will be made on
+that copy, beyond the strict minimum to keep it working.
+
 Documentation
 -------------
 
@@ -141,10 +145,11 @@ Documentation is hosted on `Read the Docs`_.
 
 .. _GitHub repository: https://github.com/anntzer/defopt
 .. _Read the Docs: https://defopt.readthedocs.io/en/latest/
-.. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
-.. _docopt: http://docopt.org/
-.. _click: http://click.palletsprojects.com/
 .. _argh: https://argh.readthedocs.io/en/latest/
+.. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
+.. _click: http://click.palletsprojects.com/
+.. _docopt: http://docopt.org/
 .. _documented: https://defopt.readthedocs.io/en/latest/features.html#docstring-styles
+.. _sphinxcontrib-napoleon: https://sphinxcontrib-napoleon.readthedocs.io/en/latest/
 
 .. This document is included in docs/index.rst; table of contents appears here.
