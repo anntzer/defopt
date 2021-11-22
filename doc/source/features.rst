@@ -249,7 +249,8 @@ Note that unfortunately, in certain circumstances, Python will reorder
 members of a union.  Most notably, ``List[Union[A, B]]`` caches the union
 type, so a later ``List[Union[B, A]]`` will be silently converted to
 ``List[Union[A, B]]``, which matters if some inputs are accepted by both the
-parser for ``A`` and the parser for ``B``.
+parser for ``A`` and the parser for ``B``.  Note that this problem does not
+affect ``list[Union[A, B]]``, on versions of Python that support it.
 
 Parsers
 -------
