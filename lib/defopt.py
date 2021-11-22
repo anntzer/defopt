@@ -13,6 +13,7 @@ import inspect
 import re
 import pydoc
 import sys
+import types
 import typing
 import warnings
 from argparse import (
@@ -859,7 +860,7 @@ def _get_parser(type_, parsers):
             parser = _make_enum_parser(type_)
         elif _is_constructible_from_str(type_):
             parser = functools.partial(type_)
-        elif _ti_get_origin(type_) is Union:
+        elif _ti_get_origin(type_) in [Union, getattr(types, "UnionType", "")]:
             args = _ti_get_args(type_)
             if type(None) in args:
                 # If None is in the Union, parse it first.  This only matters

@@ -227,11 +227,12 @@ Unions
 ------
 
 Union types can be specified with ``typing.Union[type1, type2]``, or, when
-using docstring annotations, as ``type1 or type2``.  When an argument is
-annotated with a union type, an attempt is made to convert the command-line
-argument with the parser for each of the members of the union, in the order
-they are given; the value returned by the first parser that does not raise a
-`ValueError` is used.
+using docstring annotations, as ``type1 or type2``.  The ``type1 | type2``
+syntax is also supported, if the underlying Python version supports it.  When
+an argument is annotated with a union type, an attempt is made to convert the
+command-line argument with the parser for each of the members of the union, in
+the order they are given; the value returned by the first parser that does not
+raise a `ValueError` is used.
 
 ``typing.Optional[type1]``, i.e. ``Union[type1, type(None)]``, is normally
 equivalent to ``type1``.  This is implemented using a parser for ``type(None)``

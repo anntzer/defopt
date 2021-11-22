@@ -4,6 +4,7 @@ import inspect
 import re
 import subprocess
 import sys
+import types
 import typing
 import unittest
 from contextlib import ExitStack
@@ -610,6 +611,15 @@ class TestUnion(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['1', '2']), (int, float))
         self.assertEqual(defopt.run(main, argv=['1', 'b']), (int, str))
         self.assertEqual(defopt.run(main, argv=['a', '2']), (str, float))
+
+    def test_or_union(self):
+        if not hasattr(types, "UnionType"):
+            raise unittest.SkipTest("A|B-style unions not supported")
+        def main(foo):
+            """:param int|str foo: foo"""
+            return type(foo)
+        self.assertEqual(defopt.run(main, argv=['1']), int)
+        self.assertEqual(defopt.run(main, argv=['x']), str)
 
     def test_bad_parse(self):
         def main(foo):
