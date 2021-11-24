@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+6.2.0 (2021-11-24)
+------------------
 * Bumped docutils dependency to >=0.12, for setuptools compatibility.
 * Added support for Python 3.10, and for ``A | B``-style unions (only on that
   version of Python).
