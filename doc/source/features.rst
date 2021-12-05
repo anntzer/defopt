@@ -181,8 +181,9 @@ Lists
 Lists are automatically converted to flags (regardless of whether they are
 positional-or-keyword, or keyword-only) which take zero or more arguments.
 
-When declaring that a parameter is a list in a docstring, use the established
-convention of putting the contained type inside square brackets. ::
+When declaring in a docstring that a parameter is a list, put the contained
+type in square brackets, even on Python versions which do not otherwise support
+that syntax::
 
     :param list[int] numbers: A sequence of numbers
 
@@ -244,7 +245,7 @@ as ``None`` and the others as ``str``.
 
 Collection types are not supported in unions; e.g. ``Union[List[type1]]``
 is not supported (with the exception of ``Optional[List[type1]]``, which is
-*always* equivalent to ``List[type1]``.
+*always* equivalent to ``List[type1]``).
 
 Note that unfortunately, in certain circumstances, Python will reorder
 members of a union.  Most notably, ``List[Union[A, B]]`` caches the union
