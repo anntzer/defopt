@@ -487,8 +487,7 @@ def _populate_parser(func, parser, parsers, short, cli_options,
             member_types = tuple(hints[field] for field in type_._fields)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
-                lambda args, type_=type_: type_(*args),
-                member_types, parsers)
+                type_, member_types, parsers)
             if not positional:  # http://bugs.python.org/issue14074
                 kwargs['metavar'] = type_._fields
         else:
@@ -976,14 +975,16 @@ def _make_literal_parser(literal, parsers, value=None):
             value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
 
 
-def _make_store_tuple_action_class(make_tuple, member_types, parsers):
+def _make_store_tuple_action_class(tuple_type, member_types, parsers):
     class _StoreTupleAction(Action):
         def __call__(self, parser, namespace, values, option_string=None):
             try:
-                value = make_tuple(_get_parser(arg, parsers)(value)
-                                   for arg, value in zip(member_types, values))
+                value = tuple(_get_parser(arg, parsers)(value)
+                              for arg, value in zip(member_types, values))
             except ArgumentTypeError as exc:
                 raise ArgumentError(self, str(exc))
+            if tuple_type is not tuple:
+                value = tuple_type(*value)
             setattr(namespace, self.dest, value)
     return _StoreTupleAction
 
