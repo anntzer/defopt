@@ -30,11 +30,18 @@ from docutils.nodes import NodeVisitor, SkipNode, TextElement
 from docutils.parsers.rst.states import Body
 
 try:
-    collections.Callable = collections.abc.Callable
-    from sphinxcontrib.napoleon import Config, GoogleDocstring, NumpyDocstring
-finally:
-    if sys.version_info >= (3, 7):
-        del collections.Callable
+    from sphinx.ext.napoleon import Config, GoogleDocstring, NumpyDocstring
+except (ImportError, ModuleNotFoundError):
+    try:
+        collections.Callable = collections.abc.Callable
+        from sphinxcontrib.napoleon import \
+            Config, GoogleDocstring, NumpyDocstring
+    except (ImportError, ModuleNotFoundError):
+        Config = lambda *args, **kwargs: None
+        GoogleDocstring = NumpyDocstring = lambda doc, cfg: doc
+    finally:
+        if sys.version_info >= (3, 7):
+            del collections.Callable
 
 try:
     from typing import Annotated
