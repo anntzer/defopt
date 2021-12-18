@@ -15,8 +15,8 @@ from inspect import cleandoc
 from textwrap import dedent
 from unittest import mock, TestCase
 
-from _defopt_napoleon import Config
-from _defopt_napoleon import GoogleDocstring, NumpyDocstring
+from defopt._napoleon import Config
+from defopt._napoleon import GoogleDocstring, NumpyDocstring
 
 
 class NamedtupleSubclass(namedtuple('NamedtupleSubclass', ('attr1', 'attr2'))):

@@ -84,7 +84,7 @@ extensions = ['sphinx.ext.doctest',
               'sphinx.ext.coverage',
               'sphinx.ext.mathjax',
               'sphinx.ext.viewcode',
-              '_defopt_napoleon']
+              'defopt._napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -4,7 +4,7 @@
 *.pyc
 *.pyd
 *.so
-lib/_*_version.py
+lib/*/_version.py
 .cache/
 .eggs/
 .ipynb_checkpoints/

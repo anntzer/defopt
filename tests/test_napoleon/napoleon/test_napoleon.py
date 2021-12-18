@@ -3,7 +3,7 @@
     test_napoleon
     ~~~~~~~~~~~~~
 
-    Tests for :mod:`_defopt_napoleon.__init__` module.
+    Tests for :mod:`defopt._napoleon.__init__` module.
 
 
     :copyright: Copyright 2013-2018 by Rob Ruana, see AUTHORS.
@@ -14,7 +14,7 @@ from collections import namedtuple
 from unittest import mock, TestCase
 
 from sphinx.application import Sphinx
-from _defopt_napoleon import _process_docstring, _skip_member, Config, setup
+from defopt._napoleon import _process_docstring, _skip_member, Config, setup
 
 
 def _private_doc():

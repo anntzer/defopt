@@ -29,7 +29,7 @@ import docutils.core
 from docutils.nodes import NodeVisitor, SkipNode, TextElement
 from docutils.parsers.rst.states import Body
 
-from _defopt_napoleon import Config, GoogleDocstring, NumpyDocstring
+from ._napoleon import Config, GoogleDocstring, NumpyDocstring
 
 try:
     from typing import Annotated
@@ -49,7 +49,7 @@ except ImportError:
     _colorama_text = getattr(contextlib, 'nullcontext', contextlib.ExitStack)
 
 try:
-    from _defopt_version import version as __version__
+    from ._version import version as __version__
 except ImportError:
     pass
 
@@ -982,23 +982,3 @@ def _make_store_tuple_action_class(tuple_type, member_types, parsers):
                 value = tuple_type(*value)
             setattr(namespace, self.dest, value)
     return _StoreTupleAction
-
-
-if __name__ == '__main__':
-    def main(argv=None):
-        parser = ArgumentParser()
-        parser.add_argument('function')
-        parser.add_argument('args', nargs=REMAINDER)
-        args = parser.parse_args(argv)
-        try:
-            func = pydoc.locate(args.function)
-        except pydoc.ErrorDuringImport as exc:
-            raise exc.value from None
-        if func is None:
-            raise ImportError('Failed to locate {!r}'.format(args.function))
-        argparse_kwargs = (
-            {'prog': ' '.join(sys.argv[:2])} if argv is None else {})
-        retval = run(func, argv=args.args, argparse_kwargs=argparse_kwargs)
-        sys.displayhook(retval)
-
-    main()

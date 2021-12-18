@@ -14,13 +14,13 @@ setup(
     url='https://github.com/anntzer/defopt',
     license='MIT',
     package_dir={'': 'lib'},
-    py_modules=['defopt', '_defopt_version', '_defopt_napoleon'],
+    packages=['defopt'],
     python_requires='>=3.5',
     setup_requires=['setuptools_scm>=3.3'],  # fallback_version support.
     use_scm_version=lambda: {
         "version_scheme": "post-release",
         "local_scheme": "node-and-date",
-        "write_to": "lib/_defopt_version.py",
+        "write_to": "lib/defopt/_version.py",
         "fallback_version": "0+unknown",
     },
     install_requires=[
