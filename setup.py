@@ -14,20 +14,22 @@ setup(
     url='https://github.com/anntzer/defopt',
     license='MIT',
     package_dir={'': 'lib'},
-    py_modules=['defopt', '_defopt_version'],
+    py_modules=['defopt'],
     python_requires='>=3.5',
     setup_requires=['setuptools_scm>=3.3'],  # fallback_version support.
     use_scm_version=lambda: {
-        "version_scheme": "post-release",
-        "local_scheme": "node-and-date",
-        "write_to": "lib/_defopt_version.py",
-        "fallback_version": "0+unknown",
+        'version_scheme': 'post-release',
+        'local_scheme': 'node-and-date',
+        'fallback_version': '0+unknown',
     },
     install_requires=[
         'docutils>=0.12',  # First with wheels, for better setuptools compat.
         'sphinxcontrib-napoleon>=0.7.0',  # More consistent Raises blocks.
     ],
     extras_require={
+        ':python_version<"3.8"': [
+            'importlib_metadata>=1.0',
+        ],
         ':python_version<"3.9"': [
             # Literal support, and requires typing_extensions (which also
             # brings in Annotated, on Py3.8).

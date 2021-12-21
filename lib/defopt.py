@@ -25,6 +25,19 @@ from enum import Enum
 from pathlib import PurePath
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+try:
+    import importlib.metadata as _im
+except ImportError:
+    import importlib_metadata as _im
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 import docutils.core
 from docutils.nodes import NodeVisitor, SkipNode, TextElement
 from docutils.parsers.rst.states import Body
@@ -37,15 +50,6 @@ finally:
         del collections.Callable
 
 try:
-    from typing import Annotated
-except ImportError:
-    from typing_extensions import Annotated
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
-try:
     # colorama is a dependency on Windows to support ANSI escapes (from rst
     # markup).  It is optional on Unices, but can still useful be there as it
     # strips out ANSI escapes when the output is piped.
@@ -54,9 +58,9 @@ except ImportError:
     _colorama_text = getattr(contextlib, 'nullcontext', contextlib.ExitStack)
 
 try:
-    from _defopt_version import version as __version__
+    __version__ = _im.version('defopt')
 except ImportError:
-    pass
+    __version__ = '0+unknown'
 
 __all__ = ['run', 'signature', 'bind']
 
