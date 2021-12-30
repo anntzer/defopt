@@ -13,6 +13,7 @@ Command line usage::
 
     $ python choices.py one --opt two
 """
+
 from enum import Enum
 try:
     from typing import Literal

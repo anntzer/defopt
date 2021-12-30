@@ -13,6 +13,7 @@ Command line usage::
 
     $ python booleans.py 'hello!' --no-upper --repeat
 """
+
 import defopt
 
 

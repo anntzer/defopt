@@ -13,6 +13,7 @@ Command line usage::
 
     $ python parsers.py 2015-09-13
 """
+
 from datetime import datetime
 
 import defopt

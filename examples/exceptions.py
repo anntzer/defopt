@@ -4,6 +4,7 @@ Example showing exception handling.
 If the function raises an exception listed in the docstring using ``:raises:``,
 the traceback is suppressed (the error is still reported, of course!).
 """
+
 import defopt
 
 

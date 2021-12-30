@@ -13,6 +13,7 @@ Command line usage::
     $ python short.py -C 2
     $ python short.py --count 2
 """
+
 import defopt
 
 

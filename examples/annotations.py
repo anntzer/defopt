@@ -17,13 +17,19 @@ Command line usage::
     $ python annotations.py documented 2 --numbers 1.2 3.4
     $ python annotations.py documented --numbers 1.2 3.4 -- 2
 """
-from typing import Iterable
+
+import sys
+if sys.version_info >= (3, 9):
+    from collections.abc import Iterable
+else:
+    from typing import Iterable
 
 import defopt
 
 
 def documented(numbers: Iterable[float], exponent: int) -> None:
-    """Example function using annotations.
+    """
+    Example function using annotations.
 
     The types are inserted into the generated documentation
     by ``sphinx-autodoc-typehints``.

@@ -12,6 +12,7 @@ Command line usage::
 
     $ python styles.py sphinx 2 --farewell goodbye!
 """
+
 import defopt
 
 

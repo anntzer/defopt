@@ -17,6 +17,7 @@ Command line usage::
     $ python starargs.py plain 1 2 3
     $ python starargs.py iterable --groups 1 2 --groups 3 4 5
 """
+
 import defopt
 
 
