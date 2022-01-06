@@ -405,6 +405,82 @@ class TestParsers(unittest.TestCase):
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=[])
 
+    def test_bool_optional(self):
+        def main(foo=None):
+            """:type foo: typing.Optional[bool]"""
+            return foo
+        def _parse_none(i):
+            if i.lower() == 'none':
+                return None
+            else:
+                raise ValueError('{} is not a valid None string'.format(i))
+        self.assertIs(defopt.run(main, argv=['1'],
+                      parsers={type(None): _parse_none}), True)
+        self.assertIs(defopt.run(main, argv=['0'], 
+                      parsers={type(None): _parse_none}), False)
+        self.assertIs(defopt.run(main, argv=['None'],
+                      parsers={type(None): _parse_none}), None)
+        self.assertIs(defopt.run(main, argv=[],
+                      parsers={type(None): _parse_none}), None)
+
+    def test_bool_optional_keyword_none(self):
+        def main(*, foo=None):
+            """:type foo: typing.Optional[bool]"""
+            return foo
+        self.assertIs(defopt.run(main, argv=['--foo']), True)
+        self.assertIs(defopt.run(main, argv=['--no-foo']), False) 
+        self.assertIs(defopt.run(main, argv=[]), None)
+
+    def test_bool_optional_keyword_true(self):
+        def main(*, foo=True):
+            """:type foo: typing.Optional[bool]"""
+            return foo
+        # cannot get a None value in this case from the CLI
+        self.assertIs(defopt.run(main, argv=['--foo']), True)
+        self.assertIs(defopt.run(main, argv=['--no-foo']), False) 
+        self.assertIs(defopt.run(main, argv=[]), True)
+
+    def test_bool_optional_keyword_false(self):
+        def main(*, foo=False):
+            """:type foo: typing.Optional[bool]"""
+            return foo
+        self.assertIs(defopt.run(main, argv=['--foo']), True)
+        self.assertIs(defopt.run(main, argv=['--no-foo']), False) 
+        self.assertIs(defopt.run(main, argv=[]), False)
+
+    def test_bool_optional_keyword_none_no_negated_flags(self):
+        def main(*, foo=None):
+            """:type foo: typing.Optional[bool]"""
+            return foo
+        self.assertIs(defopt.run(main, argv=['--foo'], no_negated_flags=True),
+                      True)
+        with self.assertRaises(SystemExit):
+            self.assertIs(defopt.run(main, argv=['--no-foo'],
+                          no_negated_flags=True), False)
+        self.assertIs(defopt.run(main, argv=[], no_negated_flags=True), None)
+
+    def test_bool_optional_keyword_true_no_negated_flags(self):
+        def main(*, foo=True):
+            """:type foo: typing.Optional[bool]"""
+            return foo
+        self.assertIs(defopt.run(main, argv=['--foo'], no_negated_flags=True),
+                      True)
+        # negated flag is still added, else foo could only be True
+        self.assertIs(defopt.run(main, argv=['--no-foo'],
+                      no_negated_flags=True), False)
+        self.assertIs(defopt.run(main, argv=[], no_negated_flags=True), True)
+
+    def test_bool_optional_keyword_false_no_negated_flags(self):
+        def main(*, foo=False):
+            """:type foo: typing.Optional[bool]"""
+            return foo
+        self.assertIs(defopt.run(main, argv=['--foo'], no_negated_flags=True),
+                      True)
+        with self.assertRaises(SystemExit):
+            self.assertIs(defopt.run(main, argv=['--no-foo'],
+                          no_negated_flags=True), False)
+        self.assertIs(defopt.run(main, argv=[], no_negated_flags=True), False)
+
     def test_bool_list(self):
         def main(foo):
             """:type foo: list[bool]"""

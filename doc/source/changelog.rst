@@ -1,6 +1,10 @@
 Changelog
 =========
 
+next
+----
+* Fixed `typing.Optional[bool]` to still be treated as a flag.
+
 6.2.0 (2021-11-24)
 ------------------
 * Bumped docutils dependency to >=0.12, for setuptools compatibility.

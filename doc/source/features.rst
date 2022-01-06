@@ -243,6 +243,12 @@ order" rule given above, a parser for ``type(None)`` will always be tried
 first; this is so that e.g. ``Optional[str]`` can parse some user-chosen values
 as ``None`` and the others as ``str``.
 
+``typing.Optional[bool]`` is treated separately, as a special case, to still
+act as a boolean flag.  Defining a default value of ``None`` for the argument
+will result in receiving ``None`` if the option is not specified on the command
+line and either ``True`` or ``False`` if one of the two boolean flags are
+provided.
+
 Collection types are not supported in unions; e.g. ``Union[List[type1]]``
 is not supported (with the exception of ``Optional[List[type1]]``, which is
 *always* equivalent to ``List[type1]``).

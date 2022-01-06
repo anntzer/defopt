@@ -450,8 +450,9 @@ def _populate_parser(func, parser, parsers, short, cli_options,
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
-        if type_ == bool and not positional:
-            action = ('store_true' if no_negated_flags and default is False
+        if type_ in [bool, typing.Optional[bool]] and not positional:
+            action = ('store_true' if no_negated_flags and
+                      default in [False, None]
                       else _BooleanOptionalAction)  # --name/--no-name
             actions.append(_add_argument(
                 parser, name, short, action=action, default=default,
