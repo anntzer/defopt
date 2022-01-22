@@ -397,15 +397,24 @@ def signature(func: Callable):
     - The return type is `~typing.Annotated` with the documented raisable
       exception types, in wrapped in a private tuple subclass.
     """
-    full_sig = inspect.signature(func)
+    return _signature(func)
+
+
+def _signature(func, *, skip_first_arg=False):
+    # See _is_constructible_from_str for skip_first_arg.  We can't just drop
+    # the first arg later because it may be unannotated.
+    orig_sig = inspect.signature(func)
+    orig_params = orig_sig.parameters.values()
+    if skip_first_arg:
+        _, *orig_params = orig_params
     doc = _parse_docstring(inspect.getdoc(func))
     parameters = []
-    for param in full_sig.parameters.values():
+    for param in orig_params:
         if param.name.startswith('_'):
             if param.default is param.empty:
                 raise ValueError(
                     'Parameter {} of {}{} is private but has no default'
-                    .format(param.name, func.__name__, full_sig))
+                    .format(param.name, func.__name__, orig_sig))
         else:
             parameters.append(Parameter(
                 name=param.name, kind=param.kind, default=param.default,
@@ -413,8 +422,8 @@ def signature(func: Callable):
                 doc=doc.params.get(param.name, _Param(None, None)).text))
     exc_types = _Raises(_get_type_from_doc(name, func.__globals__)
                         for name in doc.raises)
-    return_annotation = Annotated[full_sig.return_annotation, exc_types]
-    return full_sig.replace(
+    return_annotation = Annotated[orig_sig.return_annotation, exc_types]
+    return orig_sig.replace(
         parameters=parameters, return_annotation=return_annotation)
 
 
@@ -933,9 +942,9 @@ def _make_enum_parser(enum, value=None):
                 value, ', '.join(map(repr, enum.__members__))))
 
 
-def _is_constructible_from_str(type_):
+def _is_constructible_from_str(type_, *, skip_first_arg=False):
     try:
-        sig = signature(type_)
+        sig = _signature(type_, skip_first_arg=skip_first_arg)
         (argname, _), = sig.bind(object()).arguments.items()
     except TypeError:  # Can be raised by signature() or Signature.bind().
         return False
@@ -948,8 +957,11 @@ def _is_constructible_from_str(type_):
             return True
     if isinstance(type_, type):
         # signature() first checks __new__, if it is present.
+        # skip_first_arg behaves as if the first parameter was bound, i.e.
+        # __init__.__get__(object(), type_) but the latter can fail for types
+        # implemented in C (which don't support binding arbitrary objects).
         return _is_constructible_from_str(
-            type_.__init__.__get__(object(), type_))
+            type_.__init__, skip_first_arg=True)
     return False
 
 
@@ -981,16 +993,18 @@ def _make_literal_parser(literal, parsers, value=None):
 
 
 def _make_store_tuple_action_class(tuple_type, member_types, parsers):
+    parsers = [_get_parser(arg, parsers) for arg in member_types]
+
     class _StoreTupleAction(Action):
         def __call__(self, parser, namespace, values, option_string=None):
             try:
-                value = tuple(_get_parser(arg, parsers)(value)
-                              for arg, value in zip(member_types, values))
+                value = tuple(p(value) for p, value in zip(parsers, values))
             except ArgumentTypeError as exc:
                 raise ArgumentError(self, str(exc))
             if tuple_type is not tuple:
                 value = tuple_type(*value)
             setattr(namespace, self.dest, value)
+
     return _StoreTupleAction
 
 

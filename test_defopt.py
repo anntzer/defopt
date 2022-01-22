@@ -43,6 +43,10 @@ class NotConstructibleFromStr:
         pass
 
 
+class EmptyType:
+    pass
+
+
 class TestDefopt(unittest.TestCase):
     def test_main(self):
         def main(foo):
@@ -673,6 +677,12 @@ class TestTuple(unittest.TestCase):
         # their __str__ instead to make sure that the type is correct too.
         self.assertEqual(str(defopt.run(main, argv=['1', '2', '3'])),
                          str(Pair(1, '2')))
+
+    def test_tuple_fails_early(self):
+        def main(foo):
+            """:param typing.Tuple[int,EmptyType] foo: foo"""
+        with self.assertRaisesRegex(Exception, 'no parser'):
+            defopt.run(main, argv=['-h'])
 
 
 class TestUnion(unittest.TestCase):
