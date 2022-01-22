@@ -855,44 +855,43 @@ def _parse_docstring(doc):
 
 
 def _get_parser(type_, parsers):
-    try:
+    if type_ in parsers:  # Not catching KeyError, to avoid exception chaining.
         parser = functools.partial(parsers[type_])
-    except KeyError:
-        if (type_ in [str, int, float]
-                or isinstance(type_, type) and issubclass(type_, PurePath)):
-            parser = functools.partial(type_)
-        elif type_ == bool:
-            parser = functools.partial(_parse_bool)
-        elif type_ == slice:
-            parser = functools.partial(_parse_slice)
-        elif type_ == type(None):
-            parser = functools.partial(_parse_none)
-        elif type_ == list:
-            raise ValueError('unable to parse list (try list[type])')
-        elif isinstance(type_, type) and issubclass(type_, Enum):
-            parser = _make_enum_parser(type_)
-        elif _is_constructible_from_str(type_):
-            parser = functools.partial(type_)
-        elif _ti_get_origin(type_) in [Union, getattr(types, "UnionType", "")]:
-            args = _ti_get_args(type_)
-            if type(None) in args:
-                # If None is in the Union, parse it first.  This only matters
-                # if there's a custom parser for None, in which case the user
-                # should normally have picked values that they *want* to be
-                # parsed as None as opposed to anything else, e.g. strs, even
-                # if that was possible.
-                args = (type(None),
-                        *[arg for arg in args if arg is not type(None)])
-            parser = _make_union_parser(
-                type_, [_get_parser(arg, parsers) for arg in args])
-        elif _ti_get_origin(type_) is Literal:
-            args = _ti_get_args(type_)
-            parser = _make_literal_parser(
-                type_, [_get_parser(type(arg), parsers) for arg in args])
-        else:
-            raise Exception('no parser found for type {}'.format(
-                # typing types have no __name__.
-                getattr(type_, '__name__', repr(type_))))
+    elif (type_ in [str, int, float]
+          or isinstance(type_, type) and issubclass(type_, PurePath)):
+        parser = functools.partial(type_)
+    elif type_ == bool:
+        parser = functools.partial(_parse_bool)
+    elif type_ == slice:
+        parser = functools.partial(_parse_slice)
+    elif type_ == type(None):
+        parser = functools.partial(_parse_none)
+    elif type_ == list:
+        raise ValueError('unable to parse list (try list[type])')
+    elif isinstance(type_, type) and issubclass(type_, Enum):
+        parser = _make_enum_parser(type_)
+    elif _is_constructible_from_str(type_):
+        parser = functools.partial(type_)
+    elif _ti_get_origin(type_) in [Union, getattr(types, "UnionType", "")]:
+        args = _ti_get_args(type_)
+        if type(None) in args:
+            # If None is in the Union, parse it first.  This only matters if
+            # there's a custom parser for None, in which case the user should
+            # normally have picked values that they *want* to be parsed as
+            # None as opposed to anything else, e.g. strs, even if that was
+            # possible.
+            args = (type(None),
+                    *[arg for arg in args if arg is not type(None)])
+        parser = _make_union_parser(
+            type_, [_get_parser(arg, parsers) for arg in args])
+    elif _ti_get_origin(type_) is Literal:
+        args = _ti_get_args(type_)
+        parser = _make_literal_parser(
+            type_, [_get_parser(type(arg), parsers) for arg in args])
+    else:
+        raise Exception('no parser found for type {}'.format(
+            # typing types have no __name__.
+            getattr(type_, '__name__', repr(type_))))
     # Set the name that the user expects to see in error messages (we always
     # return a temporary partial object so it's safe to set its __name__).
     # Unions and Literals don't have a __name__, but their str is fine.
