@@ -10,6 +10,7 @@ import contextlib
 import functools
 import importlib
 import inspect
+import itertools
 import re
 import pydoc
 import sys
@@ -51,7 +52,7 @@ finally:
 
 try:
     # colorama is a dependency on Windows to support ANSI escapes (from rst
-    # markup).  It is optional on Unices, but can still useful be there as it
+    # markup).  It is optional on Unices, but can still be useful there as it
     # strips out ANSI escapes when the output is piped.
     from colorama import colorama_text as _colorama_text
 except ImportError:
@@ -91,6 +92,8 @@ else:
         return {  # Py<3.7.
             typing.List: list,
             typing.Iterable: collections.abc.Iterable,
+            getattr(typing, 'Collection', object()):
+                getattr(collections.abc, 'Collection', object()),
             typing.Sequence: collections.abc.Sequence,
             typing.Tuple: tuple,
         }.get(origin, origin)
@@ -490,9 +493,16 @@ def _populate_parser(func, parser, parsers, short, cli_options,
         member_types = None
         if _ti_get_origin(type_) is tuple:
             member_types = _ti_get_args(type_)
-            kwargs['nargs'] = len(member_types)
-            kwargs['action'] = _make_store_tuple_action_class(
-                tuple, member_types, parsers)
+            # Variable-length tuples of homogenous type are specified like
+            # Tuple[int, ...]
+            if len(member_types) == 2 and member_types[1] is Ellipsis:
+                kwargs['nargs'] = "*"
+                kwargs['action'] = _make_store_tuple_action_class(
+                    tuple, member_types, parsers, is_variable_length=True)
+            else:
+                kwargs['nargs'] = len(member_types)
+                kwargs['action'] = _make_store_tuple_action_class(
+                    tuple, member_types, parsers)
         elif (isinstance(type_, type) and issubclass(type_, tuple)
               and hasattr(type_, '_fields')):
             # Before Py3.6, `_field_types` does not preserve order, so retrieve
@@ -567,9 +577,12 @@ def _update_help_string(action, *, show_defaults, show_types):
 
 
 def _is_list_like(type_):
-    return (_ti_get_origin(type_)
-            in [list, collections.abc.Iterable, collections.abc.Sequence])
-
+    return _ti_get_origin(type_) in [
+        list,
+        collections.abc.Iterable,
+        getattr(collections.abc, 'Collection', object()),
+        collections.abc.Sequence,
+    ]
 
 def _get_type(func, name):
     """
@@ -991,8 +1004,12 @@ def _make_literal_parser(literal, parsers, value=None):
             value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
 
 
-def _make_store_tuple_action_class(tuple_type, member_types, parsers):
-    parsers = [_get_parser(arg, parsers) for arg in member_types]
+def _make_store_tuple_action_class(
+    tuple_type, member_types, parsers, *, is_variable_length=False):
+    if is_variable_length:
+        parsers = itertools.repeat(_get_parser(member_types[0], parsers))
+    else:
+        parsers = [_get_parser(arg, parsers) for arg in member_types]
 
     class _StoreTupleAction(Action):
         def __call__(self, parser, namespace, values, option_string=None):
