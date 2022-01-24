@@ -659,6 +659,12 @@ class TestTuple(unittest.TestCase):
             return foo
         self.assertEqual(defopt.run(main, argv=['1', '2']), (1, '2'))
 
+    def test_tuple_variable_length(self):
+        def main(foo):
+            """:param typing.Tuple[int,...] foo: foo"""
+            return foo
+        self.assertEqual(defopt.run(main, argv=['1', '2', '3']), (1, 2, 3))
+
     def test_tupleenum(self):
         def main(foo: typing.Tuple[Choice] = None):
             return foo
@@ -926,6 +932,13 @@ class TestDoc(unittest.TestCase):
         globalns = {'Sequence': typing.Sequence}
         self.assertEqual(
             defopt._get_type_from_doc('Sequence[int]', globalns),
+            typing.List[int])
+    
+    def test_collection(self):
+        # This test effectively does nothing on python versions < 3.6
+        globalns = {'Collection': getattr(typing, 'Collection', typing.List)}
+        self.assertEqual(
+            defopt._get_type_from_doc('Collection[int]', globalns),
             typing.List[int])
 
     def test_iterable(self):
@@ -1196,7 +1209,7 @@ class TestVersion(unittest.TestCase):
              self._assert_streams(stdout=r'\Afoo 42\n\Z'):
             defopt.run([], version='foo 42', argv=['--version'])
 
-    def test_no_version(self):
+    def test_moduleless(self):
         def moduleless(): pass
         moduleless.__module__ = None
         with self.assertRaises(ValueError):
