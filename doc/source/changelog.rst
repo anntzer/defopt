@@ -6,6 +6,8 @@ next
 * Fixed ``typing.Optional[bool]`` to still be treated as a flag.
 * Added support for ``tuple[X, ...]`` and ``Collection[X]`` (Thanks to
   @neelmraman).
+* Disabled syntax highlighting when parsing, thus getting rid of a weak
+  dependency on pygments.
 
 6.2.0 (2021-11-24)
 ------------------

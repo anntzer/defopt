@@ -953,9 +953,16 @@ class TestDoc(unittest.TestCase):
 
             Literal block
                 Multiple lines
+
+        .. code:: python
+
+            def foo(): pass
         """
         doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        self.assertEqual(doc.text, '    Literal block\n        Multiple lines')
+        self.assertEqual(
+            doc.text,
+            '    Literal block\n        Multiple lines \n \n \n \n'
+            '    def foo(): pass')
 
     def test_newlines(self):
         doc = """
