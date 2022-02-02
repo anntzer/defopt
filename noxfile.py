@@ -4,7 +4,7 @@ import nox
 from nox import Session, session
 
 python_versions = ['3.5', '3.6', '3.7', '3.8', '3.9', '3.10']
-nox.options.sessions = ['tests', 'docs', 'style']
+nox.options.sessions = ['tests', 'docs']
 nox.options.reuse_existing_virtualenvs = True
 
 
@@ -64,15 +64,3 @@ def docs(session: Session) -> None:
     session.install('-e', '.')
 
     session.run('sphinx-build', *args)
-
-
-@session
-def style(session: Session) -> None:
-    session.install('flake8')
-
-    session.run(
-        'flake8',
-        '--select=E501',
-        '--extend-exclude=.nox/',
-        '--max-line-length=79',
-    )

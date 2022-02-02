@@ -51,12 +51,3 @@ jobs:
         python -mpip install --upgrade coverage &&
         python -mcoverage combine .coverage.* &&  # Unifies paths across envs.
         python -mcoverage report --show-missing
-
-  style:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Style
-      run: |
-        shopt -s globstar &&
-        ! grep -E '.{80}' **/*.py

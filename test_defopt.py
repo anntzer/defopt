@@ -4,6 +4,7 @@ import inspect
 import re
 import subprocess
 import sys
+import tokenize
 import types
 import typing
 import unittest
@@ -1416,3 +1417,12 @@ class TestDefaultsPreserved(unittest.TestCase):
         params = inspect.signature(defopt.run).parameters
         self.assertEqual(params['parsers'].default, {})
         self.assertEqual(params['argparse_kwargs'].default, {})
+
+
+class TestStyle(unittest.TestCase):
+    def test_line_length(self):
+        for path in [defopt.__file__, __file__]:
+            with tokenize.open(path) as src:
+                for i, line in enumerate(src, 1):
+                    if len(line) > 80:  # 79 chars + newline.
+                        self.fail('{}:{} is too long'.format(path, i))
