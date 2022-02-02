@@ -8,6 +8,7 @@ next
   @neelmraman).
 * Disabled syntax highlighting when parsing, thus getting rid of a weak
   dependency on pygments.
+* Tweaked newline handling in help generation.
 
 6.2.0 (2021-11-24)
 ------------------

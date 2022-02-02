@@ -860,11 +860,16 @@ def _parse_docstring(doc):
             if paragraph is comment_token:
                 continue
             text.append(paragraph)
-            # We insert a space before each newline to prevent argparse
-            # from stripping consecutive newlines down to just two
-            # (http://bugs.python.org/issue31330).
-            # FIXME: but napoleon inserts far too many newlines :/
-            text.append(' \n' * (next_start - start - paragraph.count('\n')))
+            # Insert two newlines to separate paragraphs by a blank line.
+            # Actually, paragraphs may or may not already have a trailing
+            # newline (e.g. text paragraphs do but literal blocks don't) but
+            # argparse will strip extra newlines anyways.  This means that
+            # extra blank lines in the original docstring will be stripped, but
+            # this is less ugly than having a large number of extra blank lines
+            # arising e.g. from skipped info fields (which are not rendered).
+            # This means that list items are always separated by blank lines,
+            # which is an acceptable tradeoff for now.
+            text.append('\n\n')
         parsed = _Doc(text[0], ''.join(text), tuples, visitor.raises)
     else:
         parsed = _Doc('', '', tuples, visitor.raises)

@@ -420,7 +420,7 @@ class TestParsers(unittest.TestCase):
                 raise ValueError('{} is not a valid None string'.format(i))
         self.assertIs(defopt.run(main, argv=['1'],
                       parsers={type(None): _parse_none}), True)
-        self.assertIs(defopt.run(main, argv=['0'], 
+        self.assertIs(defopt.run(main, argv=['0'],
                       parsers={type(None): _parse_none}), False)
         self.assertIs(defopt.run(main, argv=['None'],
                       parsers={type(None): _parse_none}), None)
@@ -432,7 +432,7 @@ class TestParsers(unittest.TestCase):
             """:type foo: typing.Optional[bool]"""
             return foo
         self.assertIs(defopt.run(main, argv=['--foo']), True)
-        self.assertIs(defopt.run(main, argv=['--no-foo']), False) 
+        self.assertIs(defopt.run(main, argv=['--no-foo']), False)
         self.assertIs(defopt.run(main, argv=[]), None)
 
     def test_bool_optional_keyword_true(self):
@@ -441,7 +441,7 @@ class TestParsers(unittest.TestCase):
             return foo
         # cannot get a None value in this case from the CLI
         self.assertIs(defopt.run(main, argv=['--foo']), True)
-        self.assertIs(defopt.run(main, argv=['--no-foo']), False) 
+        self.assertIs(defopt.run(main, argv=['--no-foo']), False)
         self.assertIs(defopt.run(main, argv=[]), True)
 
     def test_bool_optional_keyword_false(self):
@@ -449,7 +449,7 @@ class TestParsers(unittest.TestCase):
             """:type foo: typing.Optional[bool]"""
             return foo
         self.assertIs(defopt.run(main, argv=['--foo']), True)
-        self.assertIs(defopt.run(main, argv=['--no-foo']), False) 
+        self.assertIs(defopt.run(main, argv=['--no-foo']), False)
         self.assertIs(defopt.run(main, argv=[]), False)
 
     def test_bool_optional_keyword_none_no_negated_flags(self):
@@ -777,7 +777,7 @@ class TestDoc(unittest.TestCase):
         :junk one two: nothing
         """
         doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        self.assertEqual(doc.text, 'Test function')
+        self.assertEqual(doc.text, 'Test function\n\n')
         one = doc.params['one']
         self.assertEqual(one.text, 'first param')
         self.assertEqual(one.type, 'int')
@@ -836,11 +836,11 @@ class TestDoc(unittest.TestCase):
 
     def test_implicit_role(self):
         doc = defopt._parse_docstring("""start `int` end""")
-        self.assertEqual(doc.text, 'start \033[4mint\033[0m end')
+        self.assertEqual(doc.text, 'start \033[4mint\033[0m end\n\n')
 
     def test_explicit_role(self):
         doc = defopt._parse_docstring("""start :py:class:`int` end""")
-        self.assertEqual(doc.text, 'start int end')
+        self.assertEqual(doc.text, 'start int end\n\n')
 
     def test_sphinx(self):
         doc = """
@@ -916,10 +916,10 @@ class TestDoc(unittest.TestCase):
         self._check_doc(doc)
 
     def _check_doc(self, doc):
-        self.assertRegex(
+        self.assertEqual(
             doc.text,
-            r'\AOne line summary\. \n \nExtended description\.( \n)+'
-            r'examples: \n>>> print\("hello, world"\)\Z')
+            'One line summary.\n\nExtended description.\n\n'
+            'examples:\n\n>>> print("hello, world")\n\n')
         self.assertEqual(len(doc.params), 3)
         self.assertEqual(doc.params['arg1'].text, 'Description of arg1')
         self.assertEqual(doc.params['arg1'].type, 'int')
@@ -933,7 +933,7 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(
             defopt._get_type_from_doc('Sequence[int]', globalns),
             typing.List[int])
-    
+
     def test_collection(self):
         # This test effectively does nothing on python versions < 3.6
         globalns = {'Collection': getattr(typing, 'Collection', typing.List)}
@@ -961,8 +961,8 @@ class TestDoc(unittest.TestCase):
         doc = defopt._parse_docstring(inspect.cleandoc(doc))
         self.assertEqual(
             doc.text,
-            '    Literal block\n        Multiple lines \n \n \n \n'
-            '    def foo(): pass')
+            '    Literal block\n        Multiple lines\n\n'
+            '    def foo(): pass\n\n')
 
     def test_newlines(self):
         doc = """
@@ -986,26 +986,25 @@ class TestDoc(unittest.TestCase):
         #.  baz
         """
         doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        # Use inspect.cleandoc and not textwrap.dedent, as we want to keep
-        # whitespace in lines that contain more than the common leading
-        # whitespace.
         self.assertEqual(doc.text, inspect.cleandoc("""\
             Bar
-            Baz 
-             
-            - bar 
-            - baz 
-             
-            quux: 
-             
-                hello 
-             
-             
-            1. bar 
-            2. baz 
-             
-            ii.  bar 
-            iii. baz"""))
+            Baz
+
+            - bar
+
+            - baz
+
+            quux:
+
+                hello
+
+            1. bar
+
+            2. baz
+
+            ii.  bar
+
+            iii. baz""") + "\n\n")
 
 
 class TestAnnotations(unittest.TestCase):
