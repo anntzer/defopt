@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+6.3.0 (2022-02-07)
+------------------
 * Fixed ``typing.Optional[bool]`` to still be treated as a flag.
 * Added support for ``tuple[X, ...]`` and ``Collection[X]`` (Thanks to
   @neelmraman).
