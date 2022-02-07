@@ -38,6 +38,9 @@ setup(
         ':sys.platform=="win32"': [
             'colorama>=0.3.4',
         ],
+        'docs': [
+            'sphinx>=4.4',
+        ]
     },
     classifiers=[
         'Programming Language :: Python :: 3',
