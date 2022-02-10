@@ -42,12 +42,25 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: "3.10"
-    - name: Download coverage
+    - name: Download
       uses: actions/download-artifact@v2
       with:
         name: coverage
-    - name: Coverage
+    - name: Prepare
       run: |
         python -mpip install --upgrade coverage &&
         python -mcoverage combine .coverage.* &&  # Unifies paths across envs.
+        python -mcoverage annotate
+    - name: Summary
+      run: |
         python -mcoverage report --show-missing
+    - name: Details
+      run: |
+        shopt -s globstar
+        for f in **/*,cover; do
+          if ! grep -q '^!' "$f"; then
+            continue
+          fi
+          echo "$f"
+          grep -nTC2 '^!' "$f"
+        done

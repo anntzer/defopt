@@ -4,6 +4,7 @@
 *.pyc
 *.pyd
 *.so
+*,cover
 .cache/
 .eggs/
 .ipynb_checkpoints/
