@@ -1003,11 +1003,10 @@ def _make_literal_parser(literal, parsers, value=None):
         return functools.partial(_make_literal_parser, literal, parsers)
     for arg, p in zip(_ti_get_args(literal), parsers):
         try:
-            parsed = p(value)
+            if p(value) == arg:
+                return arg
         except ValueError:
             pass
-        if parsed == arg:
-            return arg
     raise ArgumentTypeError(
         'invalid choice: {!r} (choose from {})'.format(
             value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
