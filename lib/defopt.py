@@ -167,7 +167,7 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     else:
         if cli_options != _unset:
             raise ValueError(
-                "Cannot pass both 'cli_options' and 'strict_kwonly'")
+                "cannot pass both 'cli_options' and 'strict_kwonly'")
         warnings.warn(
             'strict_kwonly is deprecated and will be removed in an upcoming '
             'release', DeprecationWarning)
@@ -286,8 +286,8 @@ def _recurse_functions(funcs, subparsers):
         except AttributeError as exc:
             # Do not allow a mapping inside of a list
             raise ValueError(
-                'Use dictionaries (mappings) for nesting; other iterables may '
-                'only contain functions (callables).'
+                'use dictionaries (mappings) for nesting; other iterables may '
+                'only contain functions (callables)'
             ) from exc
 
     for name, func in funcs.items():
@@ -335,7 +335,7 @@ def _create_parser(
     elif version is None or version:
         version_string = _get_version(version_sources)
         if version and version_string is None:
-            raise ValueError('Failed to autodetect version string')
+            raise ValueError('failed to autodetect version string')
     else:
         version_string = None
     if version_string is not None:
@@ -416,7 +416,7 @@ def _signature(func, *, skip_first_arg=False):
         if param.name.startswith('_'):
             if param.default is param.empty:
                 raise ValueError(
-                    'Parameter {} of {}{} is private but has no default'
+                    'parameter {} of {}{} is private but has no default'
                     .format(param.name, func.__name__, orig_sig))
         else:
             parameters.append(Parameter(
@@ -583,6 +583,7 @@ def _is_list_like(type_):
         getattr(collections.abc, 'Collection', object()),
         collections.abc.Sequence,
     ]
+
 
 def _get_type(func, name):
     """
@@ -927,7 +928,7 @@ def _parse_bool(string):
     elif string.lower() in ['f', 'false', '0']:
         return False
     else:
-        raise ValueError('{} is not a valid boolean string'.format(string))
+        raise ValueError('{!r} is not a valid boolean string'.format(string))
 
 
 def _parse_slice(string):
@@ -944,12 +945,12 @@ def _parse_slice(string):
         SliceVisitor().visit(ast.parse('_[{}]'.format(string)))
         sl, = slices
     except (SyntaxError, ValueError):
-        raise ValueError('{} is not a valid slice string'.format(string))
+        raise ValueError('{!r} is not a valid slice string'.format(string))
     return sl
 
 
 def _parse_none(string):
-    raise ValueError('No string can be converted to None')
+    raise ValueError('no string can be converted to None')
 
 
 def _make_enum_parser(enum, value=None):
@@ -1043,7 +1044,7 @@ if __name__ == '__main__':
         except pydoc.ErrorDuringImport as exc:
             raise exc.value from None
         if func is None:
-            raise ImportError('Failed to locate {!r}'.format(args.function))
+            raise ImportError('failed to locate {!r}'.format(args.function))
         argparse_kwargs = (
             {'prog': ' '.join(sys.argv[:2])} if argv is None else {})
         retval = run(func, argv=args.args, argparse_kwargs=argparse_kwargs)

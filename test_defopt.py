@@ -287,7 +287,7 @@ class TestDefopt(unittest.TestCase):
         def main(_a: int): assert False
         with self.assertRaisesRegex(ValueError,
                                     # Older Pythons have no space post-colon.
-                                    r'Parameter _a of main\(_a: ?int\) is '
+                                    r'parameter _a of main\(_a: ?int\) is '
                                     r'private but has no default'):
             defopt.run(main, argv=[])
 
@@ -1395,7 +1395,7 @@ class TestRunAny(unittest.TestCase):  # TODO: Reuse TestExamples.
     def test_failed_imports(self):
         with self.assertRaises(subprocess.CalledProcessError) as error:
             self._run_any('does-not-exist', [])
-        self.assertIn(b"Failed to locate 'does-not-exist'",
+        self.assertIn(b"failed to locate 'does-not-exist'",
                       error.exception.output)
         with TemporaryDirectory() as tmpdir:
             Path(tmpdir, 'bad_module.py').write_text('1+')
