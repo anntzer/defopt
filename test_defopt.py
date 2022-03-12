@@ -300,6 +300,30 @@ class TestDefopt(unittest.TestCase):
                        argv=['+a', 'foo']),
             'foo')
 
+    def test_intermixed(self):
+        def main(*args: int, key: str): return args, key
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=['1', '-kk', '2'])
+        if sys.version_info >= (3, 7):
+            self.assertEqual(
+                defopt.run(main, argv=['1', '-kk', '2'], intermixed=True),
+                ((1, 2), 'k'))
+
+
+class TestBindKnown(unittest.TestCase):
+    def test_bind_known(self):
+        def main(*args: int, key: str): return args, key
+        call, rest = defopt.bind_known(
+            main, argv=['1', '2', '-kk', '-qq'])
+        self.assertEqual((call(), rest), (((1, 2), 'k'), ['-qq']))
+        call, rest = defopt.bind_known(
+            main, argv=['1', '-kk', '2', '-qq'])
+        self.assertEqual((call(), rest), (((1,), 'k'), ['2', '-qq']))
+        if sys.version_info >= (3, 7):
+            call, rest = defopt.bind_known(
+                main, argv=['1', '-kk', '2', '-qq'], intermixed=True)
+            self.assertEqual((call(), rest), (((1, 2), 'k'), ['-qq']))
+
 
 class TestParsers(unittest.TestCase):
     def test_parser(self):

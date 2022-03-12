@@ -63,7 +63,7 @@ try:
 except ImportError:
     __version__ = '0+unknown'
 
-__all__ = ['run', 'signature', 'bind']
+__all__ = ['run', 'signature', 'bind', 'bind_known']
 
 _PARAM_TYPES = ['param', 'parameter', 'arg', 'argument', 'key', 'keyword']
 _TYPE_NAMES = ['type', 'kwtype']
@@ -146,29 +146,30 @@ def _check_in_list(_values, **kwargs):
                 '{!r} must be one of {!r}, not {!r}'.format(k, _values, v))
 
 
+def _extract_raises(sig):
+    raises, = [  # typing_inspect does not allow fetching metadata, e.g. ti#82.
+        arg for arg in getattr(sig.return_annotation, '__metadata__', [])
+        if isinstance(arg, _Raises)]
+    return raises
+
+
 _unset = 'UNSET'
 
 
-def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
-         parsers: Dict[type, Callable[[str], Any]] = {},
-         short: Optional[Dict[str, str]] = None,
-         cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
-         strict_kwonly=_unset,
-         show_defaults: bool = True,
-         show_types: bool = False,
-         no_negated_flags: bool = False,
-         version: Union[str, None, bool] = None,
-         argparse_kwargs: dict = {},
-         argv: Optional[List[str]] = None):
-    """
-    Process command-line arguments and bind arguments.
-
-    This function takes the same parameters as `defopt.run`, but
-    returns a pair, which consists of a `~typing.Callable` *func* and a
-    `~inspect.BoundArguments` *ba*, such that `defopt.run` would call
-    ``func(*ba.args, **ba.kwargs)``.  If that call would suppress the traceback
-    for some exception types, then *func* is wrapped accordingly.
-    """
+def _bind_or_bind_known(
+    funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
+    parsers: Dict[type, Callable[[str], Any]] = {},
+    short: Optional[Dict[str, str]] = None,
+    cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
+    strict_kwonly=_unset,
+    show_defaults: bool = True,
+    show_types: bool = False,
+    no_negated_flags: bool = False,
+    version: Union[str, None, bool] = None,
+    argparse_kwargs: dict = {},
+    intermixed: bool = False,
+    _known: bool = False,
+    argv: Optional[List[str]] = None):
     if strict_kwonly == _unset:
         if cli_options == _unset:
             cli_options = 'kwonly'
@@ -187,44 +188,87 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         no_negated_flags=no_negated_flags, version=version,
         argparse_kwargs=argparse_kwargs)
     with _colorama_text():
-        parsed_argv = vars(parser.parse_args(argv))
+        if not intermixed:
+            if not _known:
+                args, rest = parser.parse_args(argv), []
+            else:
+                args, rest = parser.parse_known_args(argv)
+        else:
+            if sys.version_info < (3, 7):
+                raise RuntimeError("'intermixed' requires Python>=3.7")
+            if not _known:
+                args, rest = parser.parse_intermixed_args(argv), []
+            else:
+                args, rest = parser.parse_known_intermixed_args(argv)
+    parsed_args = vars(args)
     try:
-        func = parsed_argv.pop('_func')
+        func = parsed_args.pop('_func')
     except KeyError:
         # Workaround for http://bugs.python.org/issue9253#msg186387 (and
         # https://bugs.python.org/issue29298 which blocks using required=True).
         parser.error('too few arguments')
     sig = signature(func)
     ba = sig.bind_partial()
-    ba.arguments.update(parsed_argv)
-    raises, = [
-        # typing_inspect does not allow fetching metadata; see e.g. ti#82.
-        arg for arg in getattr(sig.return_annotation, '__metadata__', [])
-        if isinstance(arg, _Raises)]
-    if raises:  # Only wrap if needed, to save a traceback frame otherwise.
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except raises as e:
-                sys.exit(e)
+    ba.arguments.update(parsed_args)
+    call = functools.partial(func, *ba.args, **ba.kwargs)
+    raises = _extract_raises(sig)
 
-        return wrapper, ba
-    else:
-        return func, ba
+    @functools.wraps(call)
+    def wrapper() -> sig.return_annotation:
+        try:
+            return call()
+        except raises as e:
+            sys.exit(e)
+
+    return wrapper, rest
 
 
-def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
-        parsers: Dict[type, Callable[[str], Any]] = {},
-        short: Optional[Dict[str, str]] = None,
-        cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
-        strict_kwonly=_unset,
-        show_defaults: bool = True,
-        show_types: bool = False,
-        no_negated_flags: bool = False,
-        version: Union[str, None, bool] = None,
-        argparse_kwargs: dict = {},
-        argv: Optional[List[str]] = None):
+def bind(*args, **kwargs):
+    """
+    Process command-line arguments and bind arguments.
+
+    This function takes the same parameters as `defopt.run`, but returns a
+    `~functools.partial` object which represents the call that ``defopt.run``
+    would execute.  In other words, ``call = defopt.bind(...); call()`` is
+    equivalent to ``defopt.run(...)``.  Note that no argument needs to be
+    passed explicitly to ``call``; everything is handled internally.
+
+    The ``call.func`` attribute is a thin wrapper around one of the functions
+    passed to `bind` (to suppress documented raisable exceptions).  The
+    original function is accessible as ``call.func.__wrapped__``.
+
+    The ``call.args`` and ``call.keywords`` attributes are set according to the
+    command-line arguments.
+    """
+    call, rest = _bind_or_bind_known(*args, _known=False, **kwargs)
+    assert not rest
+    return call
+
+
+def bind_known(*args, **kwargs):
+    """
+    Process command-line arguments and bind known arguments.
+
+    This function behaves as `bind`, but returns a pair of 1) the
+    `~functools.partial` callable, and 2) a list of unknown command-line
+    arguments, as returned by `~argparse.ArgumentParser.parse_known_args`.
+    """
+    return _bind_or_bind_known(*args, _known=True, **kwargs)
+
+
+def run(
+    funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
+    parsers: Dict[type, Callable[[str], Any]] = {},
+    short: Optional[Dict[str, str]] = None,
+    cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
+    strict_kwonly=_unset,
+    show_defaults: bool = True,
+    show_types: bool = False,
+    no_negated_flags: bool = False,
+    version: Union[str, None, bool] = None,
+    argparse_kwargs: dict = {},
+    intermixed: bool = False,
+    argv: Optional[List[str]] = None):
     """
     Process command-line arguments and run the given functions.
 
@@ -278,17 +322,24 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     :param argparse_kwargs:
         A mapping of keyword arguments that will be passed to the
         `~argparse.ArgumentParser` constructor.
+    :param intermixed:
+        Whether to use `~argparse.ArgumentParser.parse_intermixed_args` to
+        parse the command line.  Intermixed parsing imposes many restrictions,
+        listed in the `argparse` documentation.
     :param argv:
         Command line arguments to parse (default: ``sys.argv[1:]``).
     :return:
         The value returned by the function that was run.
     """
-    func, ba = bind(
+    call = bind(
         funcs, parsers=parsers, short=short, cli_options=cli_options,
         strict_kwonly=strict_kwonly, show_defaults=show_defaults,
         show_types=show_types, no_negated_flags=no_negated_flags,
-        version=version, argparse_kwargs=argparse_kwargs, argv=argv)
-    return func(*ba.args, **ba.kwargs)
+        version=version, argparse_kwargs=argparse_kwargs,
+        intermixed=intermixed, argv=argv)
+    if not _extract_raises(inspect.signature(call, follow_wrapped=False)):
+        call = call.__wrapped__  # Suppress a trivial traceback frame.
+    return call()
 
 
 def _recurse_functions(funcs, subparsers):

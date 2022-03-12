@@ -86,6 +86,7 @@ texinfo_documents = [(
 autodoc_member_order = 'bysource'
 autodoc_typehints = 'description'
 autodoc_typehints_format = 'short'
+autodoc_typehints_description_target = 'documented'
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
