@@ -1,6 +1,11 @@
 Changelog
 =========
 
+next
+----
+* `defopt.bind` now handles traceback suppression itself, returning a wrapper
+  function if needed.
+
 6.3.0 (2022-02-07)
 ------------------
 * Fixed ``typing.Optional[bool]`` to still be treated as a flag.

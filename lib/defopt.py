@@ -163,10 +163,11 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     """
     Process command-line arguments and bind arguments.
 
-    This function takes the same parameters as `defopt.run`, but returns a
-    pair, which consists of a `~typing.Callable` *func* and a
+    This function takes the same parameters as `defopt.run`, but
+    returns a pair, which consists of a `~typing.Callable` *func* and a
     `~inspect.BoundArguments` *ba*, such that `defopt.run` would call
-    ``func(*ba.args, **ba.kwargs)`` (modulo exception handling).
+    ``func(*ba.args, **ba.kwargs)``.  If that call would suppress the traceback
+    for some exception types, then *func* is wrapped accordingly.
     """
     if strict_kwonly == _unset:
         if cli_options == _unset:
@@ -196,7 +197,21 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     sig = signature(func)
     ba = sig.bind_partial()
     ba.arguments.update(parsed_argv)
-    return func, ba
+    raises, = [
+        # typing_inspect does not allow fetching metadata; see e.g. ti#82.
+        arg for arg in getattr(sig.return_annotation, '__metadata__', [])
+        if isinstance(arg, _Raises)]
+    if raises:  # Only wrap if needed, to save a traceback frame otherwise.
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except raises as e:
+                sys.exit(e)
+
+        return wrapper, ba
+    else:
+        return func, ba
 
 
 def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
@@ -213,11 +228,11 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     """
     Process command-line arguments and run the given functions.
 
-    ``funcs`` can be a single callable, which is parsed and run; or it can
-    be a list of callables or mappable of strs to callables, in which case
-    each one is given a subparser with its name (if ``funcs`` is a list) or
-    the corresponding key (if ``funcs`` is a mappable), and only the chosen
-    callable is run.
+    *funcs* can be a single callable, which is parsed and run; or it can be
+    a list of callables or mappable of strs to callables, in which case each
+    one is given a subparser with its name (if *funcs* is a list) or the
+    corresponding key (if *funcs* is a mappable), and only the chosen callable
+    is run.
 
     :param funcs:
         Function or functions to process and run.
@@ -273,16 +288,7 @@ def run(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
         strict_kwonly=strict_kwonly, show_defaults=show_defaults,
         show_types=show_types, no_negated_flags=no_negated_flags,
         version=version, argparse_kwargs=argparse_kwargs, argv=argv)
-    sig = signature(func)
-    raises, = [
-        # typing_inspect does not allow fetching metadata; see e.g. ti#82.
-        arg for arg in getattr(sig.return_annotation, '__metadata__', [])
-        if isinstance(arg, _Raises)]
-    # The function call should occur here to minimize effects on the traceback.
-    try:
-        return func(*ba.args, **ba.kwargs)
-    except raises as e:
-        sys.exit(e)
+    return func(*ba.args, **ba.kwargs)
 
 
 def _recurse_functions(funcs, subparsers):
