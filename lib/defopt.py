@@ -139,6 +139,13 @@ class _DefaultList(list):
     """
 
 
+def _check_in_list(_values, **kwargs):
+    for k, v in kwargs.items():
+        if v not in _values:
+            raise ValueError(
+                '{!r} must be one of {!r}, not {!r}'.format(k, _values, v))
+
+
 _unset = 'UNSET'
 
 
@@ -172,6 +179,7 @@ def bind(funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
             'strict_kwonly is deprecated and will be removed in an upcoming '
             'release', DeprecationWarning)
         cli_options = 'kwonly' if strict_kwonly else 'has_default'
+    _check_in_list(['kwonly', 'all', 'has_default'], cli_options=cli_options)
     parser = _create_parser(
         funcs, parsers=parsers, short=short, cli_options=cli_options,
         show_defaults=show_defaults, show_types=show_types,
