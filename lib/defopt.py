@@ -499,7 +499,12 @@ def _populate_parser(func, parser, parsers, short, cli_options,
                 kwargs['action'] = 'append'
                 kwargs['default'] = _DefaultList()
         member_types = None
-        if _ti_get_origin(type_) is tuple:
+
+        if isinstance(type_, type) and issubclass(type_, Enum):
+            # Enums must be checked first to handle enums-of-namedtuples.
+            kwargs['type'] = _get_parser(type_, parsers)
+            kwargs['metavar'] = '{' + ','.join(type_.__members__) + '}'
+        elif _ti_get_origin(type_) is tuple:
             member_types = _ti_get_args(type_)
             # Variable-length tuples of homogenous type are specified like
             # Tuple[int, ...]
@@ -524,9 +529,7 @@ def _populate_parser(func, parser, parsers, short, cli_options,
                 kwargs['metavar'] = type_._fields
         else:
             kwargs['type'] = _get_parser(type_, parsers)
-            if isinstance(type_, type) and issubclass(type_, Enum):
-                kwargs['metavar'] = '{' + ','.join(type_.__members__) + '}'
-            elif _ti_get_origin(type_) is Literal:
+            if _ti_get_origin(type_) is Literal:
                 kwargs['metavar'] = (
                     '{' + ','.join(map(str, _ti_get_args(type_))) + '}')
         actions.append(_add_argument(parser, name, short, **kwargs))

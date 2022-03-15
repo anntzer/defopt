@@ -685,6 +685,14 @@ class TestTuple(unittest.TestCase):
         self.assertEqual(str(defopt.run(main, argv=['1', '2', '3'])),
                          str(Pair(1, '2')))
 
+    def test_enumnamedtuple(self):
+        class EnumPair(Pair, Enum):
+            a = Pair('A', 1)
+            b = Pair('B', 2)
+
+        def main(foo: EnumPair): return foo
+        self.assertEqual(defopt.run(main, argv=['a']), EnumPair.a)
+
     def test_tuple_fails_early(self):
         def main(foo):
             """:param typing.Tuple[int,EmptyType] foo: foo"""
