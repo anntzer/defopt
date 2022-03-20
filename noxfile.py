@@ -60,7 +60,6 @@ def docs(session: Session) -> None:
     """Produce the coverage report."""
     args = session.posargs or ['-b', 'html', 'doc/source', 'doc/build']
 
-    session.install('-r', 'doc/requirements.txt')
-    session.install('-e', '.')
+    session.install('-e', '.[docs]')
 
     session.run('sphinx-build', *args)
