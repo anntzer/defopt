@@ -1428,9 +1428,18 @@ class TestDefaultsPreserved(unittest.TestCase):
 
 
 class TestStyle(unittest.TestCase):
-    def test_line_length(self):
+    def _iter_stripped_lines(self):
         for path in [defopt.__file__, __file__]:
             with tokenize.open(path) as src:
                 for i, line in enumerate(src, 1):
-                    if len(line) > 80:  # 79 chars + newline.
-                        self.fail('{}:{} is too long'.format(path, i))
+                    yield '{}:{}'.format(path, i), line.rstrip('\n')
+
+    def test_line_length(self):
+        for name, line in self._iter_stripped_lines():
+            if len(line) > 79:
+                self.fail('{} is too long'.format(name))
+
+    def test_trailing_whitespace(self):
+        for name, line in self._iter_stripped_lines():
+            if line and line[-1].isspace():
+                self.fail('{} has trailing whitespace'.format(name))
