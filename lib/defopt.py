@@ -758,7 +758,7 @@ def _parse_docstring(doc):
         
         def visit_target(self, node):
             if node.get('refuri'):
-                self._current_paragraph.append(f" ({node['refuri']})")
+                self._current_paragraph.append(" ({})".format(node['refuri']))
             else:
                 self._current_paragraph.append(node.astext())
             raise SkipNode
