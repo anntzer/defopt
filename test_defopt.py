@@ -1184,7 +1184,7 @@ class TestHelp(unittest.TestCase):
     def test_hyperlink_target_separated(self):
         def foo():
             """This site_ is cool
-            
+
             .. _site: https://www.python.org/
             """
         self.assert_in_help("This site is cool", foo, "")
