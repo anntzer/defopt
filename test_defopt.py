@@ -1171,8 +1171,8 @@ class TestHelp(unittest.TestCase):
             foo,
             ""
         )
-    
-    def test_hyperlink_target(self):
+
+    def test_hyperlink_target_embedded(self):
         def foo():
             """`This site <https://www.python.org/>`_ is cool"""
         self.assert_in_help(
@@ -1180,6 +1180,15 @@ class TestHelp(unittest.TestCase):
             foo,
             ""
         )
+
+    def test_hyperlink_target_separated(self):
+        def foo():
+            """This site_ is cool
+            
+            .. _site: https://www.python.org/
+            """
+        self.assert_in_help("This site is cool", foo, "")
+        self.assert_not_in_help("https://www.python.org/", foo, "")
 
     def test_rst_ansi(self):
         def foo():

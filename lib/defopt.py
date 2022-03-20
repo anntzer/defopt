@@ -755,8 +755,11 @@ def _parse_docstring(doc):
         depart_Text = _do_nothing
 
         visit_reference = depart_reference = _do_nothing
-        
+
         def visit_target(self, node):
+            if self._current_paragraph is None:
+                raise SkipNode
+
             if node.get('refuri'):
                 self._current_paragraph.append(" ({})".format(node['refuri']))
             else:
