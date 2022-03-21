@@ -1163,6 +1163,33 @@ class TestHelp(unittest.TestCase):
         self.assert_in_help('%(prog)s', foo, '')
         self.assert_not_in_help('%%', foo, '')
 
+    def test_hyperlink_plaintext(self):
+        def foo():
+            """This site https://www.python.org/ is cool"""
+        self.assert_in_help(
+            "This site https://www.python.org/ is cool",
+            foo,
+            ""
+        )
+
+    def test_hyperlink_target_embedded(self):
+        def foo():
+            """`This site <https://www.python.org/>`_ is cool"""
+        self.assert_in_help(
+            "This site (https://www.python.org/) is cool",
+            foo,
+            ""
+        )
+
+    def test_hyperlink_target_separated(self):
+        def foo():
+            """This site_ is cool
+
+            .. _site: https://www.python.org/
+            """
+        self.assert_in_help("This site is cool", foo, "")
+        self.assert_not_in_help("https://www.python.org/", foo, "")
+
     def test_rst_ansi(self):
         def foo():
             """**bold** *italic* `underlined`"""
