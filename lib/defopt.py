@@ -239,6 +239,8 @@ def bind(*args, **kwargs):
 
     The ``call.args`` and ``call.keywords`` attributes are set according to the
     command-line arguments.
+
+    This API is provisional and may be adjusted depending on feedback.
     """
     call, rest = _bind_or_bind_known(*args, _known=False, **kwargs)
     assert not rest
@@ -252,6 +254,8 @@ def bind_known(*args, **kwargs):
     This function behaves as `bind`, but returns a pair of 1) the
     `~functools.partial` callable, and 2) a list of unknown command-line
     arguments, as returned by `~argparse.ArgumentParser.parse_known_args`.
+
+    This API is provisional and may be adjusted depending on feedback.
     """
     return _bind_or_bind_known(*args, _known=True, **kwargs)
 

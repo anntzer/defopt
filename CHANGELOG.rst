@@ -7,6 +7,7 @@ next
   the call that would be executed by `defopt.run`.
 * Added `defopt.bind_known` which supports unknown arguments and returns them
   as a separate list.
+* Document `defopt.bind` and `defopt.bind_known` as provisional APIs.
 * Added ``intermixed`` (on Python>=3.7).
 
 6.3.0 (2022-02-07)
