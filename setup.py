@@ -29,11 +29,10 @@ setup(
     extras_require={
         ':python_version<"3.8"': [
             'importlib_metadata>=1.0',
+            'typing_inspect>=0.5.0',
         ],
         ':python_version<"3.9"': [
-            # Literal support, and requires typing_extensions (which also
-            # brings in Annotated, on Py3.8).
-            'typing_inspect>=0.5.0',
+            'typing_extensions>=3.7.4',  # Annotated (and Literal, on Py3.8).
         ],
         ':sys.platform=="win32"': [
             'colorama>=0.3.4',
