@@ -598,7 +598,7 @@ class TestParsers(unittest.TestCase):
         def notok(foo):
             """:type foo: NotConstructibleFromStr"""
 
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, 'no parser.*NotConstructible'):
             defopt.run(notok, argv=["foo"])
 
 
