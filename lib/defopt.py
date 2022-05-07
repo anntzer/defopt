@@ -12,7 +12,6 @@ import importlib
 import inspect
 import itertools
 import re
-import pydoc
 import sys
 import types
 import typing
@@ -30,6 +29,10 @@ try:
     import importlib.metadata as _im
 except ImportError:
     import importlib_metadata as _im
+try:
+    from pkgutil import resolve_name as _pkgutil_resolve_name
+except ImportError:
+    from pkgutil_resolve_name import resolve_name as _pkgutil_resolve_name
 try:
     from typing import Annotated
 except ImportError:
@@ -1120,15 +1123,12 @@ def _make_store_tuple_action_class(
 if __name__ == '__main__':
     def main(argv=None):
         parser = ArgumentParser()
-        parser.add_argument('function')
+        parser.add_argument(
+            'function',
+            help='package.name.function_name or package.name:function_name')
         parser.add_argument('args', nargs=REMAINDER)
         args = parser.parse_args(argv)
-        try:
-            func = pydoc.locate(args.function)
-        except pydoc.ErrorDuringImport as exc:
-            raise exc.value from None
-        if func is None:
-            raise ImportError('failed to locate {!r}'.format(args.function))
+        func = _pkgutil_resolve_name(args.function)
         argparse_kwargs = (
             {'prog': ' '.join(sys.argv[:2])} if argv is None else {})
         retval = run(func, argv=args.args, argparse_kwargs=argparse_kwargs)

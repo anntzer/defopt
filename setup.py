@@ -32,6 +32,7 @@ setup(
             'typing_inspect>=0.5.0',
         ],
         ':python_version<"3.9"': [
+            'pkgutil_resolve_name',
             'typing_extensions>=3.7.4',  # Annotated (and Literal, on Py3.8).
         ],
         ':sys.platform=="win32"': [

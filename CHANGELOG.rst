@@ -9,6 +9,8 @@ next
   as a separate list.
 * Document `defopt.bind` and `defopt.bind_known` as provisional APIs.
 * Added ``intermixed`` (on Python>=3.7).
+* Support ``python -mdefopt package.name:function_name args ...`` (with a
+  colon).
 
 6.3.0 (2022-02-07)
 ------------------

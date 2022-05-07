@@ -375,16 +375,17 @@ This entry point can now be referenced in the ``setup.py`` file.
         entry_points={'console_scripts': ['name=test:entry_point']}
     )
 
-Alternatively, arbitrary type-hinted functions can be directly run from the
-command line with
+Alternatively, to keep scripts importable independently of `defopt`, arbitrary
+type-hinted functions can be directly run from the command line with
 
 .. code-block:: sh
 
     $ python -m defopt dotted.name args ...
 
 which is equivalent to passing the ``dotted.name`` function to `defopt.run` and
-calling the resulting script with ``args ...``.  This may be useful to make the
-script importable independently of `defopt`.
+calling the resulting script with ``args ...``.  The ``dotted.name`` can use
+a colon to separate the package name from the function name (as supported by
+relies on `pkgutil.resolve_name`).
 
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 .. _Google: http://google.github.io/styleguide/pyguide.html

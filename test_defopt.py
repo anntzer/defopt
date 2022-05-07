@@ -1448,13 +1448,13 @@ class TestRunAny(unittest.TestCase):  # TODO: Reuse TestExamples.
             'examples.lists.main', ['2', '--numbers', '1.2', '3.4'])
         self.assertEqual(output, b'[2.4, 6.8]\n')
         output = self._run_any(
-            'examples.lists.main', ['--numbers', '1.2', '3.4', '--', '2'])
+            'examples.lists:main', ['--numbers', '1.2', '3.4', '--', '2'])
         self.assertEqual(output, b'[2.4, 6.8]\n')
 
     def test_failed_imports(self):
         with self.assertRaises(subprocess.CalledProcessError) as error:
-            self._run_any('does-not-exist', [])
-        self.assertIn(b"failed to locate 'does-not-exist'",
+            self._run_any('does_not_exist', [])
+        self.assertIn(b"No module named 'does_not_exist'",
                       error.exception.output)
         with TemporaryDirectory() as tmpdir:
             Path(tmpdir, 'bad_module.py').write_text('1+')
