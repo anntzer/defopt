@@ -1,18 +1,20 @@
 import builtins
 import contextlib
 import inspect
+import multiprocessing as mp
 import re
+import runpy
 import subprocess
 import sys
 import tokenize
 import types
 import typing
 import unittest
+from concurrent.futures import ProcessPoolExecutor
 from contextlib import ExitStack
 from enum import Enum
 from io import StringIO
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import defopt
 from defopt import __version__
@@ -1437,28 +1439,34 @@ class TestRunAny(unittest.TestCase):  # TODO: Reuse TestExamples.
     def test_lists_cli(self):
         output = self._run_any(
             'examples.lists.main', ['2', '--numbers', '1.2', '3.4'])
-        self.assertEqual(output, b'[2.4, 6.8]\n')
+        self.assertEqual(output, '[2.4, 6.8]\n')
         output = self._run_any(
             'examples.lists:main', ['--numbers', '1.2', '3.4', '--', '2'])
-        self.assertEqual(output, b'[2.4, 6.8]\n')
+        self.assertEqual(output, '[2.4, 6.8]\n')
 
     def test_failed_imports(self):
-        with self.assertRaises(subprocess.CalledProcessError) as error:
+        with self.assertRaises((ImportError, subprocess.CalledProcessError)):
             self._run_any('does_not_exist', [])
-        self.assertIn(b"No module named 'does_not_exist'",
-                      error.exception.output)
-        with TemporaryDirectory() as tmpdir:
-            Path(tmpdir, 'bad_module.py').write_text('1+')
-            with self.assertRaises(subprocess.CalledProcessError) as error:
-                self._run_any('bad_module', [], cwd=tmpdir)
-            self.assertRegex(error.exception.output,
-                             br'SyntaxError: invalid syntax\n\Z')
+
+    @staticmethod
+    def _target(command, argv):
+        sys.argv[1:] = [command, *argv]  # Only executed in a subprocess.
+        buf = StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+            runpy.run_module('defopt', run_name='__main__', alter_sys=True)
+        return buf.getvalue()
 
     def _run_any(self, command, argv, **kwargs):
-        output = subprocess.check_output(
-            [sys.executable, '-m', 'defopt', command] + argv,
-            stderr=subprocess.STDOUT, **kwargs)
-        return output.replace(b'\r\n', b'\n')
+        if sys.version_info >= (3, 7):  # multiprocessing for proper coverage.
+            with ProcessPoolExecutor(mp_context=mp.get_context('spawn')) \
+                    as executor:
+                fut = executor.submit(self._target, command, argv)
+            return fut.result().replace('\r\n', '\n')
+        else:  # mp_context is not available.
+            output = subprocess.check_output(
+                [sys.executable, '-m', 'defopt', command] + argv,
+                stderr=subprocess.STDOUT, universal_newlines=True, **kwargs)
+            return output.replace('\r\n', '\n')
 
 
 class TestDefaultsPreserved(unittest.TestCase):
