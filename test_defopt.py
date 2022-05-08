@@ -77,13 +77,10 @@ class TestDefopt(unittest.TestCase):
     def test_nested_lists_invalid(self):
         def sub1(*bar):
             """:type bar: float"""
-            return bar
         def subsub1(*, baz=None):
             """:type baz: int"""
-            return baz
         def subsub2(*foo):
             """:type foo: float"""
-            return foo
         with self.assertRaises(ValueError):
             defopt.run([sub1, [subsub1, subsub2]], argv=['sub1', '1.2'])
 
@@ -164,13 +161,10 @@ class TestDefopt(unittest.TestCase):
     def test_nested_subcommands_mixed_invalid1(self):
         def sub1(*bar):
             """:type bar: float"""
-            return bar
         def subsub1(*, baz=None):
             """:type baz: int"""
-            return baz
         def subsub2(*foo):
             """:type foo: float"""
-            return foo
         with self.assertRaises(ValueError):
             defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
                         argv=['sub1', '1.2'])
@@ -184,13 +178,10 @@ class TestDefopt(unittest.TestCase):
     def test_nested_subcommands_mixed_invalid2(self):
         def sub(*bar):
             """:type bar: float"""
-            return bar
         def subsub_with_dash(*, baz=None):
             """:type baz: int"""
-            return baz
         def subsub(*foo):
             """:type foo: float"""
-            return foo
         with self.assertRaises(ValueError):
             defopt.run([sub, {'subsub1': subsub_with_dash, 'subsub2': subsub}],
                        argv=['sub', '1.2'])

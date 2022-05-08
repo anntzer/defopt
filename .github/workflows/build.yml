@@ -6,6 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.5", "3.6", "3.7", "3.8", "3.9", "3.10"]
     steps:
@@ -46,21 +47,17 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: coverage
-    - name: Prepare
+    - name: Run
       run: |
+        shopt -s globstar &&
         python -mpip install --upgrade coverage &&
         python -mcoverage combine .coverage.* &&  # Unifies paths across envs.
-        python -mcoverage annotate
-    - name: Summary
-      run: |
-        python -mcoverage report --show-missing
-    - name: Details
-      run: |
-        shopt -s globstar
+        python -mcoverage annotate &&
         for f in **/*,cover; do
           if ! grep -q '^!' "$f"; then
             continue
           fi
-          echo "$f"
+          echo "$f" &&
           grep -nTC2 '^!' "$f"
-        done
+        done &&
+        python -mcoverage report --show-missing
