@@ -1060,7 +1060,7 @@ def _is_constructible_from_str(type_, *, skip_first_arg=False):
     except ValueError:
         # Can be raised for classes, if the relevant info is in `__init__`.
         if not isinstance(type_, type):
-            raise
+            return False
     else:
         if sig.parameters[argname].annotation is str:
             return True
