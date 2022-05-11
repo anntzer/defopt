@@ -23,6 +23,7 @@ from argparse import (
 from collections import defaultdict, namedtuple, Counter
 from enum import Enum
 from pathlib import PurePath
+from types import MethodType
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 try:
@@ -472,16 +473,8 @@ def signature(func: Callable):
     - The return type is `~typing.Annotated` with the documented raisable
       exception types, in wrapped in a private tuple subclass.
     """
-    return _signature(func)
-
-
-def _signature(func, *, skip_first_arg=False):
-    # See _is_constructible_from_str for skip_first_arg.  We can't just drop
-    # the first arg later because it may be unannotated.
     orig_sig = inspect.signature(func)
     orig_params = orig_sig.parameters.values()
-    if skip_first_arg:
-        _, *orig_params = orig_params
     doc = _parse_docstring(inspect.getdoc(func))
     parameters = []
     for param in orig_params:
@@ -1051,26 +1044,26 @@ def _make_enum_parser(enum, value=None):
                 value, ', '.join(map(repr, enum.__members__))))
 
 
-def _is_constructible_from_str(type_, *, skip_first_arg=False):
+def _is_constructible_from_str(type_):
     try:
-        sig = _signature(type_, skip_first_arg=skip_first_arg)
+        sig = signature(type_)
         (argname, _), = sig.bind(object()).arguments.items()
     except TypeError:  # Can be raised by signature() or Signature.bind().
         return False
     except ValueError:
-        # Can be raised for classes, if the relevant info is in `__init__`.
-        if not isinstance(type_, type):
-            return False
+        # No relevant info in signature; continue below to also look in
+        # `type_.__init__`, in the case where type_ is indeed a type.
+        pass
     else:
         if sig.parameters[argname].annotation is str:
             return True
     if isinstance(type_, type):
         # signature() first checks __new__, if it is present.
-        # skip_first_arg behaves as if the first parameter was bound, i.e.
-        # __init__.__get__(object(), type_) but the latter can fail for types
-        # implemented in C (which don't support binding arbitrary objects).
-        return _is_constructible_from_str(
-            type_.__init__, skip_first_arg=True)
+        # `MethodType(type_.__init__, object())` binds the first parameter of
+        # `__init__` -- similarly to `__init__.__get__(object(), type_)`, but
+        # the latter can fail for types implemented in C (which may not support
+        # binding arbitrary objects).
+        return _is_constructible_from_str(MethodType(type_.__init__, object()))
     return False
 
 
