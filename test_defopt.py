@@ -766,6 +766,93 @@ class TestUnion(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['--foo', '1']), [1])
 
 
+class TestOptional(unittest.TestCase):
+    def test_optional_hint_list(self):
+        def main(op: typing.Optional[typing.List[str]]): return op
+        self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), ['1', '2'])
+
+    def test_optional_hint_tuple(self):
+        def main(op: typing.Optional[typing.Tuple[int]]): return op
+        self.assertEqual(defopt.run(main, argv=['1']), (1,))
+
+    def test_optional_doc_list(self):
+        def main(op):
+            """:param typing.Optional[typing.List[int]] op: op"""
+            return op
+        self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), [1, 2])
+
+    def test_optional_doc_tuple(self):
+        def main(op):
+            """:param typing.Optional[typing.Tuple[str]] op: op"""
+            return op
+        self.assertEqual(defopt.run(main, argv=['1']), ('1',))
+
+    def test_union_operator_hint_list(self):
+        if not hasattr(types, "UnionType"):
+            raise unittest.SkipTest("A|B-style unions not supported")
+        def main(op: typing.List[str] | None): return op
+        self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), ['1', '2'])
+
+    def test_union_operator_hint_tuple(self):
+        if not hasattr(types, "UnionType"):
+            raise unittest.SkipTest("A|B-style unions not supported")
+        def main(op: typing.Tuple[int] | None): return op
+        self.assertEqual(defopt.run(main, argv=['1']), (1,))
+
+    def test_union_operator_doc_list(self):
+        if not hasattr(types, "UnionType"):
+            raise unittest.SkipTest("A|B-style unions not supported")
+        def main(op):
+            """:param list[int]|None op: op"""
+            return op
+        self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), [1, 2])
+
+    def test_union_operator_doc_one_item_tuple(self):
+        if not hasattr(types, "UnionType"):
+            raise unittest.SkipTest("A|B-style unions not supported")
+        def main(op):
+            """:param tuple[int]|None op: op"""
+            return op
+        self.assertEqual(defopt.run(main, argv=['1']), (1,))
+
+    def test_union_operator_doc_multiple_item_tuple(self):
+        if not hasattr(types, "UnionType"):
+            raise unittest.SkipTest("A|B-style unions not supported")
+        def main(op):
+            """:param tuple[str,str]|None op: op"""
+            return op
+        self.assertEqual(defopt.run(main, argv=['a', 'b']), ('a', 'b'))
+
+    def test_multiple_item_optional_tuple_none_parser(self):
+        def main(op):
+            """:param typing.Optional[typing.Tuple[int, int]] op: op"""
+            return op
+        def _parse_none(i):
+            if i.lower() == 'none':
+                return None
+            else:
+                raise ValueError('{} is not a valid None string'.format(i))
+        with self.assertRaises(ValueError):
+            defopt.run(main, argv=['1', '2'],
+                       parsers={type(None): _parse_none})
+
+    def test_one_item_optional_tuple_none_parser(self):
+        # As long as there is not support for trying the NoneType parser
+        # before the tuple parser in the case of a one-item optional tuple,
+        # this case should also raise an error. See comments on GH115 for more
+        # details.
+        def main(op):
+            """:param typing.Optional[typing.Tuple[str]] op: op"""
+            return op
+        def _parse_none(i):
+            if i.lower() == 'none':
+                return None
+            else:
+                raise ValueError('{} is not a valid None string'.format(i))
+        with self.assertRaises(ValueError):
+            defopt.run(main, argv=['1'], parsers={type(None): _parse_none})
+
+
 class TestLiteral(unittest.TestCase):
     def test_literal(self):
         def main(foo):
@@ -1040,11 +1127,6 @@ class TestAnnotations(unittest.TestCase):
     def test_container(self):
         self.assertEqual(defopt._get_type_from_hint(typing.Sequence[int]),
                          typing.List[int])
-
-    def test_optional(self):
-        self.assertEqual(
-            defopt._get_type_from_hint(typing.Optional[typing.List[int]]),
-            typing.List[int])
 
     def test_conflicting(self):
         def foo(bar: int):
