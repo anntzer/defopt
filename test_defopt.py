@@ -765,98 +765,92 @@ class TestUnion(unittest.TestCase):
         def main(foo: typing.List[int] = None): return foo
         self.assertEqual(defopt.run(main, argv=['--foo', '1']), [1])
 
+
 class TestOptional(unittest.TestCase):
     def test_optional_hint_list(self):
-        def main(foo: typing.Optional[typing.List[str]]): return foo
-        self.assertEqual(defopt.run(main, argv=['--foo', '1', '2']), ['1','2'])
+        def main(op: typing.Optional[typing.List[str]]): return op
+        self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), ['1', '2'])
 
     def test_optional_hint_tuple(self):
-        def main(foo: typing.Optional[typing.Tuple[int]]): return foo
+        def main(op: typing.Optional[typing.Tuple[int]]): return op
         self.assertEqual(defopt.run(main, argv=['1']), (1,))
 
     def test_optional_doc_list(self):
-        def main(foo):
-            """:param typing.Optional[typing.List[int]] foo: foo"""
-            return foo
-        self.assertEqual(defopt.run(main, argv=['--foo', '1', '2']), [1,2])
+        def main(op):
+            """:param typing.Optional[typing.List[int]] op: op"""
+            return op
+        self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), [1, 2])
 
     def test_optional_doc_tuple(self):
-        def main(foo):
-            """:param typing.Optional[typing.Tuple[str]] foo: foo"""
-            return foo
+        def main(op):
+            """:param typing.Optional[typing.Tuple[str]] op: op"""
+            return op
         self.assertEqual(defopt.run(main, argv=['1']), ('1',))
 
     def test_union_operator_hint_list(self):
         if not hasattr(types, "UnionType"):
             raise unittest.SkipTest("A|B-style unions not supported")
-        def main(foo: typing.List[str] | None): return foo
-        self.assertEqual(defopt.run(main, argv=['--foo', '1', '2']), ['1','2'])
+        def main(op: typing.List[str] | None): return op
+        self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), ['1', '2'])
 
     def test_union_operator_hint_tuple(self):
         if not hasattr(types, "UnionType"):
             raise unittest.SkipTest("A|B-style unions not supported")
-        def main(foo: typing.Tuple[int] | None): return foo
+        def main(op: typing.Tuple[int] | None): return op
         self.assertEqual(defopt.run(main, argv=['1']), (1,))
 
     def test_union_operator_doc_list(self):
         if not hasattr(types, "UnionType"):
             raise unittest.SkipTest("A|B-style unions not supported")
-        def main(foo):
-            """:param list[int]|None foo: foo"""
-            return foo
-        self.assertEqual(defopt.run(main, argv=['--foo', '1', '2']), [1,2])
+        def main(op):
+            """:param list[int]|None op: op"""
+            return op
+        self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), [1, 2])
 
     def test_union_operator_doc_one_item_tuple(self):
         if not hasattr(types, "UnionType"):
             raise unittest.SkipTest("A|B-style unions not supported")
-        def main(foo):
-            """:param tuple[int]|None foo: foo"""
-            return foo
+        def main(op):
+            """:param tuple[int]|None op: op"""
+            return op
         self.assertEqual(defopt.run(main, argv=['1']), (1,))
 
     def test_union_operator_doc_multiple_item_tuple(self):
         if not hasattr(types, "UnionType"):
             raise unittest.SkipTest("A|B-style unions not supported")
-        def main(foo):
-            """:param tuple[str,str]|None foo: foo"""
-            return foo
-        self.assertEqual(defopt.run(main, argv=['a', 'b']), ('a','b'))
+        def main(op):
+            """:param tuple[str,str]|None op: op"""
+            return op
+        self.assertEqual(defopt.run(main, argv=['a', 'b']), ('a', 'b'))
 
     def test_multiple_item_optional_tuple_none_parser(self):
-        def main(foo):
-            """:param typing.Optional[typing.Tuple[int, int]] foo: foo"""
-            return foo
+        def main(op):
+            """:param typing.Optional[typing.Tuple[int, int]] op: op"""
+            return op
         def _parse_none(i):
             if i.lower() == 'none':
                 return None
             else:
                 raise ValueError('{} is not a valid None string'.format(i))
         with self.assertRaises(ValueError):
-            self.assertEqual(
-                defopt.run(
-                    main, argv=["1", "2"], parsers={type(None): _parse_none}
-                )
-            )
+            defopt.run(main, argv=['1', '2'],
+                       parsers={type(None): _parse_none})
 
     def test_one_item_optional_tuple_none_parser(self):
         # As long as there is not support for trying the NoneType parser
         # before the tuple parser in the case of a one-item optional tuple,
         # this case should also raise an error. See comments on GH115 for more
         # details.
-        def main(foo):
-            """:param typing.Optional[typing.Tuple[str]] foo: foo"""
-            return foo
+        def main(op):
+            """:param typing.Optional[typing.Tuple[str]] op: op"""
+            return op
         def _parse_none(i):
             if i.lower() == 'none':
                 return None
             else:
                 raise ValueError('{} is not a valid None string'.format(i))
         with self.assertRaises(ValueError):
-            self.assertEqual(
-                defopt.run(
-                    main, argv=["1"], parsers={type(None): _parse_none}
-                )
-            )
+            defopt.run(main, argv=['1'], parsers={type(None): _parse_none})
 
 
 class TestLiteral(unittest.TestCase):

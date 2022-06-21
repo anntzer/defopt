@@ -535,11 +535,9 @@ def _populate_parser(func, parser, parsers, short, cli_options,
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
         if type_ in [bool, typing.Optional[bool]] and not positional:
-            action = (
-                "store_true"
-                if no_negated_flags and default in [False, None]
-                else _BooleanOptionalAction  # --name/--no-name
-            )
+            action = ('store_true'
+                      if no_negated_flags and default in [False, None]
+                      else _BooleanOptionalAction)  # --name/--no-name
             actions.append(_add_argument(
                 parser, name, short, action=action, default=default,
                 required=required,  # Always False if `default is False`.
@@ -559,18 +557,14 @@ def _populate_parser(func, parser, parsers, short, cli_options,
         else:
             kwargs['required'] = required
 
-        # If the type is an Optional container, extract only the container
-        union_args = []
-        if _is_union(type_):
-            union_args = _ti_get_args(type_)
-            if any(_is_container(subtype) for subtype in union_args):
-                non_none = [arg for arg in union_args if arg is not type(None)]
-                if len(non_none) != 1:
-                    raise ValueError(
-                        'unsupported union including container type: {}'
-                        .format(type_)
-                    )
-                type_ = non_none[0]
+        # If the type is an Optional container, extract only the container.
+        union_args = _ti_get_args(type_) if _is_union_type(type_) else []
+        if any(_is_container(subtype) for subtype in union_args):
+            non_none = [arg for arg in union_args if arg is not type(None)]
+            if len(non_none) != 1:
+                raise ValueError('unsupported union including container type: '
+                                 '{}'.format(type_))
+            type_, = non_none
 
         if _is_list_like(type_):
             type_, = _ti_get_args(type_)
@@ -590,20 +584,16 @@ def _populate_parser(func, parser, parsers, short, cli_options,
             # Variable-length tuples of homogenous type are specified like
             # Tuple[int, ...]
             if num_members == 2 and member_types[1] is Ellipsis:
-                kwargs["nargs"] = "*"
-                kwargs["action"] = _make_store_tuple_action_class(
-                    tuple, member_types, parsers, is_variable_length=True
-                )
+                kwargs['nargs'] = '*'
+                kwargs['action'] = _make_store_tuple_action_class(
+                    tuple, member_types, parsers, is_variable_length=True)
             elif type(None) in union_args and parsers.get(type(None)):
-                raise ValueError(
-                    "Optional tuples are currently not supported with use of "
-                    "a NoneType parser due to ambiguity."
-                )
+                raise ValueError('Optional tuples and NoneType parsers cannot '
+                                 'be used together due to ambiguity')
             else:
-                kwargs["nargs"] = num_members
-                kwargs["action"] = _make_store_tuple_action_class(
-                    tuple, member_types, parsers
-                )
+                kwargs['nargs'] = num_members
+                kwargs['action'] = _make_store_tuple_action_class(
+                    tuple, member_types, parsers)
         elif (isinstance(type_, type) and issubclass(type_, tuple)
               and hasattr(type_, '_fields')):
             # Before Py3.6, `_field_types` does not preserve order, so retrieve
@@ -683,16 +673,16 @@ def _is_container(type_):
     return _ti_get_origin(type_) in {*_LIST_TYPES, tuple}
 
 
-def _is_union(type_):
-    return _ti_get_origin(type_) in {Union, getattr(types, "UnionType", "")}
+def _is_union_type(type_):
+    return _ti_get_origin(type_) in {Union, getattr(types, 'UnionType', '')}
 
 
 def _is_optional_list_like(type_):
     # Assume a union with a list subtype is actually Optional[list[...]]
     # because this condition is enforced in other places
-    return _is_union(type_) and any(
-        _is_list_like(subtype) for subtype in _ti_get_args(type_)
-    )
+    return (_is_union_type(type_)
+            and any(_is_list_like(subtype) for subtype in _ti_get_args(type_)))
+
 
 def _get_type(func, name):
     """
@@ -737,13 +727,10 @@ def _get_type_from_doc(name, globalns):
             raise ValueError(
                 'unsupported union including container type: {}'.format(name))
         return Union[tuple(subtype for subtype in subtypes)]
-    # Support for sphinx-specific "list[type]", "tuple[type]" syntax; only
-    # needed for Py<3.9.
-    # (This intentionally won't catch `List` or `typing.List`.)
-    name = re.sub(r'\b(tuple|list)\b', lambda m: m.group().title(), name)
-    return _get_type_from_hint(
-        eval(name, {**globalns, "Tuple": Tuple, "List": List})
-    )
+    if sys.version_info < (3, 9):  # Support "list[type]", "tuple[type]".
+        globalns = {**globalns, 'tuple': Tuple, 'list': List}
+    return _get_type_from_hint(eval(name, globalns))
+
 
 def _get_type_from_hint(hint):
     if _is_list_like(hint):
@@ -1004,7 +991,7 @@ def _get_parser(type_, parsers):
         parser = _make_enum_parser(type_)
     elif _is_constructible_from_str(type_):
         parser = functools.partial(type_)
-    elif _is_union(type_):
+    elif _is_union_type(type_):
         args = _ti_get_args(type_)
         if type(None) in args:
             # If None is in the Union, parse it first.  This only matters if
