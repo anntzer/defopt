@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+6.4.0 (2022-07-19)
+------------------
 * `defopt.bind` now returns a single `functools.partial` object representing
   the call that would be executed by `defopt.run`.
 * Added `defopt.bind_known` which supports unknown arguments and returns them
