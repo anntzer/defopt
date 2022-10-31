@@ -96,8 +96,9 @@ A runnable example is available at `examples/nested.py`_.
 Standard types
 --------------
 
-For parameters annotated as `str`, `int`, `float`, and `pathlib.Path`, the type
-constructor is directly called on the argument passed in.
+For parameters annotated as `str`, `int`, `float`, and `pathlib.Path` (or any
+`pathlib.PurePath` subclass), the type constructor is directly called on the
+argument passed in.
 
 For parameters annotated as `slice`, the argument passed in is split at
 ``":"``, the resulting fragments evaluated with `ast.literal_eval` (with empty
@@ -233,7 +234,10 @@ syntax is also supported, if the underlying Python version supports it.  When
 an argument is annotated with a union type, an attempt is made to convert the
 command-line argument with the parser for each of the members of the union, in
 the order they are given; the value returned by the first parser that does not
-raise a `ValueError` is used.
+raise a `ValueError` is used.  Note that all types in the union must be
+parsable, *except* that types that come after ``str`` or ``Path``/``PurePath``
+are not taken into account (as conversion to ``str`` or to ``Path`` will always
+succeed).
 
 ``typing.Optional[type1]``, i.e. ``Union[type1, type(None)]``, is normally
 equivalent to ``type1``.  This is implemented using a parser for ``type(None)``

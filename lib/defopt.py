@@ -1001,8 +1001,19 @@ def _get_parser(type_, parsers):
             # possible.
             args = (type(None),
                     *[arg for arg in args if arg is not type(None)])
-        parser = _make_union_parser(
-            type_, [_get_parser(arg, parsers) for arg in args])
+        elem_parsers = []
+        for arg in args:
+            elem_parser = _get_parser(arg, parsers)
+            elem_parsers.append(elem_parser)
+            if (isinstance(elem_parser, functools.partial)
+                    and (elem_parser.func is str
+                         or isinstance(elem_parser.func, type)
+                         and issubclass(elem_parser.func, PurePath))
+                    and not (elem_parser.args or elem_parser.keywords)):
+                # Infaillible parser; skip all following types (which may not
+                # even have a parser defined).
+                break
+        parser = _make_union_parser(type_, elem_parsers)
     elif _ti_get_origin(type_) is Literal:
         args = _ti_get_args(type_)
         parser = _make_literal_parser(

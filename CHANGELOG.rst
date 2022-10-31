@@ -1,6 +1,11 @@
 Changelog
 =========
 
+next
+----
+* Union members that come after `str` or `pathlib.Path` no longer need to have
+  a valid parser.
+
 6.4.0 (2022-07-19)
 ------------------
 * `defopt.bind` now returns a single `functools.partial` object representing

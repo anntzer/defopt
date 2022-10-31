@@ -765,6 +765,20 @@ class TestUnion(unittest.TestCase):
         def main(foo: typing.List[int] = None): return foo
         self.assertEqual(defopt.run(main, argv=['--foo', '1']), [1])
 
+    def test_union_infaillible_and_unparseable(self):
+        def main(foo: typing.Union[str, NotConstructibleFromStr],
+                 bar: typing.Union[Path, NotConstructibleFromStr]):
+            return foo, bar
+        self.assertEqual(defopt.run(main, argv=['a', 'b']), ('a', Path('b')))
+
+    def test_union_unparseable_and_infaillible(self):
+        def main(foo: typing.Union[NotConstructibleFromStr, str]): return foo
+        with self.assertRaises(Exception):
+            defopt.run(main, argv=['foo'])
+        def main(foo: typing.Union[NotConstructibleFromStr, Path]): return foo
+        with self.assertRaises(Exception):
+            defopt.run(main, argv=['foo'])
+
 
 class TestOptional(unittest.TestCase):
     def test_optional_hint_list(self):
