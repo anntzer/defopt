@@ -448,6 +448,20 @@ def _get_version1(func):
             module_name, _ = module_name.rsplit('.', 1)
 
 
+class Signature(inspect.Signature):
+    __slots__ = (*inspect.Signature.__slots__, '_doc')
+    doc = property(lambda self: self._doc)
+
+    def __init__(self, *args, doc=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._doc = doc
+
+    def replace(self, *, doc=inspect._void, **kwargs):
+        copy = super().replace(**kwargs)
+        copy._doc = self._doc if doc is inspect._void else doc
+        return copy
+
+
 class Parameter(inspect.Parameter):
     __slots__ = (*inspect.Parameter.__slots__, '_doc')
     doc = property(lambda self: self._doc)
@@ -469,17 +483,18 @@ def signature(func: Callable):
     This function behaves similarly to `inspect.signature`, with the following
     differences:
 
+    - The parsed function docstring (which will be used as the parser
+      description) is available as ``signature.doc``; likewise, parameter
+      docstrings are available as ``parameter.doc`` (this is done by using
+      subclasses of `inspect.Signature` and `inspect.Parameter`).
     - Private parameters (starting with an underscore) are not listed.
     - Parameter types are also read from ``func``'s docstring (if a parameter's
       type is specified both in the signature and the docstring, both types
       must match).
-    - The docstring for each parameter is available as the
-      `~inspect.Parameter`'s ``.doc`` attribute (in fact, a subclass of
-      `~inspect.Parameter` is used).
     - The return type is `~typing.Annotated` with the documented raisable
       exception types, in wrapped in a private tuple subclass.
     """
-    orig_sig = inspect.signature(func)
+    orig_sig = Signature.from_callable(func)
     orig_params = orig_sig.parameters.values()
     doc = _parse_docstring(inspect.getdoc(func))
     parameters = []
@@ -496,16 +511,16 @@ def signature(func: Callable):
                 doc=doc.params.get(param.name, _Param(None, None)).text))
     exc_types = _Raises(_get_type_from_doc(name, func.__globals__)
                         for name in doc.raises)
-    return_annotation = Annotated[orig_sig.return_annotation, exc_types]
     return orig_sig.replace(
-        parameters=parameters, return_annotation=return_annotation)
+        parameters=parameters,
+        return_annotation=Annotated[orig_sig.return_annotation, exc_types],
+        doc=doc.text)
 
 
 def _populate_parser(func, parser, parsers, short, cli_options,
                      show_defaults, show_types, no_negated_flags):
     sig = signature(func)
-    doc = _parse_docstring(inspect.getdoc(func))
-    parser.description = doc.text
+    parser.description = sig.doc
 
     positionals = {
         name for name, param in sig.parameters.items()

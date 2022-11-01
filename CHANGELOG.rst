@@ -5,6 +5,7 @@ next
 ----
 * Union members that come after `str` or `pathlib.Path` no longer need to have
   a valid parser.
+* Parsed function docstring made available as ``signature(...).doc``.
 
 6.4.0 (2022-07-19)
 ------------------
