@@ -17,7 +17,7 @@ from io import StringIO
 from pathlib import Path
 
 import defopt
-from defopt import __version__
+from defopt import __version__, _options
 from examples import (
     annotations, booleans, choices, exceptions, lists, parsers, short,
     starargs, styles)
@@ -1317,9 +1317,9 @@ class TestHelp(unittest.TestCase):
 
     def _get_help(self, funcs, flags):
         self.assertLessEqual({*flags}, {'d', 't', 'n'})
-        parser = defopt._create_parser(
-            funcs, show_defaults='d' in flags, show_types='t' in flags,
-            no_negated_flags='n' in flags, cli_options='has_default')
+        parser = defopt._create_parser(funcs, _options(
+            show_defaults='d' in flags, show_types='t' in flags,
+            no_negated_flags='n' in flags, cli_options='has_default'))
         return parser.format_help()
 
 

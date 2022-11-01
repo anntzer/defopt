@@ -159,38 +159,23 @@ def _extract_raises(sig):
     return raises
 
 
-def _bind_or_bind_known(
-    funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
-    parsers: Dict[type, Callable[[str], Any]] = {},
-    short: Optional[Dict[str, str]] = None,
-    cli_options: Literal['kwonly', 'all', 'has_default'] = 'kwonly',
-    show_defaults: bool = True,
-    show_types: bool = False,
-    no_negated_flags: bool = False,
-    version: Union[str, None, bool] = None,
-    argparse_kwargs: dict = {},
-    intermixed: bool = False,
-    _known: bool = False,
-    argv: Optional[List[str]] = None):
-    _check_in_list(['kwonly', 'all', 'has_default'], cli_options=cli_options)
-    parser = _create_parser(
-        funcs, parsers=parsers, short=short, cli_options=cli_options,
-        show_defaults=show_defaults, show_types=show_types,
-        no_negated_flags=no_negated_flags, version=version,
-        argparse_kwargs=argparse_kwargs)
+def _bind_or_bind_known(funcs, *, opts, _known: bool = False):
+    _check_in_list(['kwonly', 'all', 'has_default'],
+                   cli_options=opts.cli_options)
+    parser = _create_parser(funcs, opts)
     with _colorama_text():
-        if not intermixed:
+        if not opts.intermixed:
             if not _known:
-                args, rest = parser.parse_args(argv), []
+                args, rest = parser.parse_args(opts.argv), []
             else:
-                args, rest = parser.parse_known_args(argv)
+                args, rest = parser.parse_known_args(opts.argv)
         else:
             if sys.version_info < (3, 7):
                 raise RuntimeError("'intermixed' requires Python>=3.7")
             if not _known:
-                args, rest = parser.parse_intermixed_args(argv), []
+                args, rest = parser.parse_intermixed_args(opts.argv), []
             else:
-                args, rest = parser.parse_known_intermixed_args(argv)
+                args, rest = parser.parse_known_intermixed_args(opts.argv)
     parsed_args = vars(args)
     try:
         func = parsed_args.pop('_func')
@@ -233,7 +218,8 @@ def bind(*args, **kwargs):
 
     This API is provisional and may be adjusted depending on feedback.
     """
-    call, rest = _bind_or_bind_known(*args, _known=False, **kwargs)
+    call, rest = _bind_or_bind_known(
+        *args, opts=_options(**kwargs), _known=False)
     assert not rest
     return call
 
@@ -248,7 +234,8 @@ def bind_known(*args, **kwargs):
 
     This API is provisional and may be adjusted depending on feedback.
     """
-    return _bind_or_bind_known(*args, _known=True, **kwargs)
+    return _bind_or_bind_known(
+        *args, opts=_options(**kwargs), _known=True)
 
 
 def run(
@@ -329,6 +316,19 @@ def run(
     return call()
 
 
+_DefoptOptions = namedtuple(
+    '_DefoptOptions',
+    ['parsers', 'short', 'cli_options', 'show_defaults', 'show_types',
+     'no_negated_flags', 'version', 'argparse_kwargs', 'intermixed', 'argv'])
+
+
+def _options(**kwargs):
+    params = inspect.signature(run).parameters
+    return (
+        _DefoptOptions(*[params[k].default for k in _DefoptOptions._fields])
+        ._replace(**kwargs))
+
+
 def _recurse_functions(funcs, subparsers):
     if not isinstance(funcs, collections.abc.Mapping):
         # If this iterable is not a mapping, then convert it to one using the
@@ -359,34 +359,23 @@ def _recurse_functions(funcs, subparsers):
             yield from _recurse_functions(func, nestedsubparsers)
 
 
-def _create_parser(
-        funcs, *,
-        parsers={},
-        short=None,
-        cli_options='kwonly',
-        show_defaults=True,
-        show_types=False,
-        no_negated_flags=False,
-        version=None,
-        argparse_kwargs={}):
-    parser = ArgumentParser(
-        **{**{'formatter_class': RawTextHelpFormatter}, **argparse_kwargs})
+def _create_parser(funcs, opts):
+    parser = ArgumentParser(**{**{'formatter_class': RawTextHelpFormatter},
+                               **opts.argparse_kwargs})
     version_sources = []
     if callable(funcs):
-        _populate_parser(funcs, parser, parsers, short, cli_options,
-                         show_defaults, show_types, no_negated_flags)
+        _populate_parser(funcs, parser, opts)
         version_sources.append(funcs)
     else:
         subparsers = parser.add_subparsers()
         for func, subparser in _recurse_functions(funcs, subparsers):
-            _populate_parser(func, subparser, parsers, short, cli_options,
-                             show_defaults, show_types, no_negated_flags)
+            _populate_parser(func, subparser, opts)
             version_sources.append(func)
-    if isinstance(version, str):
-        version_string = version
-    elif version is None or version:
+    if isinstance(opts.version, str):
+        version_string = opts.version
+    elif opts.version is None or opts.version:
         version_string = _get_version(version_sources)
-        if version and version_string is None:
+        if opts.version and version_string is None:
             raise ValueError('failed to autodetect version string')
     else:
         version_string = None
@@ -490,25 +479,26 @@ def signature(func: Callable):
         doc=doc.text)
 
 
-def _populate_parser(func, parser, parsers, short, cli_options,
-                     show_defaults, show_types, no_negated_flags):
+def _populate_parser(func, parser, opts):
     sig = signature(func)
     parser.description = sig.doc
 
     positionals = {
         name for name, param in sig.parameters.items()
-        if ((cli_options == 'kwonly' or
-             (param.default is param.empty and cli_options == 'has_default'))
+        if ((opts.cli_options == 'kwonly' or
+             (param.default is param.empty
+              and opts.cli_options == 'has_default'))
             and not _is_list_like(param.annotation)
             and not _is_optional_list_like(param.annotation)
             and param.kind != param.KEYWORD_ONLY)}
-    if short is None:
+    if opts.short is None:
         count_initials = Counter(name[0] for name in sig.parameters
                                  if name not in positionals)
         if parser.add_help:
             count_initials['h'] += 1
-        short = {name.replace('_', '-'): name[0] for name in sig.parameters
-                 if name not in positionals and count_initials[name[0]] == 1}
+        opts = opts._replace(short={
+            name.replace('_', '-'): name[0] for name in sig.parameters
+            if name not in positionals and count_initials[name[0]] == 1})
 
     actions = []
     for name, param in sig.parameters.items():
@@ -524,10 +514,10 @@ def _populate_parser(func, parser, parsers, short, cli_options,
         positional = name in positionals
         if type_ in [bool, typing.Optional[bool]] and not positional:
             action = ('store_true'
-                      if no_negated_flags and default in [False, None]
+                      if opts.no_negated_flags and default in [False, None]
                       else _BooleanOptionalAction)  # --name/--no-name
             actions.append(_add_argument(
-                parser, name, short, action=action, default=default,
+                parser, name, opts.short, action=action, default=default,
                 required=required,  # Always False if `default is False`.
                 **kwargs))  # Add help if available.
             continue
@@ -564,7 +554,7 @@ def _populate_parser(func, parser, parsers, short, cli_options,
 
         if isinstance(type_, type) and issubclass(type_, Enum):
             # Enums must be checked first to handle enums-of-namedtuples.
-            kwargs['type'] = _get_parser(type_, parsers)
+            kwargs['type'] = _get_parser(type_, opts.parsers)
             kwargs['metavar'] = '{' + ','.join(type_.__members__) + '}'
         elif _ti_get_origin(type_) is tuple:
             member_types = _ti_get_args(type_)
@@ -574,14 +564,14 @@ def _populate_parser(func, parser, parsers, short, cli_options,
             if num_members == 2 and member_types[1] is Ellipsis:
                 kwargs['nargs'] = '*'
                 kwargs['action'] = _make_store_tuple_action_class(
-                    tuple, member_types, parsers, is_variable_length=True)
-            elif type(None) in union_args and parsers.get(type(None)):
+                    tuple, member_types, opts.parsers, is_variable_length=True)
+            elif type(None) in union_args and opts.parsers.get(type(None)):
                 raise ValueError('Optional tuples and NoneType parsers cannot '
                                  'be used together due to ambiguity')
             else:
                 kwargs['nargs'] = num_members
                 kwargs['action'] = _make_store_tuple_action_class(
-                    tuple, member_types, parsers)
+                    tuple, member_types, opts.parsers)
         elif (isinstance(type_, type) and issubclass(type_, tuple)
               and hasattr(type_, '_fields')):
             # Before Py3.6, `_field_types` does not preserve order, so retrieve
@@ -590,18 +580,17 @@ def _populate_parser(func, parser, parsers, short, cli_options,
             member_types = tuple(hints[field] for field in type_._fields)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
-                type_, member_types, parsers)
+                type_, member_types, opts.parsers)
             if not positional:  # http://bugs.python.org/issue14074
                 kwargs['metavar'] = type_._fields
         else:
-            kwargs['type'] = _get_parser(type_, parsers)
+            kwargs['type'] = _get_parser(type_, opts.parsers)
             if _ti_get_origin(type_) is Literal:
                 kwargs['metavar'] = (
                     '{' + ','.join(map(str, _ti_get_args(type_))) + '}')
-        actions.append(_add_argument(parser, name, short, **kwargs))
+        actions.append(_add_argument(parser, name, opts.short, **kwargs))
     for action in actions:
-        _update_help_string(
-            action, show_defaults=show_defaults, show_types=show_types)
+        _update_help_string(action, opts)
 
     parser.set_defaults(_func=func)
 
@@ -629,16 +618,16 @@ def _add_argument(parser, name, short, _positional=False, **kwargs):
     return action
 
 
-def _update_help_string(action, *, show_defaults, show_types):
+def _update_help_string(action, opts):
     action_help = action.help or ''
     info = []
-    if (show_types
+    if (opts.show_types
             and action.type is not None
             and action.type.func not in [_make_enum_parser,
                                          _make_literal_parser]
             and '%(type)' not in action_help):
         info.append('type: %(type)s')
-    if (show_defaults
+    if (opts.show_defaults
             and action.const is not False  # i.e. action='store_false'.
             and not isinstance(action.default, _DefaultList)
             and '%(default)' not in action_help
