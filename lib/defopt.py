@@ -106,26 +106,25 @@ else:
         }.get(origin, origin)
 
 
-# Modified from Py3.9's version, plus:
-# - a fix to bpo#38956 (by omitting the extraneous help string),
-# - support for short aliases for --no-foo, by moving negative flag generation
-#   to _add_argument (where the negative aliases are available),
-# - a hack (_CustomString) to simulate format_usage on Py<3.9 (_CustomString
-#   relies on an Py<3.9 implementation detail: the usage string is built using
-#   '%s' % option_strings[0] (so there is an additional call to str()) whereas
-#   the option invocation help directly joins the strings).
-
-
-class _CustomString(str):
-    def __str__(self):
-        return self.action.format_usage()
-
-
 class _BooleanOptionalAction(Action):
+    # Modified from Py3.9's version, plus:
+    # - a fix to bpo#38956 (by omitting the extraneous help string),
+    # - support for short aliases for --no-foo, by moving negative flag
+    #   generation to _add_argument (where the negative aliases are available),
+    # - a hack (_CustomString) to simulate format_usage on Py<3.9
+    #   (_CustomString relies on an Py<3.9 implementation detail: the usage
+    #   string is built using '%s' % option_strings[0] (so there is an
+    #   additional call to str()) whereas the option invocation help directly
+    #   joins the strings).
+
+    class _CustomString(str):
+        def __str__(self):
+            return self.action.format_usage()
+
     def __init__(self, option_strings, **kwargs):
         self.negative_option_strings = []  # set by _add_argument
         if option_strings:
-            cs = option_strings[0] = _CustomString(option_strings[0])
+            cs = option_strings[0] = self._CustomString(option_strings[0])
             cs.action = self
         super().__init__(option_strings, nargs=0, **kwargs)
 
@@ -332,7 +331,7 @@ def run(
 
 def _recurse_functions(funcs, subparsers):
     if not isinstance(funcs, collections.abc.Mapping):
-        # If this iterable is not a maping, then convert it to one using the
+        # If this iterable is not a mapping, then convert it to one using the
         # function name itself as the key, but replacing _ with -.
         try:
             funcs = {func.__name__.replace('_', '-'): func for func in funcs}

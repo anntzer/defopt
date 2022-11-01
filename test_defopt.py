@@ -46,10 +46,6 @@ class NotConstructibleFromStr:
         pass
 
 
-class EmptyType:
-    pass
-
-
 class TestDefopt(unittest.TestCase):
     def test_main(self):
         def main(foo):
@@ -171,11 +167,11 @@ class TestDefopt(unittest.TestCase):
             defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
                         argv=['sub1', '1.2'])
         with self.assertRaises(ValueError):
-                defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
-                        argv=['sub2', 'subsub1', '--baz', '1'])
+            defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
+                       argv=['sub2', 'subsub1', '--baz', '1'])
         with self.assertRaises(ValueError):
-                defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
-                        argv=['sub2', 'subsub2', '1.1'])
+            defopt.run([sub1, {'sub2': [subsub1, subsub2]}],
+                       argv=['sub2', 'subsub2', '1.1'])
 
     def test_nested_subcommands_mixed_invalid2(self):
         def sub(*bar):
@@ -700,7 +696,7 @@ class TestTuple(unittest.TestCase):
 
     def test_tuple_fails_early(self):
         def main(foo):
-            """:param typing.Tuple[int,EmptyType] foo: foo"""
+            """:param typing.Tuple[int,NotConstructibleFromStr] foo: foo"""
         with self.assertRaisesRegex(Exception, 'no parser'):
             defopt.run(main, argv=['-h'])
 
