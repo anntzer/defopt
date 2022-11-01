@@ -96,8 +96,6 @@ if hasattr(typing, 'get_origin'):
 else:
     def _ti_get_origin(tp):
         import typing_inspect as ti
-        if ti.is_literal_type(tp):  # ti.get_origin returns None for Literals.
-            return Literal
         origin = ti.get_origin(tp)
         return {  # Py<3.7.
             typing.List: list,

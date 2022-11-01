@@ -29,7 +29,7 @@ setup(
     extras_require={
         ':python_version<"3.8"': [
             'importlib_metadata>=1.0',
-            'typing_inspect>=0.5.0',
+            'typing_inspect>=0.8.0',
         ],
         ':python_version<"3.9"': [
             'pkgutil_resolve_name',
