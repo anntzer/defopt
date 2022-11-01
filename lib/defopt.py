@@ -15,7 +15,6 @@ import re
 import sys
 import types
 import typing
-import warnings
 from argparse import (
     REMAINDER, SUPPRESS,
     Action, ArgumentParser, RawTextHelpFormatter,
@@ -161,15 +160,11 @@ def _extract_raises(sig):
     return raises
 
 
-_unset = 'UNSET'
-
-
 def _bind_or_bind_known(
     funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     parsers: Dict[type, Callable[[str], Any]] = {},
     short: Optional[Dict[str, str]] = None,
-    cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
-    strict_kwonly=_unset,
+    cli_options: Literal['kwonly', 'all', 'has_default'] = 'kwonly',
     show_defaults: bool = True,
     show_types: bool = False,
     no_negated_flags: bool = False,
@@ -178,17 +173,6 @@ def _bind_or_bind_known(
     intermixed: bool = False,
     _known: bool = False,
     argv: Optional[List[str]] = None):
-    if strict_kwonly == _unset:
-        if cli_options == _unset:
-            cli_options = 'kwonly'
-    else:
-        if cli_options != _unset:
-            raise ValueError(
-                "cannot pass both 'cli_options' and 'strict_kwonly'")
-        warnings.warn(
-            'strict_kwonly is deprecated and will be removed in an upcoming '
-            'release', DeprecationWarning)
-        cli_options = 'kwonly' if strict_kwonly else 'has_default'
     _check_in_list(['kwonly', 'all', 'has_default'], cli_options=cli_options)
     parser = _create_parser(
         funcs, parsers=parsers, short=short, cli_options=cli_options,
@@ -272,8 +256,7 @@ def run(
     funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
     parsers: Dict[type, Callable[[str], Any]] = {},
     short: Optional[Dict[str, str]] = None,
-    cli_options: Literal['kwonly', 'all', 'has_default'] = _unset,
-    strict_kwonly=_unset,
+    cli_options: Literal['kwonly', 'all', 'has_default'] = 'kwonly',
     show_defaults: bool = True,
     show_types: bool = False,
     no_negated_flags: bool = False,
@@ -303,15 +286,9 @@ def run(
     :param cli_options:
         The default behavior ('kwonly') is to convert keyword-only parameters
         to command line flags, and non-keyword-only parameters with a default
-        to optional positional command line parameters. 'all' turns all
-        parameters into command-line flags. 'has_default' turns a parameter
+        to optional positional command line parameters.  'all' turns all
+        parameters into command-line flags.  'has_default' turns a parameter
         into a command-line flag if and only if it has a default value.
-    :param strict_kwonly:
-        Deprecated.  If `False`, all parameters with a default are converted
-        into command-line flags. The default behavior (`True`) is to convert
-        keyword-only parameters to command line flags, and non-keyword-only
-        parameters with a default to optional positional command line
-        parameters.
     :param show_defaults:
         Whether parameter defaults are appended to parameter descriptions.
     :param show_types:
@@ -345,10 +322,9 @@ def run(
     """
     call = bind(
         funcs, parsers=parsers, short=short, cli_options=cli_options,
-        strict_kwonly=strict_kwonly, show_defaults=show_defaults,
-        show_types=show_types, no_negated_flags=no_negated_flags,
-        version=version, argparse_kwargs=argparse_kwargs,
-        intermixed=intermixed, argv=argv)
+        show_defaults=show_defaults, show_types=show_types,
+        no_negated_flags=no_negated_flags, version=version,
+        argparse_kwargs=argparse_kwargs, intermixed=intermixed, argv=argv)
     if not _extract_raises(inspect.signature(call, follow_wrapped=False)):
         call = call.__wrapped__  # Suppress a trivial traceback frame.
     return call()
