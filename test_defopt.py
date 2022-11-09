@@ -854,9 +854,10 @@ class TestOptional(unittest.TestCase):
 class TestLiteral(unittest.TestCase):
     def test_literal(self):
         def main(foo):
-            """:param defopt.Literal["bar","baz"] foo: foo"""
+            """:param defopt.Literal[Choice.one,"bar","baz"] foo: foo"""
             return foo
         self.assertEqual(defopt.run(main, argv=["bar"]), "bar")
+        self.assertEqual(defopt.run(main, argv=["one"]), Choice.one)
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=["quux"])
 

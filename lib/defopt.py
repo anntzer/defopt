@@ -149,6 +149,10 @@ class _PseudoChoices(list):
     (see `argparse._get_action_name`).
     """
 
+    def __init__(self, items):
+        super().__init__(str(item.name if isinstance(item, Enum) else item)
+                         for item in items)
+
     def __contains__(self, obj):
         return True
 
@@ -571,7 +575,7 @@ def _populate_parser(func, parser, opts):
         if isinstance(type_, type) and issubclass(type_, Enum):
             # Enums must be checked first to handle enums-of-namedtuples.
             kwargs['type'] = _get_parser(type_, opts.parsers)
-            kwargs['choices'] = _PseudoChoices(type_.__members__)
+            kwargs['choices'] = _PseudoChoices(type_.__members__.values())
         elif _ti_get_origin(type_) is tuple:
             member_types = _ti_get_args(type_)
             num_members = len(member_types)
@@ -602,8 +606,7 @@ def _populate_parser(func, parser, opts):
         else:
             kwargs['type'] = _get_parser(type_, opts.parsers)
             if _ti_get_origin(type_) is Literal:
-                kwargs['choices'] = _PseudoChoices(
-                    map(str, _ti_get_args(type_)))
+                kwargs['choices'] = _PseudoChoices(_ti_get_args(type_))
         actions.append(_add_argument(parser, name, opts.short, **kwargs))
     for action in actions:
         _update_help_string(action, opts)
@@ -1078,11 +1081,12 @@ def _make_literal_parser(literal, parsers, value=None):
         try:
             if p(value) == arg:
                 return arg
-        except ValueError:
+        except (ValueError, ArgumentTypeError):
             pass
     raise ArgumentTypeError(
         'invalid choice: {!r} (choose from {})'.format(
-            value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
+            value, ', '.join(
+                map(repr, _PseudoChoices(_ti_get_args(literal))))))
 
 
 def _is_constructible_from_str(type_):
