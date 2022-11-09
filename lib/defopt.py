@@ -1135,7 +1135,9 @@ def _make_store_tuple_action_class(
         def __call__(self, parser, namespace, values, option_string=None):
             try:
                 value = tuple(p(value) for p, value in zip(parsers, values))
-            except ArgumentTypeError as exc:
+            except (ValueError, ArgumentTypeError) as exc:
+                # Custom actions need to raise ArgumentError, not ValueError or
+                # ArgumentTypeError.
                 raise ArgumentError(self, str(exc))
             if tuple_type is not tuple:
                 value = tuple_type(*value)

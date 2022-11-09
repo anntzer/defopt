@@ -1353,6 +1353,12 @@ class TestErrorMessage(unittest.TestCase):
                 self, stderr="error: argument x: invalid choice: 'three'"):
             defopt.run(foo, argv=['three'])
 
+    def test_tuple(self):
+        def foo(x: typing.Tuple[int]): pass
+        with self.assertRaises(SystemExit), _assert_streams(
+                self, stderr="error: argument x: invalid literal for int"):
+            defopt.run(foo, argv=['three'])
+
 
 class TestVersion(unittest.TestCase):
     def test_no_version(self):
