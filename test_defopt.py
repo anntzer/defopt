@@ -1323,29 +1323,58 @@ class TestHelp(unittest.TestCase):
         return parser.format_help()
 
 
+@contextlib.contextmanager
+def _assert_streams(self, *, stdout=None, stderr=None):
+    with ExitStack() as stack:
+        if stdout is not None:
+            r_stdout = stack.enter_context(
+                contextlib.redirect_stdout(StringIO()))
+            stack.callback(
+                lambda: self.assertRegex(r_stdout.getvalue(), stdout))
+        if stderr is not None:
+            r_stderr = stack.enter_context(
+                contextlib.redirect_stderr(StringIO()))
+            stack.callback(
+                lambda: self.assertRegex(r_stderr.getvalue(), stderr))
+        yield
+
+
+class TestErrorMessage(unittest.TestCase):
+    def test_enum(self):
+        def foo(x: Choice): pass
+        with self.assertRaises(SystemExit), _assert_streams(
+                self, stderr="error: argument x: invalid choice: 'three'"):
+            defopt.run(foo, argv=['three'])
+
+    def test_literal(self):
+        def foo(x: defopt.Literal[1, "a"]): pass
+        with self.assertRaises(SystemExit), _assert_streams(
+                self, stderr="error: argument x: invalid choice: 'three'"):
+            defopt.run(foo, argv=['three'])
+
+
 class TestVersion(unittest.TestCase):
     def test_no_version(self):
         for funcs in [[], lambda: None, [lambda: None]]:
-            with self.assertRaises(SystemExit), \
-                 self._assert_streams(
+            with self.assertRaises(SystemExit), _assert_streams(
+                     self,
                      stdout=r'\A\Z',
                      stderr='unrecognized arguments: --version'):
                 defopt.run([], version=False, argv=['--version'])
 
     def test_auto_version(self):
-        with self.assertRaises(SystemExit), \
-             self._assert_streams(
-                 stdout=r'\A{}\n\Z'.format(re.escape(__version__))):
+        with self.assertRaises(SystemExit), _assert_streams(
+                 self, stdout=r'\A{}\n\Z'.format(re.escape(__version__))):
             defopt.run(lambda: None, argv=['--version'])
-        with self.assertRaises(SystemExit), \
-             self._assert_streams(
+        with self.assertRaises(SystemExit), _assert_streams(
+                 self,
                  stdout=r'\A\Z',
                  stderr='unrecognized arguments: --version'):
             defopt.run([], argv=['--version'])
 
     def test_manual_version(self):
-        with self.assertRaises(SystemExit), \
-             self._assert_streams(stdout=r'\Afoo 42\n\Z'):
+        with self.assertRaises(SystemExit), _assert_streams(
+                self, stdout=r'\Afoo 42\n\Z'):
             defopt.run([], version='foo 42', argv=['--version'])
 
     def test_moduleless(self):
@@ -1353,21 +1382,6 @@ class TestVersion(unittest.TestCase):
         moduleless.__module__ = None
         with self.assertRaises(ValueError):
             defopt.run([moduleless], version=True)
-
-    @contextlib.contextmanager
-    def _assert_streams(self, *, stdout=None, stderr=None):
-        with ExitStack() as stack:
-            if stdout is not None:
-                r_stdout = stack.enter_context(
-                    contextlib.redirect_stdout(StringIO()))
-                stack.callback(
-                    lambda: self.assertRegex(r_stdout.getvalue(), stdout))
-            if stderr is not None:
-                r_stderr = stack.enter_context(
-                    contextlib.redirect_stderr(StringIO()))
-                stack.callback(
-                    lambda: self.assertRegex(r_stderr.getvalue(), stderr))
-            yield
 
 
 class TestExamples(unittest.TestCase):

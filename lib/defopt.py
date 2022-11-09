@@ -137,6 +137,22 @@ class _BooleanOptionalAction(Action):
         return ' | '.join(self.option_strings)
 
 
+class _PseudoChoices(list):
+    """
+    Pseudo-type used for ``add_argument(..., choices=...)`` so that usage
+    strings correctly print choices (as their corresponding str values) for
+    enums and literals, but without actually checking for containment (as
+    argparse does that on the type-converted values, which are different).
+
+    Note that abusing metavar to generate the usage string does not work as
+    well, as that also affects the argument name in generated error messages
+    (see `argparse._get_action_name`).
+    """
+
+    def __contains__(self, obj):
+        return True
+
+
 class _DefaultList(list):
     """
     Marker type used to determine that a parameter corresponds to a varargs,
@@ -555,7 +571,7 @@ def _populate_parser(func, parser, opts):
         if isinstance(type_, type) and issubclass(type_, Enum):
             # Enums must be checked first to handle enums-of-namedtuples.
             kwargs['type'] = _get_parser(type_, opts.parsers)
-            kwargs['metavar'] = '{' + ','.join(type_.__members__) + '}'
+            kwargs['choices'] = _PseudoChoices(type_.__members__)
         elif _ti_get_origin(type_) is tuple:
             member_types = _ti_get_args(type_)
             num_members = len(member_types)
@@ -586,8 +602,8 @@ def _populate_parser(func, parser, opts):
         else:
             kwargs['type'] = _get_parser(type_, opts.parsers)
             if _ti_get_origin(type_) is Literal:
-                kwargs['metavar'] = (
-                    '{' + ','.join(map(str, _ti_get_args(type_))) + '}')
+                kwargs['choices'] = _PseudoChoices(
+                    map(str, _ti_get_args(type_)))
         actions.append(_add_argument(parser, name, opts.short, **kwargs))
     for action in actions:
         _update_help_string(action, opts)
@@ -1037,6 +1053,13 @@ def _parse_none(string):
     raise ValueError('no string can be converted to None')
 
 
+# _make_{enum,literal}_parser raise ArgumentTypeError so that the error message
+# generated for invalid inputs is fully customized to match standard argparse
+# 'choices': "argument x: invalid choice: '{value}' (choose from ...)".
+# The other parsers raise ValueError, which leads to
+# "argument x: invalid {type} value: '{value}'".
+
+
 def _make_enum_parser(enum, value=None):
     if value is None:
         return functools.partial(_make_enum_parser, enum)
@@ -1046,6 +1069,20 @@ def _make_enum_parser(enum, value=None):
         raise ArgumentTypeError(
             'invalid choice: {!r} (choose from {})'.format(
                 value, ', '.join(map(repr, enum.__members__))))
+
+
+def _make_literal_parser(literal, parsers, value=None):
+    if value is None:
+        return functools.partial(_make_literal_parser, literal, parsers)
+    for arg, p in zip(_ti_get_args(literal), parsers):
+        try:
+            if p(value) == arg:
+                return arg
+        except ValueError:
+            pass
+    raise ArgumentTypeError(
+        'invalid choice: {!r} (choose from {})'.format(
+            value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
 
 
 def _is_constructible_from_str(type_):
@@ -1081,20 +1118,6 @@ def _make_union_parser(union, parsers, value=None):
             pass
     raise ValueError(
         '{} could not be parsed as any of {}'.format(value, union))
-
-
-def _make_literal_parser(literal, parsers, value=None):
-    if value is None:
-        return functools.partial(_make_literal_parser, literal, parsers)
-    for arg, p in zip(_ti_get_args(literal), parsers):
-        try:
-            if p(value) == arg:
-                return arg
-        except ValueError:
-            pass
-    raise ArgumentTypeError(
-        'invalid choice: {!r} (choose from {})'.format(
-            value, ', '.join(map(repr, map(str, _ti_get_args(literal))))))
 
 
 def _make_store_tuple_action_class(
