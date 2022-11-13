@@ -354,8 +354,7 @@ def _recurse_functions(funcs, subparsers):
         if callable(func):
             # If this item is callable, then add it to the current
             # subparser using this name.
-            sp_help = _parse_docstring(
-                inspect.getdoc(func)).doc.split('\n\n', 1)[0]
+            sp_help = signature(inspect.getdoc(func)).doc.split('\n\n', 1)[0]
             subparser = subparsers.add_parser(
                 name, formatter_class=RawTextHelpFormatter, help=sp_help)
             yield func, subparser
@@ -450,7 +449,8 @@ class Parameter(inspect.Parameter):
         return copy
 
 
-def signature(func: Callable):
+@functools.lru_cache()
+def signature(func: Union[Callable, str]):
     """
     Return an enhanced signature for ``func``.
 
@@ -467,12 +467,21 @@ def signature(func: Callable):
     - Parameter types are also read from ``func``'s docstring (if a parameter's
       type is specified both in the signature and the docstring, both types
       must match).
+    - It is also possible to pass a docstring instead of a callable as *func*;
+      in that case, a Signature is still returned, but all parameters are
+      considered positional-or-keyword, with no default, and the annotations
+      are returned as strs.
+
+    This API is provisional and may be adjusted depending on feedback.
     """
-    inspect_sig = _preprocess_inspect_signature(
-        func, inspect.signature(func))
-    doc_sig = _preprocess_doc_signature(
-        func, _parse_docstring(inspect.getdoc(func)))
-    return _merge_signatures(inspect_sig, doc_sig)
+    if isinstance(func, str) or func is None:
+        return _parse_docstring(func)
+    else:
+        inspect_sig = _preprocess_inspect_signature(
+            func, inspect.signature(func))
+        doc_sig = _preprocess_doc_signature(
+            func, signature(inspect.getdoc(func)))
+        return _merge_signatures(inspect_sig, doc_sig)
 
 
 def _preprocess_inspect_signature(func, sig):
@@ -773,7 +782,6 @@ def _sphinx_common_roles():
             role_map.pop('py:' + role)
 
 
-@functools.lru_cache()
 def _parse_docstring(doc):
     """
     Extract documentation from a function's docstring into a `.Signature`
@@ -787,6 +795,7 @@ def _parse_docstring(doc):
     # (Should do nothing if not in either style.)
     # use_ivar avoids generating an unhandled .. attribute:: directive for
     # Attribute blocks, preferring a benign :ivar: field.
+    doc = inspect.cleandoc(doc)
     cfg = Config(napoleon_use_ivar=True)
     doc = str(GoogleDocstring(doc, cfg))
     doc = str(NumpyDocstring(doc, cfg))
