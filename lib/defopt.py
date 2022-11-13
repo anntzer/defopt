@@ -468,26 +468,103 @@ def signature(func: Callable):
       type is specified both in the signature and the docstring, both types
       must match).
     """
-    orig_sig = Signature.from_callable(func)
-    doc_sig = _parse_docstring(inspect.getdoc(func))
+    inspect_sig = _preprocess_inspect_signature(
+        func, inspect.signature(func))
+    doc_sig = _preprocess_doc_signature(
+        func, _parse_docstring(inspect.getdoc(func)))
+    return _merge_signatures(inspect_sig, doc_sig)
+
+
+def _preprocess_inspect_signature(func, sig):
+    hints = typing.get_type_hints(func)
     parameters = []
-    for param in orig_sig.parameters.values():
+    for name, param in sig.parameters.items():
         if param.name.startswith('_'):
             if param.default is param.empty:
                 raise ValueError(
                     'parameter {} of {}{} is private but has no default'
-                    .format(param.name, func.__name__, orig_sig))
+                    .format(name, func.__name__, sig))
+            continue
+        try:
+            hint = hints[name]
+        except KeyError:
+            hint_type = param.empty
         else:
-            parameters.append(Parameter(
-                name=param.name, kind=param.kind, default=param.default,
-                annotation=_get_type(func, param.name),
-                doc=(doc_sig.parameters[param.name].doc
-                     if param.name in doc_sig.parameters else None)))
-    return orig_sig.replace(
-        parameters=parameters,
-        doc=doc_sig.doc,
+            if (param.default is None
+                    and param.annotation != hint
+                    and Optional[param.annotation] == hint):
+                # `f(x: tuple[int, int] = None)` means we support a tuple, but
+                # not None (to constrain the number of arguments).
+                hint = param.annotation
+            hint_type = _get_type_from_hint(hint)
+        parameters.append(Parameter(
+            name=name, kind=param.kind, default=param.default,
+            annotation=hint_type))
+    return sig.replace(parameters=parameters)
+
+
+def _preprocess_doc_signature(func, sig):
+    parameters = []
+    for name, param in sig.parameters.items():
+        if param.name.startswith('_'):
+            continue
+        doc_type = (sig.parameters[name].annotation
+                    if name in sig.parameters else param.empty)
+        doc_type = (_get_type_from_doc(doc_type, func.__globals__)
+                    if doc_type is not param.empty else param.empty)
+        parameters.append(Parameter(
+            name=name, kind=param.kind, annotation=doc_type,
+            doc=(sig.parameters[name].doc
+                 if name in sig.parameters else None)))
+    return Signature(
+        parameters,
+        doc=sig.doc,
         raises=[_get_type_from_doc(name, func.__globals__)
-                for name in doc_sig.raises])
+                for name in sig.raises])
+
+
+def _merge_signatures(inspect_sig, doc_sig):
+    parameters = []
+    for name, param in inspect_sig.parameters.items():
+        doc_param = doc_sig.parameters.get(name)
+        if doc_param:
+            anns = set()
+            if param.annotation is not param.empty:
+                anns.add(param.annotation)
+            if doc_param.annotation is not param.empty:
+                anns.add(doc_param.annotation)
+            if len(anns) > 1:
+                raise ValueError(
+                    'conflicting types found for parameter {}: {}, {}'.format(
+                        name,
+                        param.annotation.__name__,
+                        doc_param.annotation.__name__))
+            ann = anns.pop() if anns else param.empty
+            param = param.replace(annotation=ann, doc=doc_param.doc)
+        parameters.append(param)
+    return Signature(
+        parameters, return_annotation=inspect_sig.return_annotation,
+        doc=doc_sig.doc, raises=doc_sig.raises)
+
+
+def _get_type_from_doc(name, globalns):
+    if ' or ' in name:
+        subtypes = [_get_type_from_doc(part, globalns)
+                    for part in name.split(' or ')]
+        if any(map(_is_list_like, subtypes)) and None not in subtypes:
+            raise ValueError(
+                'unsupported union including container type: {}'.format(name))
+        return Union[tuple(subtype for subtype in subtypes)]
+    if sys.version_info < (3, 9):  # Support "list[type]", "tuple[type]".
+        globalns = {**globalns, 'tuple': Tuple, 'list': List}
+    return _get_type_from_hint(eval(name, globalns))
+
+
+def _get_type_from_hint(hint):
+    if _is_list_like(hint):
+        [type_] = _ti_get_args(hint)
+        return List[type_]
+    return hint
 
 
 def _populate_parser(func, parser, opts):
@@ -519,6 +596,8 @@ def _populate_parser(func, parser, opts):
         type_ = param.annotation
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
+        if type_ is param.empty:
+            raise ValueError('no type found for parameter {}'.format(name))
         hasdefault = param.default is not param.empty
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
@@ -669,63 +748,6 @@ def _is_optional_list_like(type_):
     # because this condition is enforced in other places
     return (_is_union_type(type_)
             and any(_is_list_like(subtype) for subtype in _ti_get_args(type_)))
-
-
-def _get_type(func, name):
-    """
-    Retrieve a type from either documentation or annotations.
-
-    If both are specified, they must agree exactly.
-    """
-    doc_sig = _parse_docstring(inspect.getdoc(func))
-    doc_type = (doc_sig.parameters[name].annotation
-                if name in doc_sig.parameters else doc_sig.empty)
-    doc_type = (_get_type_from_doc(doc_type, func.__globals__)
-                if doc_type is not doc_sig.empty else None)
-
-    hints = typing.get_type_hints(func)
-    try:
-        hint = hints[name]
-    except KeyError:
-        hint_type = None
-    else:
-        param = inspect.signature(func).parameters[name]
-        if (param.default is None
-                and param.annotation != hint
-                and Optional[param.annotation] == hint):
-            # `f(x: tuple[int, int] = None)` means we support a tuple, but not
-            # None (to constrain the number of arguments).
-            hint = param.annotation
-        hint_type = _get_type_from_hint(hint)
-
-    chosen = [x is not None for x in [doc_type, hint_type]]
-    if not any(chosen):
-        raise ValueError('no type found for parameter {}'.format(name))
-    if all(chosen) and doc_type != hint_type:
-        raise ValueError(
-            'conflicting types found for parameter {}: {}, {}'
-            .format(name, doc_sig.parameters[name].annotation, hint.__name__))
-    return doc_type or hint_type
-
-
-def _get_type_from_doc(name, globalns):
-    if ' or ' in name:
-        subtypes = [_get_type_from_doc(part, globalns)
-                    for part in name.split(' or ')]
-        if any(map(_is_list_like, subtypes)) and None not in subtypes:
-            raise ValueError(
-                'unsupported union including container type: {}'.format(name))
-        return Union[tuple(subtype for subtype in subtypes)]
-    if sys.version_info < (3, 9):  # Support "list[type]", "tuple[type]".
-        globalns = {**globalns, 'tuple': Tuple, 'list': List}
-    return _get_type_from_hint(eval(name, globalns))
-
-
-def _get_type_from_hint(hint):
-    if _is_list_like(hint):
-        [type_] = _ti_get_args(hint)
-        return List[type_]
-    return hint
 
 
 def _passthrough_role(

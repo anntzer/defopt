@@ -1130,7 +1130,7 @@ class TestAnnotations(unittest.TestCase):
     def test_conflicting(self):
         def foo(bar: int):
             """:type bar: float"""
-        with self.assertRaisesRegex(ValueError, 'bar.*float.*int'):
+        with self.assertRaisesRegex(ValueError, 'bar.*int.*float'):
             defopt.run(foo, argv=['1'])
 
     def test_none(self):

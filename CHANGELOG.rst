@@ -10,6 +10,8 @@ next
   On the other hand `defopt.signature` no longer annotates the return type with
   the suppressed exceptions, and `defopt.bind` only wraps the returned callable
   object in an exception suppressor if needed.
+* `defopt.signature` now correctly annotates parameters with no type annotation
+  using `inspect.Parameter.empty` instead of ``None``.
 * Removed the deprecated ``strict_kwonly`` in favor of ``cli_options``.
 
 6.4.0 (2022-07-19)
