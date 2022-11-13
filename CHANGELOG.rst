@@ -5,7 +5,11 @@ next
 ----
 * Union members that come after `str` or `pathlib.Path` no longer need to have
   a valid parser.
-* Parsed function docstring made available as ``signature(...).doc``.
+* Made parsed function docstring available as ``signature(...).doc``, and
+  tuple of suppressed exception types as ``signature(...).raises``.
+  On the other hand `defopt.signature` no longer annotates the return type with
+  the suppressed exceptions, and `defopt.bind` only wraps the returned callable
+  object in an exception suppressor if needed.
 * Removed the deprecated ``strict_kwonly`` in favor of ``cli_options``.
 
 6.4.0 (2022-07-19)

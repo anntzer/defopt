@@ -888,14 +888,14 @@ class TestDoc(unittest.TestCase):
         :returns: str
         :junk one two: nothing
         """
-        doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        self.assertEqual(doc.text, 'Test function\n\n')
-        one = doc.params['one']
-        self.assertEqual(one.text, 'first param')
-        self.assertEqual(one.type, 'int')
-        two = doc.params['two']
-        self.assertEqual(two.text, 'second param')
-        self.assertEqual(two.type, 'float')
+        doc_sig = defopt._parse_docstring(inspect.cleandoc(doc))
+        self.assertEqual(doc_sig.doc, 'Test function\n\n')
+        one = doc_sig.parameters['one']
+        self.assertEqual(one.doc, 'first param')
+        self.assertEqual(one.annotation, 'int')
+        two = doc_sig.parameters['two']
+        self.assertEqual(two.doc, 'second param')
+        self.assertEqual(two.annotation, 'float')
 
     def test_parse_params(self):
         doc = """
@@ -908,13 +908,13 @@ class TestDoc(unittest.TestCase):
         :key fifth: fifth param
         :keyword str sixth: sixth param
         """
-        doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        self.assertEqual(doc.params['first'].text, 'first param')
-        self.assertEqual(doc.params['second'].text, 'second param')
-        self.assertEqual(doc.params['third'].text, 'third param')
-        self.assertEqual(doc.params['fourth'].text, 'fourth param')
-        self.assertEqual(doc.params['fifth'].text, 'fifth param')
-        self.assertEqual(doc.params['sixth'].text, 'sixth param')
+        doc_sig = defopt._parse_docstring(inspect.cleandoc(doc))
+        self.assertEqual(doc_sig.parameters['first'].doc, 'first param')
+        self.assertEqual(doc_sig.parameters['second'].doc, 'second param')
+        self.assertEqual(doc_sig.parameters['third'].doc, 'third param')
+        self.assertEqual(doc_sig.parameters['fourth'].doc, 'fourth param')
+        self.assertEqual(doc_sig.parameters['fifth'].doc, 'fifth param')
+        self.assertEqual(doc_sig.parameters['sixth'].doc, 'sixth param')
 
     def test_parse_doubles(self):
         doc = """
@@ -935,24 +935,24 @@ class TestDoc(unittest.TestCase):
             defopt._parse_docstring(inspect.cleandoc(doc))
 
     def test_no_doc(self):
-        doc = defopt._parse_docstring(None)
-        self.assertEqual(doc.text, '')
-        self.assertEqual(doc.params, {})
+        doc_sig = defopt._parse_docstring(None)
+        self.assertEqual(doc_sig.doc, '')
+        self.assertEqual(doc_sig.parameters, {})
 
     def test_param_only(self):
-        doc = defopt._parse_docstring(""":param int param: test""")
-        self.assertEqual(doc.text, '')
-        param = doc.params['param']
-        self.assertEqual(param.text, 'test')
-        self.assertEqual(param.type, 'int')
+        doc_sig = defopt._parse_docstring(""":param int param: test""")
+        self.assertEqual(doc_sig.doc, '')
+        param = doc_sig.parameters['param']
+        self.assertEqual(param.doc, 'test')
+        self.assertEqual(param.annotation, 'int')
 
     def test_implicit_role(self):
-        doc = defopt._parse_docstring("""start `int` end""")
-        self.assertEqual(doc.text, 'start \033[4mint\033[0m end\n\n')
+        doc_sig = defopt._parse_docstring("""start `int` end""")
+        self.assertEqual(doc_sig.doc, 'start \033[4mint\033[0m end\n\n')
 
     def test_explicit_role(self):
-        doc = defopt._parse_docstring("""start :py:class:`int` end""")
-        self.assertEqual(doc.text, 'start int end\n\n')
+        doc_sig = defopt._parse_docstring("""start :py:class:`int` end""")
+        self.assertEqual(doc_sig.doc, 'start int end\n\n')
 
     def test_sphinx(self):
         doc = """
@@ -970,8 +970,8 @@ class TestDoc(unittest.TestCase):
 
         >>> print("hello, world")
         """
-        doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        self._check_doc(doc)
+        doc_sig = defopt._parse_docstring(inspect.cleandoc(doc))
+        self._check_doc(doc_sig)
 
     def test_google(self):
         # Docstring taken from Napoleon's example (plus a keyword argument).
@@ -993,8 +993,8 @@ class TestDoc(unittest.TestCase):
         Examples:
           >>> print("hello, world")
         """
-        doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        self._check_doc(doc)
+        doc_sig = defopt._parse_docstring(inspect.cleandoc(doc))
+        self._check_doc(doc_sig)
 
     def test_numpy(self):
         # Docstring taken from Napoleon's example (plus a keyword argument).
@@ -1024,21 +1024,21 @@ class TestDoc(unittest.TestCase):
         --------
         >>> print("hello, world")
         """
-        doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        self._check_doc(doc)
+        doc_sig = defopt._parse_docstring(inspect.cleandoc(doc))
+        self._check_doc(doc_sig)
 
-    def _check_doc(self, doc):
+    def _check_doc(self, doc_sig):
         self.assertEqual(
-            doc.text,
+            doc_sig.doc,
             'One line summary.\n\nExtended description.\n\n'
             'examples:\n\n>>> print("hello, world")\n\n')
-        self.assertEqual(len(doc.params), 3)
-        self.assertEqual(doc.params['arg1'].text, 'Description of arg1')
-        self.assertEqual(doc.params['arg1'].type, 'int')
-        self.assertEqual(doc.params['arg2'].text, 'Description of arg2')
-        self.assertEqual(doc.params['arg2'].type, 'str')
-        self.assertEqual(doc.params['arg3'].text, 'Description of arg3')
-        self.assertEqual(doc.params['arg3'].type, 'float')
+        self.assertEqual(len(doc_sig.parameters), 3)
+        self.assertEqual(doc_sig.parameters['arg1'].doc, 'Description of arg1')
+        self.assertEqual(doc_sig.parameters['arg1'].annotation, 'int')
+        self.assertEqual(doc_sig.parameters['arg2'].doc, 'Description of arg2')
+        self.assertEqual(doc_sig.parameters['arg2'].annotation, 'str')
+        self.assertEqual(doc_sig.parameters['arg3'].doc, 'Description of arg3')
+        self.assertEqual(doc_sig.parameters['arg3'].annotation, 'float')
 
     def test_sequence(self):
         globalns = {'Sequence': typing.Sequence}
@@ -1070,9 +1070,9 @@ class TestDoc(unittest.TestCase):
 
             def foo(): pass
         """
-        doc = defopt._parse_docstring(inspect.cleandoc(doc))
+        doc_sig = defopt._parse_docstring(inspect.cleandoc(doc))
         self.assertEqual(
-            doc.text,
+            doc_sig.doc,
             '    Literal block\n        Multiple lines\n\n'
             '    def foo(): pass\n\n')
 
@@ -1097,8 +1097,8 @@ class TestDoc(unittest.TestCase):
         ii. bar
         #.  baz
         """
-        doc = defopt._parse_docstring(inspect.cleandoc(doc))
-        self.assertEqual(doc.text, inspect.cleandoc("""\
+        doc_sig = defopt._parse_docstring(inspect.cleandoc(doc))
+        self.assertEqual(doc_sig.doc, inspect.cleandoc("""\
             Bar
             Baz
 

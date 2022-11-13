@@ -34,10 +34,6 @@ try:
 except ImportError:
     from pkgutil_resolve_name import resolve_name as _pkgutil_resolve_name
 try:
-    from typing import Annotated
-except ImportError:
-    from typing_extensions import Annotated
-try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
@@ -76,10 +72,6 @@ _LIST_TYPES = [
     getattr(collections.abc, "Collection", object()),
     collections.abc.Sequence,
 ]
-
-_Doc = namedtuple('_Doc', ('first_line', 'text', 'params', 'raises'))
-_Param = namedtuple('_Param', ('text', 'type'))
-class _Raises(tuple): pass
 
 
 if hasattr(typing, 'get_args'):
@@ -172,13 +164,6 @@ def _check_in_list(_values, **kwargs):
                 '{!r} must be one of {!r}, not {!r}'.format(k, _values, v))
 
 
-def _extract_raises(sig):
-    raises, = [  # typing_inspect does not allow fetching metadata, e.g. ti#82.
-        arg for arg in getattr(sig.return_annotation, '__metadata__', [])
-        if isinstance(arg, _Raises)]
-    return raises
-
-
 def _bind_or_bind_known(funcs, *, opts, _known: bool = False):
     _check_in_list(['kwonly', 'all', 'has_default'],
                    cli_options=opts.cli_options)
@@ -207,16 +192,19 @@ def _bind_or_bind_known(funcs, *, opts, _known: bool = False):
     ba = sig.bind_partial()
     ba.arguments.update(parsed_args)
     call = functools.partial(func, *ba.args, **ba.kwargs)
-    raises = _extract_raises(sig)
 
-    @functools.wraps(call)
-    def wrapper() -> sig.return_annotation:
-        try:
-            return call()
-        except raises as e:
-            sys.exit(e)
+    if sig.raises:
+        @functools.wraps(call)
+        def wrapper():
+            try:
+                return call()
+            except sig.raises as e:
+                sys.exit(e)
 
-    return wrapper, rest
+        return wrapper, rest
+
+    else:
+        return call, rest
 
 
 def bind(*args, **kwargs):
@@ -224,17 +212,20 @@ def bind(*args, **kwargs):
     Process command-line arguments and bind arguments.
 
     This function takes the same parameters as `defopt.run`, but returns a
-    `~functools.partial` object which represents the call that ``defopt.run``
-    would execute.  In other words, ``call = defopt.bind(...); call()`` is
-    equivalent to ``defopt.run(...)``.  Note that no argument needs to be
-    passed explicitly to ``call``; everything is handled internally.
+    wrapper callable ``call`` such that ``call()`` represents the call that
+    ``defopt.run`` would execute.  Note that ``call`` takes no arguments; they
+    are bound internally.
 
-    The ``call.func`` attribute is a thin wrapper around one of the functions
-    passed to `bind` (to suppress documented raisable exceptions).  The
-    original function is accessible as ``call.func.__wrapped__``.
+    If there are no documented exceptions that ``defopt.run`` needs to
+    suppress, then ``call`` is a `functools.partial` object, ``call.func`` is
+    one of the functions passed to ``bind``, and ``call.args`` and
+    ``call.keywords`` are set according to the command-line arguments.
 
-    The ``call.args`` and ``call.keywords`` attributes are set according to the
-    command-line arguments.
+    If there are documented exceptions that ``defopt.run`` needs to suppress,
+    then ``call`` is a wrapper around that partial object.
+
+    A generic expression to retrieve the underlying selected function is thus
+    ``getattr(call, "__wrapped__", call).func``.
 
     This API is provisional and may be adjusted depending on feedback.
     """
@@ -326,14 +317,11 @@ def run(
     :return:
         The value returned by the function that was run.
     """
-    call = bind(
+    return bind(
         funcs, parsers=parsers, short=short, cli_options=cli_options,
         show_defaults=show_defaults, show_types=show_types,
         no_negated_flags=no_negated_flags, version=version,
-        argparse_kwargs=argparse_kwargs, intermixed=intermixed, argv=argv)
-    if not _extract_raises(inspect.signature(call, follow_wrapped=False)):
-        call = call.__wrapped__  # Suppress a trivial traceback frame.
-    return call()
+        argparse_kwargs=argparse_kwargs, intermixed=intermixed, argv=argv)()
 
 
 _DefoptOptions = namedtuple(
@@ -366,10 +354,10 @@ def _recurse_functions(funcs, subparsers):
         if callable(func):
             # If this item is callable, then add it to the current
             # subparser using this name.
+            sp_help = _parse_docstring(
+                inspect.getdoc(func)).doc.split('\n\n', 1)[0]
             subparser = subparsers.add_parser(
-                name,
-                formatter_class=RawTextHelpFormatter,
-                help=_parse_docstring(inspect.getdoc(func)).first_line)
+                name, formatter_class=RawTextHelpFormatter, help=sp_help)
             yield func, subparser
         else:
             # If this item is not callable, then add this name as a new
@@ -431,16 +419,20 @@ def _get_version1(func):
 
 
 class Signature(inspect.Signature):
-    __slots__ = (*inspect.Signature.__slots__, '_doc')
+    __slots__ = (*inspect.Signature.__slots__, '_doc', '_raises')
     doc = property(lambda self: self._doc)
+    raises = property(lambda self: self._raises)
 
-    def __init__(self, *args, doc=None, **kwargs):
+    def __init__(self, *args, doc=None, raises=(), **kwargs):
         super().__init__(*args, **kwargs)
         self._doc = doc
+        self._raises = tuple(raises)
 
-    def replace(self, *, doc=inspect._void, **kwargs):
+    def replace(self, *, doc=inspect._void, raises=inspect._void, **kwargs):
         copy = super().replace(**kwargs)
         copy._doc = self._doc if doc is inspect._void else doc
+        copy._raises = tuple(
+            self._raises if raises is inspect._void else raises)
         return copy
 
 
@@ -467,20 +459,19 @@ def signature(func: Callable):
 
     - The parsed function docstring (which will be used as the parser
       description) is available as ``signature.doc``; likewise, parameter
-      docstrings are available as ``parameter.doc`` (this is done by using
-      subclasses of `inspect.Signature` and `inspect.Parameter`).
+      docstrings are available as ``parameter.doc``.  The tuple of raisable
+      exception types is available is available as ``signature.raises``.  (This
+      is done by using subclasses of `inspect.Signature` and
+      `inspect.Parameter`.)
     - Private parameters (starting with an underscore) are not listed.
     - Parameter types are also read from ``func``'s docstring (if a parameter's
       type is specified both in the signature and the docstring, both types
       must match).
-    - The return type is `~typing.Annotated` with the documented raisable
-      exception types, in wrapped in a private tuple subclass.
     """
     orig_sig = Signature.from_callable(func)
-    orig_params = orig_sig.parameters.values()
-    doc = _parse_docstring(inspect.getdoc(func))
+    doc_sig = _parse_docstring(inspect.getdoc(func))
     parameters = []
-    for param in orig_params:
+    for param in orig_sig.parameters.values():
         if param.name.startswith('_'):
             if param.default is param.empty:
                 raise ValueError(
@@ -490,13 +481,13 @@ def signature(func: Callable):
             parameters.append(Parameter(
                 name=param.name, kind=param.kind, default=param.default,
                 annotation=_get_type(func, param.name),
-                doc=doc.params.get(param.name, _Param(None, None)).text))
-    exc_types = _Raises(_get_type_from_doc(name, func.__globals__)
-                        for name in doc.raises)
+                doc=(doc_sig.parameters[param.name].doc
+                     if param.name in doc_sig.parameters else None)))
     return orig_sig.replace(
         parameters=parameters,
-        return_annotation=Annotated[orig_sig.return_annotation, exc_types],
-        doc=doc.text)
+        doc=doc_sig.doc,
+        raises=[_get_type_from_doc(name, func.__globals__)
+                for name in doc_sig.raises])
 
 
 def _populate_parser(func, parser, opts):
@@ -686,10 +677,11 @@ def _get_type(func, name):
 
     If both are specified, they must agree exactly.
     """
-    doc = _parse_docstring(inspect.getdoc(func))
-    doc_type = doc.params.get(name, _Param(None, None)).type
-    if doc_type is not None:
-        doc_type = _get_type_from_doc(doc_type, func.__globals__)
+    doc_sig = _parse_docstring(inspect.getdoc(func))
+    doc_type = (doc_sig.parameters[name].annotation
+                if name in doc_sig.parameters else doc_sig.empty)
+    doc_type = (_get_type_from_doc(doc_type, func.__globals__)
+                if doc_type is not doc_sig.empty else None)
 
     hints = typing.get_type_hints(func)
     try:
@@ -710,8 +702,9 @@ def _get_type(func, name):
     if not any(chosen):
         raise ValueError('no type found for parameter {}'.format(name))
     if all(chosen) and doc_type != hint_type:
-        raise ValueError('conflicting types found for parameter {}: {}, {}'
-                         .format(name, doc.params[name].type, hint.__name__))
+        raise ValueError(
+            'conflicting types found for parameter {}: {}, {}'
+            .format(name, doc_sig.parameters[name].annotation, hint.__name__))
     return doc_type or hint_type
 
 
@@ -760,9 +753,13 @@ def _sphinx_common_roles():
 
 @functools.lru_cache()
 def _parse_docstring(doc):
-    """Extract documentation from a function's docstring."""
+    """
+    Extract documentation from a function's docstring into a `.Signature`
+    object *with unevaluated annotations*.
+    """
+
     if doc is None:
-        return _Doc('', '', {}, [])
+        return Signature(doc='')
 
     # Convert Google- or Numpy-style docstrings to RST.
     # (Should do nothing if not in either style.)
@@ -942,10 +939,12 @@ def _parse_docstring(doc):
     visitor = Visitor(tree)
     tree.walkabout(visitor)
 
-    tuples = {name: _Param(values.get('param'), values.get('type'))
-              for name, values in visitor.params.items()}
+    params = [Parameter(name, kind=Parameter.POSITIONAL_OR_KEYWORD,
+                        annotation=values.get('type', Parameter.empty),
+                        doc=values.get('param'))
+              for name, values in visitor.params.items()]
+    text = []
     if visitor.paragraphs:
-        text = []
         for start, paragraph, next_start in zip(
                 visitor.start_lines,
                 visitor.paragraphs,
@@ -963,10 +962,7 @@ def _parse_docstring(doc):
             # This means that list items are always separated by blank lines,
             # which is an acceptable tradeoff for now.
             text.append('\n\n')
-        parsed = _Doc(text[0], ''.join(text), tuples, visitor.raises)
-    else:
-        parsed = _Doc('', '', tuples, visitor.raises)
-    return parsed
+    return Signature(params, doc=''.join(text), raises=visitor.raises)
 
 
 def _get_parser(type_, parsers):
