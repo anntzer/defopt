@@ -67,11 +67,11 @@ Underscores in function names are replaced by hyphens.
 Friendlier subcommand names can be provided by calling `defopt.run` with a dict
 mapping subcommand names to functions.  In that case, no underscore replacement
 occurs (as one can directly set names with hyphens).
-￼
+ 
 .. code-block:: python
-￼
-￼   defopt.run({"friendly_func": awkward_name, "func2": other_name})
-￼
+
+    defopt.run({"friendly_func": awkward_name, "func2": other_name})
+
 Command line usage will use the new names ::
 
     usage: test.py [-h] {friendly_func,func2} ...
