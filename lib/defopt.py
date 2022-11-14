@@ -1083,6 +1083,29 @@ def _parse_none(string):
     raise ValueError('no string can be converted to None')
 
 
+def _is_constructible_from_str(type_):
+    try:
+        sig = signature(type_)
+        (argname, _), = sig.bind(object()).arguments.items()
+    except TypeError:  # Can be raised by signature() or Signature.bind().
+        return False
+    except ValueError:
+        # No relevant info in signature; continue below to also look in
+        # `type_.__init__`, in the case where type_ is indeed a type.
+        pass
+    else:
+        if sig.parameters[argname].annotation is str:
+            return True
+    if isinstance(type_, type):
+        # signature() first checks __new__, if it is present.
+        # `MethodType(type_.__init__, object())` binds the first parameter of
+        # `__init__` -- similarly to `__init__.__get__(object(), type_)`, but
+        # the latter can fail for types implemented in C (which may not support
+        # binding arbitrary objects).
+        return _is_constructible_from_str(MethodType(type_.__init__, object()))
+    return False
+
+
 # _make_{enum,literal}_parser raise ArgumentTypeError so that the error message
 # generated for invalid inputs is fully customized to match standard argparse
 # 'choices': "argument x: invalid choice: '{value}' (choose from ...)".
@@ -1114,29 +1137,6 @@ def _make_literal_parser(literal, parsers, value=None):
         'invalid choice: {!r} (choose from {})'.format(
             value, ', '.join(
                 map(repr, _PseudoChoices(_ti_get_args(literal))))))
-
-
-def _is_constructible_from_str(type_):
-    try:
-        sig = signature(type_)
-        (argname, _), = sig.bind(object()).arguments.items()
-    except TypeError:  # Can be raised by signature() or Signature.bind().
-        return False
-    except ValueError:
-        # No relevant info in signature; continue below to also look in
-        # `type_.__init__`, in the case where type_ is indeed a type.
-        pass
-    else:
-        if sig.parameters[argname].annotation is str:
-            return True
-    if isinstance(type_, type):
-        # signature() first checks __new__, if it is present.
-        # `MethodType(type_.__init__, object())` binds the first parameter of
-        # `__init__` -- similarly to `__init__.__get__(object(), type_)`, but
-        # the latter can fail for types implemented in C (which may not support
-        # binding arbitrary objects).
-        return _is_constructible_from_str(MethodType(type_.__init__, object()))
-    return False
 
 
 def _make_union_parser(union, parsers, value=None):
