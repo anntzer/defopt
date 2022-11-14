@@ -3,6 +3,8 @@ Changelog
 
 next
 ----
+* Added the :envvar:`DEFOPT_DEBUG` environment variable to help troubleshooting
+  union parser failures.
 * Union members that come after `str` or `pathlib.Path` no longer need to have
   a valid parser.
 * Made parsed function docstring available as ``signature(...).doc``, and

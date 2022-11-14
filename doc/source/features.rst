@@ -264,6 +264,10 @@ type, so a later ``List[Union[B, A]]`` will be silently converted to
 parser for ``A`` and the parser for ``B``.  Note that this problem does not
 affect ``list[Union[A, B]]``, on versions of Python that support it.
 
+If the :envvar:`DEFOPT_DEBUG` environment variable is set and a union parser
+fails, then the errors associated with each member parser are printed out.
+This knob should be considered a debugging help and is not a stable API.
+
 Parsers
 -------
 

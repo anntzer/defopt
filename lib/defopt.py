@@ -11,6 +11,7 @@ import functools
 import importlib
 import inspect
 import itertools
+import os
 import re
 import sys
 import types
@@ -269,6 +270,9 @@ def run(
     one is given a subparser with its name (if *funcs* is a list) or the
     corresponding key (if *funcs* is a mappable), and only the chosen callable
     is run.
+
+    See :doc:`/features` for the detailed mapping from function signature to
+    command-line parsing.
 
     :param funcs:
         Function or functions to process and run.
@@ -1127,9 +1131,9 @@ def _make_enum_parser(enum, value=None):
 def _make_literal_parser(literal, parsers, value=None):
     if value is None:
         return functools.partial(_make_literal_parser, literal, parsers)
-    for arg, p in zip(_ti_get_args(literal), parsers):
+    for arg, parser in zip(_ti_get_args(literal), parsers):
         try:
-            if p(value) == arg:
+            if parser(value) == arg:
                 return arg
         except (ValueError, ArgumentTypeError):
             pass
@@ -1142,11 +1146,14 @@ def _make_literal_parser(literal, parsers, value=None):
 def _make_union_parser(union, parsers, value=None):
     if value is None:
         return functools.partial(_make_union_parser, union, parsers)
-    for p in parsers:
+    suppressed = []
+    for parser in parsers:
         try:
-            return p(value)
-        except (ValueError, ArgumentTypeError):
-            pass
+            return parser(value)
+        # See ArgumentParser._get_value.
+        except (TypeError, ValueError, ArgumentTypeError) as exc:
+            suppressed.append((parser, exc))
+    _report_suppressed_exceptions(suppressed)
     raise ValueError(
         '{} could not be parsed as any of {}'.format(value, union))
 
@@ -1161,7 +1168,8 @@ def _make_store_tuple_action_class(
     class _StoreTupleAction(Action):
         def __call__(self, parser, namespace, values, option_string=None):
             try:
-                value = tuple(p(value) for p, value in zip(parsers, values))
+                value = tuple(
+                    parser(value) for parser, value in zip(parsers, values))
             except (ValueError, ArgumentTypeError) as exc:
                 # Custom actions need to raise ArgumentError, not ValueError or
                 # ArgumentTypeError.
@@ -1171,6 +1179,16 @@ def _make_store_tuple_action_class(
             setattr(namespace, self.dest, value)
 
     return _StoreTupleAction
+
+
+def _report_suppressed_exceptions(suppressed):
+    if not os.environ.get("DEFOPT_DEBUG"):
+        return
+    print("The following parsing failures were suppressed:\n", file=sys.stderr)
+    for parser, exc in suppressed:
+        print(parser, file=sys.stderr)
+        print(exc, file=sys.stderr)
+        print(file=sys.stderr)
 
 
 if __name__ == '__main__':
