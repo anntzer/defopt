@@ -19,7 +19,7 @@ def tests(session: Session, old: bool) -> None:
 
     if old:
         # Oldest supported versions
-        session.install('docutils==0.12', 'sphinxcontrib-napoleon==0.7.0')
+        session.install('docutils==0.12')
         if session.python in ['3.5', '3.6', '3.7']:
             session.install(
                 'typing_extensions==3.7.4', 'typing_inspect==0.5.0'

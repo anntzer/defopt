@@ -134,6 +134,11 @@ Development
 For source code, examples, questions, feature requests and bug reports, visit
 the `GitHub repository`_.
 
+defopt includes a vendored copy of sphinx.ext.napoleon_ that can be imported
+in a standalone manner, because importing all of Sphinx is too slow for a
+command-line tool.  No changes will be made on that copy, beyond the strict
+minimum to keep it independent from the rest of Sphinx.
+
 Documentation
 -------------
 
@@ -141,10 +146,11 @@ Documentation is hosted on `Read the Docs`_.
 
 .. _GitHub repository: https://github.com/anntzer/defopt
 .. _Read the Docs: https://defopt.readthedocs.io/en/latest/
-.. _autodoc: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
-.. _docopt: http://docopt.org/
-.. _click: https://click.palletsprojects.com/
 .. _argh: https://argh.readthedocs.io/en/latest/
+.. _autodoc: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
+.. _click: https://click.palletsprojects.com/
+.. _docopt: http://docopt.org/
 .. _documented: https://defopt.readthedocs.io/en/latest/examples.html#docstring-styles
+.. _sphinx.ext.napoleon: https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 
 .. This document is included in docs/index.rst; table of contents appears here.

@@ -23,7 +23,7 @@ from argparse import (
 from collections import defaultdict, namedtuple, Counter
 from enum import Enum
 from pathlib import PurePath
-from types import MethodType
+from types import MethodType, SimpleNamespace
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 try:
@@ -44,19 +44,14 @@ from docutils.nodes import NodeVisitor, SkipNode, TextElement
 from docutils.parsers.rst.states import Body
 
 try:
-    collections.Callable = collections.abc.Callable
-    from sphinxcontrib.napoleon import Config, GoogleDocstring, NumpyDocstring
-finally:
-    if sys.version_info >= (3, 7):
-        del collections.Callable
-
-try:
     # colorama is a dependency on Windows to support ANSI escapes (from rst
     # markup).  It is optional on Unices, but can still be useful there as it
     # strips out ANSI escapes when the output is piped.
     from colorama import colorama_text as _colorama_text
 except ImportError:
     _colorama_text = getattr(contextlib, 'nullcontext', contextlib.ExitStack)
+
+from _defopt_napoleon import GoogleDocstring, NumpyDocstring
 
 try:
     __version__ = _im.version('defopt')
@@ -798,10 +793,31 @@ def _parse_docstring(doc):
 
     # Convert Google- or Numpy-style docstrings to RST.
     # (Should do nothing if not in either style.)
-    # use_ivar avoids generating an unhandled .. attribute:: directive for
-    # Attribute blocks, preferring a benign :ivar: field.
+    # use_ivar = True avoids generating an unhandled .. attribute:: directive
+    # for Attribute blocks, preferring a benign :ivar: field.
+    # attr_annotations = False as we already inspect annotations directly, and
+    # don't want to vendor stringify_annotations as well.
     doc = inspect.cleandoc(doc)
-    cfg = Config(napoleon_use_ivar=True)
+    cfg = SimpleNamespace(  # the defaults
+        napoleon_google_docstring=True,
+        napoleon_numpy_docstring=True,
+        napoleon_include_init_with_doc=False,
+        napoleon_include_private_with_doc=False,
+        napoleon_include_special_with_doc=False,
+        napoleon_use_admonition_for_examples=False,
+        napoleon_use_admonition_for_notes=False,
+        napoleon_use_admonition_for_references=False,
+        napoleon_use_ivar=False,
+        napoleon_use_param=True,
+        napoleon_use_rtype=True,
+        napoleon_use_keyword=True,
+        napoleon_preprocess_types=False,
+        napoleon_type_aliases=None,
+        napoleon_custom_sections=None,
+        napoleon_attr_annotations=True,
+    )
+    cfg.napoleon_use_ivar = True
+    cfg.napoleon_attr_annotations = False
     doc = str(GoogleDocstring(doc, cfg))
     doc = str(NumpyDocstring(doc, cfg))
 
