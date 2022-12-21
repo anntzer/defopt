@@ -17,7 +17,7 @@ defopt
    image:: https://img.shields.io/readthedocs/defopt
    :target: `Read the Docs`_
 .. |Build|
-   image:: https://img.shields.io/github/workflow/status/anntzer/defopt/build
+   image:: https://img.shields.io/github/actions/workflow/status/anntzer/defopt/build.yml?branch=main
    :target: https://github.com/anntzer/defopt/actions
 
 defopt is a lightweight, no-effort argument parser.
