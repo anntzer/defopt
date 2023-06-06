@@ -87,4 +87,4 @@ Nested subcommands
     :undoc-members:
     :show-inheritance:
 
-.. _examples: https://github.com/anntzer/defopt/tree/master/examples
+.. _examples: https://github.com/anntzer/defopt/tree/main/examples

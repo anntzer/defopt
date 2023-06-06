@@ -9,7 +9,7 @@ defopt
    :target: `GitHub repository`_
 .. |PyPI|
    image:: https://img.shields.io/pypi/v/defopt.svg?color=brightgreen
-   :target: https://pypi.python.org/pypi/defopt
+   :target: https://pypi.org/project/defopt
 .. |conda-forge|
    image:: https://img.shields.io/conda/v/conda-forge/defopt.svg?label=conda-forge&color=brightgreen
    :target: https://anaconda.org/conda-forge/defopt
@@ -141,10 +141,10 @@ Documentation is hosted on `Read the Docs`_.
 
 .. _GitHub repository: https://github.com/anntzer/defopt
 .. _Read the Docs: https://defopt.readthedocs.io/en/latest/
-.. _autodoc: http://www.sphinx-doc.org/en/stable/ext/autodoc.html
+.. _autodoc: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 .. _docopt: http://docopt.org/
-.. _click: http://click.palletsprojects.com/
+.. _click: https://click.palletsprojects.com/
 .. _argh: https://argh.readthedocs.io/en/latest/
-.. _documented: https://defopt.readthedocs.io/en/latest/features.html#docstring-styles
+.. _documented: https://defopt.readthedocs.io/en/latest/examples.html#docstring-styles
 
 .. This document is included in docs/index.rst; table of contents appears here.

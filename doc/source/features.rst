@@ -395,17 +395,17 @@ calling the resulting script with ``args ...``.  The ``dotted.name`` can use
 a colon to separate the package name from the function name (as supported by
 relies on `pkgutil.resolve_name`).
 
-.. _Sphinx: http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
-.. _Google: http://google.github.io/styleguide/pyguide.html
-.. _Numpy: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
+.. _Sphinx: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#info-field-lists
+.. _Google: https://google.github.io/styleguide/pyguide.html
+.. _Numpy: https://numpydoc.readthedocs.io/en/latest/format.html
 .. _Napoleon: https://sphinxcontrib-napoleon.readthedocs.io/en/latest/
-.. _examples/annotations.py: https://github.com/anntzer/defopt/blob/master/examples/annotations.py
-.. _examples/booleans.py: https://github.com/anntzer/defopt/blob/master/examples/booleans.py
-.. _examples/choices.py: https://github.com/anntzer/defopt/blob/master/examples/choices.py
-.. _examples/exceptions.py: https://github.com/anntzer/defopt/blob/master/examples/exceptions.py
-.. _examples/lists.py: https://github.com/anntzer/defopt/blob/master/examples/lists.py
-.. _examples/parsers.py: https://github.com/anntzer/defopt/blob/master/examples/parsers.py
-.. _examples/short.py: https://github.com/anntzer/defopt/blob/master/examples/short.py
-.. _examples/starargs.py: https://github.com/anntzer/defopt/blob/master/examples/starargs.py
-.. _examples/styles.py: https://github.com/anntzer/defopt/blob/master/examples/styles.py
-.. _examples/nested.py: https://github.com/anntzer/defopt/blob/master/examples/nested.py
+.. _examples/annotations.py: https://github.com/anntzer/defopt/blob/main/examples/annotations.py
+.. _examples/booleans.py: https://github.com/anntzer/defopt/blob/main/examples/booleans.py
+.. _examples/choices.py: https://github.com/anntzer/defopt/blob/main/examples/choices.py
+.. _examples/exceptions.py: https://github.com/anntzer/defopt/blob/main/examples/exceptions.py
+.. _examples/lists.py: https://github.com/anntzer/defopt/blob/main/examples/lists.py
+.. _examples/parsers.py: https://github.com/anntzer/defopt/blob/main/examples/parsers.py
+.. _examples/short.py: https://github.com/anntzer/defopt/blob/main/examples/short.py
+.. _examples/starargs.py: https://github.com/anntzer/defopt/blob/main/examples/starargs.py
+.. _examples/styles.py: https://github.com/anntzer/defopt/blob/main/examples/styles.py
+.. _examples/nested.py: https://github.com/anntzer/defopt/blob/main/examples/nested.py
