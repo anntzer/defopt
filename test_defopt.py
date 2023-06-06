@@ -16,6 +16,8 @@ from enum import Enum
 from io import StringIO
 from pathlib import Path
 
+from docutils.utils import SystemMessage
+
 import defopt
 from defopt import __version__, _options
 from examples import (
@@ -1117,6 +1119,15 @@ class TestDoc(unittest.TestCase):
             ii.  bar
 
             iii. baz""") + "\n\n")
+
+    def test_bad_doc(self):
+        doc = """
+        some
+        - bad
+          - indent
+        """
+        with self.assertRaises(SystemMessage):
+            defopt._parse_docstring(inspect.cleandoc(doc))
 
 
 class TestAnnotations(unittest.TestCase):

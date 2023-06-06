@@ -806,10 +806,12 @@ def _parse_docstring(doc):
 
     with _sphinx_common_roles():
         tree = docutils.core.publish_doctree(
-            # Disable syntax highlighting, as 1) pygments is not a dependency
-            # 2) we don't render with colors and 3) SH breaks the assumption
-            # that literal blocks contain a single text element.
-            doc, settings_overrides={'syntax_highlight': 'none'})
+            # - Propagate errors out.
+            # - Disable syntax highlighting, as 1) pygments is not a dependency
+            #   2) we don't render with colors and 3) SH breaks the assumption
+            #   that literal blocks contain a single text element.
+            doc, settings_overrides={
+                'halt_level': 3, 'syntax_highlight': 'none'})
 
     class Visitor(NodeVisitor):
         optional = [
