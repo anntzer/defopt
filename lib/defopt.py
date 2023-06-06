@@ -272,7 +272,8 @@ def run(
     is run.
 
     See :doc:`/features` for the detailed mapping from function signature to
-    command-line parsing.
+    command-line parsing.  Note that all docstrings must be valid RST
+    conforming to Sphinx-, Google-, or Numpy-style.
 
     :param funcs:
         Function or functions to process and run.
