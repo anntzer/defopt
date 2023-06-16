@@ -120,21 +120,25 @@ arguments (regardless of whether the Python parameter is positional-or-keyword
 or keyword-only); required Python parameters (i.e. with no default) are
 converted to required CLI arguments. ::
 
-    usage: test.py [-h] [-k KWONLY] positional_no_default [positional_with_default]
+    usage: test.py [-h] --kwonly-no-default KWONLY_NO_DEFAULT [--kwonly-with-default KWONLY_WITH_DEFAULT]
+                   positional_no_default [positional_with_default]
 
     positional arguments:
       positional_no_default
       positional_with_default
+                            (default: some_value)
 
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
-      -k KWONLY, --kwonly KWONLY
+      --kwonly-no-default KWONLY_NO_DEFAULT
+      --kwonly-with-default KWONLY_WITH_DEFAULT
+                            (default: some_value)
 
 Alternatively, one can make all optional Python parameters, regardless of
 whether they are keyword-only or not, also map to CLI flags, by passing
-``strict_kwonly=False`` to `defopt.run`.  (This behavior is similar to the
-informal approach previously commonly found on Python 2, which was to consider
-required parameters as positional and optional parameters as keyword.)
+``cli_options='has_default'`` to `defopt.run`.  (This behavior is similar to
+the informal approach previously commonly found on Python 2, which was to
+consider required parameters as positional and optional parameters as keyword.)
 
 Auto-generated short flags can be overridden by passing a dictionary to
 `defopt.run` which maps flag names to single letters:
@@ -159,9 +163,9 @@ Booleans
 --------
 
 Boolean keyword-only parameters (or, as above, parameters with defaults, if
-``strict_kwonly=False``) are automatically converted to two separate flags:
-``--name`` which stores `True` and ``--no-name`` which stores `False`.  The
-help text and the default are displayed next to the ``--name`` flag::
+``cli_options='has_default'``) are automatically converted to two separate
+flags: ``--name`` which stores `True` and ``--no-name`` which stores `False`.
+The help text and the default are displayed next to the ``--name`` flag::
 
     --flag      Set "flag" to True
                 (default: False)
