@@ -1,7 +1,7 @@
 """
 Autogenerate standalone _defopt_napoleon module from sphinx.ext.napoleon.
 
-Run ``python gen_defopt_napoleon.py .../napoleon.py > lib/_defopt_napoleon.py``
+Run ``python gen_defopt_napoleon.py .../napoleon/docstring.py > lib/_defopt_napoleon.py``
 and manually update the version number in LICENSE and the configuration in
 _parse_docstring.
 """
@@ -47,18 +47,19 @@ src = ast.unparse(tree)
 
 
 replacements = [
+    ("from __future__ import annotations\n", ""),
     ("from sphinx.application import Sphinx\n", ""),
     ("from sphinx.config import Config as SphinxConfig\n", ""),
     ("from sphinx.locale import _, __\n",
      "_ = __ = lambda s: s\n"),
     ("from sphinx.util import logging\n",
      "import logging\n"),
-    ("from sphinx.util.inspect import stringify_annotation\n",
-     "def stringify_annotation(_): pass\n"),
-    ("from sphinx.util.typing import get_type_hints\n",
-     "from typing import get_type_hints\n"),
+    ("from sphinx.util.typing import get_type_hints, stringify_annotation\n",
+     "from typing import get_type_hints\ndef stringify_annotation(_): pass\n"),
 ]
 for a, b in replacements:
+    if src.count(a) != 1:
+        raise ValueError(f"Cannot patch {a!r}")
     assert src.count(a) == 1
     src = src.replace(a, b)
 

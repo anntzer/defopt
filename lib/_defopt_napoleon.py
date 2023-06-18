@@ -3,11 +3,11 @@ import collections
 import inspect
 import re
 from functools import partial
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable
 _ = __ = lambda s: s
 import logging
-def stringify_annotation(_): pass
 from typing import get_type_hints
+def stringify_annotation(_): pass
 logger = logging.getLogger(__name__)
 _directive_regex = re.compile('\\.\\. \\S+::')
 _google_section_regex = re.compile('^(\\s|\\w)+:\\s*$')
@@ -197,8 +197,8 @@ class GoogleDocstring:
 
     def _consume_field(self, parse_type=True, prefer_type=False):
         line = self._lines.next()
-        (before, colon, after) = self._partition_field_on_colon(line)
-        (_name, _type, _desc) = (before, '', after)
+        before, colon, after = self._partition_field_on_colon(line)
+        _name, _type, _desc = (before, '', after)
         if parse_type:
             match = _google_typed_arg_regex.match(before)
             if match:
@@ -206,7 +206,7 @@ class GoogleDocstring:
                 _type = match.group(2)
         _name = self._escape_args_and_kwargs(_name)
         if prefer_type and (not _type):
-            (_type, _name) = (_name, _type)
+            _type, _name = (_name, _type)
         if _type and self._config.napoleon_preprocess_types:
             _type = _convert_type_spec(_type, self._config.napoleon_type_aliases or {})
         indent = self._get_indent(line) + 1
@@ -218,7 +218,7 @@ class GoogleDocstring:
         self._consume_empty()
         fields = []
         while not self._is_section_break():
-            (_name, _type, _desc) = self._consume_field(parse_type, prefer_type)
+            _name, _type, _desc = self._consume_field(parse_type, prefer_type)
             if multiple and _name:
                 for name in _name.split(','):
                     fields.append((name.strip(), _type, _desc))
@@ -228,9 +228,9 @@ class GoogleDocstring:
 
     def _consume_inline_attribute(self):
         line = self._lines.next()
-        (_type, colon, _desc) = self._partition_field_on_colon(line)
+        _type, colon, _desc = self._partition_field_on_colon(line)
         if not colon or not _desc:
-            (_type, _desc) = (_desc, _type)
+            _type, _desc = (_desc, _type)
             _desc += colon
         _descs = [_desc] + self._dedent(self._consume_to_end())
         _descs = self.__class__(_descs, self._config).lines()
@@ -239,8 +239,8 @@ class GoogleDocstring:
     def _consume_returns_section(self, preprocess_types=False):
         lines = self._dedent(self._consume_to_next_section())
         if lines:
-            (before, colon, after) = self._partition_field_on_colon(lines[0])
-            (_name, _type, _desc) = ('', '', lines)
+            before, colon, after = self._partition_field_on_colon(lines[0])
+            _name, _type, _desc = ('', '', lines)
             if colon:
                 if after:
                     _desc = [after] + lines[1:]
@@ -311,7 +311,7 @@ class GoogleDocstring:
     def _format_admonition(self, admonition, lines):
         lines = self._strip_empty(lines)
         if len(lines) == 1:
-            return ['.. %s:: %s' % (admonition, lines[0].strip()), '']
+            return [f'.. {admonition}:: {lines[0].strip()}', '']
         elif lines:
             lines = self._indent(self._dedent(lines), 3)
             return ['.. %s::' % admonition, ''] + lines + ['']
@@ -323,7 +323,7 @@ class GoogleDocstring:
             if padding is None:
                 padding = ' ' * len(prefix)
             result_lines = []
-            for (i, line) in enumerate(lines):
+            for i, line in enumerate(lines):
                 if i == 0:
                     result_lines.append((prefix + line).rstrip())
                 elif line:
@@ -336,16 +336,16 @@ class GoogleDocstring:
 
     def _format_docutils_params(self, fields, field_role='param', type_role='type'):
         lines = []
-        for (_name, _type, _desc) in fields:
+        for _name, _type, _desc in fields:
             _desc = self._strip_empty(_desc)
             if any(_desc):
                 _desc = self._fix_field_desc(_desc)
-                field = ':%s %s: ' % (field_role, _name)
+                field = f':{field_role} {_name}: '
                 lines.extend(self._format_block(field, _desc))
             else:
-                lines.append(':%s %s:' % (field_role, _name))
+                lines.append(f':{field_role} {_name}:')
             if _type:
-                lines.append(':%s %s: %s' % (type_role, _name, _type))
+                lines.append(f':{type_role} {_name}: {_type}')
         return lines + ['']
 
     def _format_field(self, _name, _type, _desc):
@@ -355,16 +355,16 @@ class GoogleDocstring:
         if _name:
             if _type:
                 if '`' in _type:
-                    field = '**%s** (%s)%s' % (_name, _type, separator)
+                    field = f'**{_name}** ({_type}){separator}'
                 else:
-                    field = '**%s** (*%s*)%s' % (_name, _type, separator)
+                    field = f'**{_name}** (*{_type}*){separator}'
             else:
-                field = '**%s**%s' % (_name, separator)
+                field = f'**{_name}**{separator}'
         elif _type:
             if '`' in _type:
-                field = '%s%s' % (_type, separator)
+                field = f'{_type}{separator}'
             else:
-                field = '*%s*%s' % (_type, separator)
+                field = f'*{_type}*{separator}'
         else:
             field = ''
         if has_desc:
@@ -381,7 +381,7 @@ class GoogleDocstring:
         padding = ' ' * len(field_type)
         multi = len(fields) > 1
         lines = []
-        for (_name, _type, _desc) in fields:
+        for _name, _type, _desc in fields:
             field = self._format_field(_name, _type, _desc)
             if multi:
                 if lines:
@@ -404,7 +404,7 @@ class GoogleDocstring:
         return 0
 
     def _get_indent(self, line):
-        for (i, s) in enumerate(line):
+        for i, s in enumerate(line):
             if not s.isspace():
                 return i
         return len(line)
@@ -420,9 +420,7 @@ class GoogleDocstring:
         for line in lines:
             if line:
                 indent = self._get_indent(line)
-                if min_indent is None:
-                    min_indent = indent
-                elif indent < min_indent:
+                if min_indent is None or indent < min_indent:
                     min_indent = indent
         return min_indent or 0
 
@@ -430,7 +428,7 @@ class GoogleDocstring:
         return [' ' * n + line for line in lines]
 
     def _is_indented(self, line, indent=1):
-        for (i, s) in enumerate(line):
+        for i, s in enumerate(line):
             if i >= indent:
                 return True
             elif not s.isspace():
@@ -518,7 +516,7 @@ class GoogleDocstring:
         return self._format_admonition(admonition, lines)
 
     def _parse_attribute_docstring(self):
-        (_type, _desc) = self._consume_inline_attribute()
+        _type, _desc = self._consume_inline_attribute()
         lines = self._format_field('', '', _desc)
         if _type:
             lines.extend(['', ':type: %s' % _type])
@@ -526,14 +524,14 @@ class GoogleDocstring:
 
     def _parse_attributes_section(self, section):
         lines = []
-        for (_name, _type, _desc) in self._consume_fields():
+        for _name, _type, _desc in self._consume_fields():
             if not _type:
                 _type = self._lookup_annotation(_name)
             if self._config.napoleon_use_ivar:
                 field = ':ivar %s: ' % _name
                 lines.extend(self._format_block(field, _desc))
                 if _type:
-                    lines.append(':vartype %s: %s' % (_name, _type))
+                    lines.append(f':vartype {_name}: {_type}')
             else:
                 lines.append('.. attribute:: ' + _name)
                 if self._opt and 'noindex' in self._opt:
@@ -594,7 +592,7 @@ class GoogleDocstring:
 
     def _parse_methods_section(self, section):
         lines = []
-        for (_name, _type, _desc) in self._consume_fields(parse_type=False):
+        for _name, _type, _desc in self._consume_fields(parse_type=False):
             lines.append('.. method:: %s' % _name)
             if self._opt and 'noindex' in self._opt:
                 lines.append('   :noindex:')
@@ -626,7 +624,7 @@ class GoogleDocstring:
     def _parse_raises_section(self, section):
         fields = self._consume_fields(parse_type=False, prefer_type=True)
         lines = []
-        for (_name, _type, _desc) in fields:
+        for _name, _type, _desc in fields:
             m = self._name_rgx.match(_type)
             if m and m.group('name'):
                 _type = m.group('name')
@@ -636,7 +634,7 @@ class GoogleDocstring:
             _type = ' ' + _type if _type else ''
             _desc = self._strip_empty(_desc)
             _descs = ' ' + '\n    '.join(_desc) if any(_desc) else ''
-            lines.append(':raises%s:%s' % (_type, _descs))
+            lines.append(f':raises{_type}:{_descs}')
         if lines:
             lines.append('')
         return lines
@@ -658,7 +656,7 @@ class GoogleDocstring:
         multi = len(fields) > 1
         use_rtype = False if multi else self._config.napoleon_use_rtype
         lines = []
-        for (_name, _type, _desc) in fields:
+        for _name, _type, _desc in fields:
             if use_rtype:
                 field = self._format_field(_name, '', _desc)
             else:
@@ -692,7 +690,7 @@ class GoogleDocstring:
         after_colon = []
         colon = ''
         found_colon = False
-        for (i, source) in enumerate(_xref_or_code_regex.split(line)):
+        for i, source in enumerate(_xref_or_code_regex.split(line)):
             if found_colon:
                 after_colon.append(source)
             else:
@@ -709,7 +707,7 @@ class GoogleDocstring:
     def _strip_empty(self, lines):
         if lines:
             start = -1
-            for (i, line) in enumerate(lines):
+            for i, line in enumerate(lines):
                 if line:
                     start = i
                     break
@@ -733,7 +731,7 @@ class GoogleDocstring:
                     localns.update(getattr(self._config, 'napoleon_type_aliases', {}) or {})
                     self._annotations = get_type_hints(self._obj, None, localns)
                 if _name in self._annotations:
-                    return stringify_annotation(self._annotations[_name])
+                    return stringify_annotation(self._annotations[_name], 'fully-qualified-except-typing')
         return ''
 
 def _recombine_set_tokens(tokens):
@@ -813,10 +811,10 @@ def _token_type(token, location=None):
     elif token.endswith('}'):
         logger.warning(__('invalid value set (missing opening brace): %s'), token, location=location)
         type_ = 'literal'
-    elif token.startswith("'") or token.startswith('"'):
+    elif token.startswith(("'", '"')):
         logger.warning(__('malformed string literal (missing closing quote): %s'), token, location=location)
         type_ = 'literal'
-    elif token.endswith("'") or token.endswith('"'):
+    elif token.endswith(("'", '"')):
         logger.warning(__('malformed string literal (missing opening quote): %s'), token, location=location)
         type_ = 'literal'
     elif token in ('optional', 'default'):
@@ -842,7 +840,7 @@ def _convert_numpy_type_spec(_type, location=None, translations={}):
     combined_tokens = _recombine_set_tokens(tokens)
     types = [(token, _token_type(token, location)) for token in combined_tokens]
     converters = {'literal': lambda x: '``%s``' % x, 'obj': lambda x: convert_obj(x, translations, ':class:`%s`'), 'control': lambda x: '*%s*' % x, 'delimiter': lambda x: x, 'reference': lambda x: x}
-    converted = ''.join((converters.get(type_)(token) for (token, type_) in types))
+    converted = ''.join((converters.get(type_)(token) for token, type_ in types))
     return converted
 
 class NumpyDocstring(GoogleDocstring):
@@ -965,15 +963,15 @@ class NumpyDocstring(GoogleDocstring):
     def _consume_field(self, parse_type=True, prefer_type=False):
         line = self._lines.next()
         if parse_type:
-            (_name, _, _type) = self._partition_field_on_colon(line)
+            _name, _, _type = self._partition_field_on_colon(line)
         else:
-            (_name, _type) = (line, '')
-        (_name, _type) = (_name.strip(), _type.strip())
+            _name, _type = (line, '')
+        _name, _type = (_name.strip(), _type.strip())
         _name = self._escape_args_and_kwargs(_name)
         if parse_type and (not _type):
             _type = self._lookup_annotation(_name)
         if prefer_type and (not _type):
-            (_type, _name) = (_name, _type)
+            _type, _name = (_name, _type)
         if self._config.napoleon_preprocess_types:
             _type = _convert_numpy_type_spec(_type, location=self._get_location(), translations=self._config.napoleon_type_aliases or {})
         indent = self._get_indent(line) + 1
@@ -991,11 +989,11 @@ class NumpyDocstring(GoogleDocstring):
         return section
 
     def _is_section_break(self):
-        (line1, line2) = (self._lines.get(0), self._lines.get(1))
+        line1, line2 = (self._lines.get(0), self._lines.get(1))
         return not self._lines or self._is_section_header() or ['', ''] == [line1, line2] or (self._is_in_section and line1 and (not self._is_indented(line1, self._section_indent)))
 
     def _is_section_header(self):
-        (section, underline) = (self._lines.get(0), self._lines.get(1))
+        section, underline = (self._lines.get(0), self._lines.get(1))
         section = section.lower()
         if section in self._sections and isinstance(underline, str):
             return bool(_numpy_section_regex.match(underline))
@@ -1041,7 +1039,7 @@ class NumpyDocstring(GoogleDocstring):
         def push_item(name, rest):
             if not name:
                 return
-            (name, role) = parse_item_name(name)
+            name, role = parse_item_name(name)
             items.append((name, list(rest), role))
             del rest[:]
 
@@ -1065,7 +1063,7 @@ class NumpyDocstring(GoogleDocstring):
             m = self._name_rgx.match(line)
             if m and line[m.end():].strip().startswith(':'):
                 push_item(current_func, rest)
-                (current_func, line) = (line[:m.end()], line[m.end():])
+                current_func, line = (line[:m.end()], line[m.end():])
                 rest = [line.split(':', 1)[1].strip()]
                 if not rest[0]:
                     rest = []
@@ -1083,12 +1081,12 @@ class NumpyDocstring(GoogleDocstring):
         push_item(current_func, rest)
         if not items:
             return []
-        items = [translate(func, description, role) for (func, description, role) in items]
+        items = [translate(func, description, role) for func, description, role in items]
         lines = []
         last_had_desc = True
-        for (name, desc, role) in items:
+        for name, desc, role in items:
             if role:
-                link = ':%s:`%s`' % (role, name)
+                link = f':{role}:`{name}`'
             else:
                 link = ':obj:`%s`' % name
             if desc or last_had_desc:
