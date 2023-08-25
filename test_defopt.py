@@ -29,6 +29,13 @@ Choice = Enum('Choice', [('one', 1), ('two', 2), ('%', 0.01)])
 Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
 
 
+def _parse_none(i):
+    if i.lower() == ':none:':
+        return None
+    else:
+        raise ValueError('{} is not a valid None string'.format(i))
+
+
 # Also check that the Attributes section doesn't trip docutils.
 class ConstructibleFromStr:
     """
@@ -299,6 +306,9 @@ class TestDefopt(unittest.TestCase):
             self.assertEqual(
                 defopt.run(main, argv=['1', '-kk', '2'], intermixed=True),
                 ((1, 2), 'k'))
+        else:
+            with self.assertRaises(RuntimeError):
+                defopt.run(main, argv=['1', '-kk', '2'], intermixed=True)
 
 
 class TestBindKnown(unittest.TestCase):
@@ -429,19 +439,16 @@ class TestParsers(unittest.TestCase):
         def main(foo=None):
             """:type foo: typing.Optional[bool]"""
             return foo
-        def _parse_none(i):
-            if i.lower() == 'none':
-                return None
-            else:
-                raise ValueError('{} is not a valid None string'.format(i))
         self.assertIs(defopt.run(main, argv=['1'],
-                      parsers={type(None): _parse_none}), True)
+                                 parsers={type(None): _parse_none}), True)
         self.assertIs(defopt.run(main, argv=['0'],
-                      parsers={type(None): _parse_none}), False)
-        self.assertIs(defopt.run(main, argv=['None'],
-                      parsers={type(None): _parse_none}), None)
+                                 parsers={type(None): _parse_none}), False)
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=[':none:'])
+        self.assertIs(defopt.run(main, argv=[':none:'],
+                                 parsers={type(None): _parse_none}), None)
         self.assertIs(defopt.run(main, argv=[],
-                      parsers={type(None): _parse_none}), None)
+                                 parsers={type(None): _parse_none}), None)
 
     def test_bool_optional_keyword_none(self):
         def main(*, foo=None):
@@ -827,11 +834,6 @@ class TestOptional(unittest.TestCase):
         def main(op):
             """:param typing.Optional[typing.Tuple[int, int]] op: op"""
             return op
-        def _parse_none(i):
-            if i.lower() == 'none':
-                return None
-            else:
-                raise ValueError('{} is not a valid None string'.format(i))
         with self.assertRaises(ValueError):
             defopt.run(main, argv=['1', '2'],
                        parsers={type(None): _parse_none})
@@ -844,11 +846,6 @@ class TestOptional(unittest.TestCase):
         def main(op):
             """:param typing.Optional[typing.Tuple[str]] op: op"""
             return op
-        def _parse_none(i):
-            if i.lower() == 'none':
-                return None
-            else:
-                raise ValueError('{} is not a valid None string'.format(i))
         with self.assertRaises(ValueError):
             defopt.run(main, argv=['1'], parsers={type(None): _parse_none})
 
