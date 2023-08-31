@@ -7,6 +7,7 @@ next
   union parser failures.
 * Union members that come after `str` or `pathlib.Path` no longer need to have
   a valid parser.
+* Support optional single-item tuples with None parsers.
 * Pass-through more Sphinx standard roles.
 * Made parsed function docstring available as ``signature(...).doc``, and
   tuple of suppressed exception types as ``signature(...).raises``.

@@ -251,17 +251,17 @@ def bind_known(*args, **kwargs):
 
 
 def run(
-    funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
-    parsers: Dict[type, Callable[[str], Any]] = {},
-    short: Optional[Dict[str, str]] = None,
-    cli_options: Literal['kwonly', 'all', 'has_default'] = 'kwonly',
-    show_defaults: bool = True,
-    show_types: bool = False,
-    no_negated_flags: bool = False,
-    version: Union[str, None, bool] = None,
-    argparse_kwargs: dict = {},
-    intermixed: bool = False,
-    argv: Optional[List[str]] = None):
+        funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
+        parsers: Dict[type, Callable[[str], Any]] = {},
+        short: Optional[Dict[str, str]] = None,
+        cli_options: Literal['kwonly', 'all', 'has_default'] = 'kwonly',
+        show_defaults: bool = True,
+        show_types: bool = False,
+        no_negated_flags: bool = False,
+        version: Union[str, None, bool] = None,
+        argparse_kwargs: dict = {},
+        intermixed: bool = False,
+        argv: Optional[List[str]] = None):
     """
     Process command-line arguments and run the given functions.
 
@@ -670,8 +670,15 @@ def _populate_parser(func, parser, opts):
                 kwargs['action'] = _make_store_tuple_action_class(
                     tuple, member_types, opts.parsers, is_variable_length=True)
             elif type(None) in union_args and opts.parsers.get(type(None)):
-                raise ValueError('Optional tuples and NoneType parsers cannot '
-                                 'be used together due to ambiguity')
+                if num_members == 1:
+                    kwargs['nargs'] = 1
+                    kwargs['action'] = _make_store_tuple_action_class(
+                        tuple, member_types, opts.parsers,
+                        with_none_parser=opts.parsers[type(None)])
+                else:
+                    raise ValueError(
+                        'Optional tuples of length > 1 and NoneType parsers '
+                        'cannot be used together due to ambiguity')
             else:
                 kwargs['nargs'] = num_members
                 kwargs['action'] = _make_store_tuple_action_class(
@@ -1191,24 +1198,33 @@ def _make_union_parser(union, parsers, value=None):
 
 
 def _make_store_tuple_action_class(
-    tuple_type, member_types, parsers, *, is_variable_length=False):
+        tuple_type, member_types, parsers, *,
+        is_variable_length=False, with_none_parser=None):
     if is_variable_length:
         parsers = itertools.repeat(_get_parser(member_types[0], parsers))
     else:
         parsers = [_get_parser(arg, parsers) for arg in member_types]
 
+    def parse(action, values):
+        if with_none_parser is not None:
+            try:
+                return with_none_parser(*values)
+            except ValueError:
+                pass
+        try:
+            value = tuple(
+                parser(value) for parser, value in zip(parsers, values))
+        except (ValueError, ArgumentTypeError) as exc:
+            # Custom actions need to raise ArgumentError, not ValueError or
+            # ArgumentTypeError.
+            raise ArgumentError(action, str(exc))
+        if tuple_type is not tuple:
+            value = tuple_type(*value)
+        return value
+
     class _StoreTupleAction(Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            try:
-                value = tuple(
-                    parser(value) for parser, value in zip(parsers, values))
-            except (ValueError, ArgumentTypeError) as exc:
-                # Custom actions need to raise ArgumentError, not ValueError or
-                # ArgumentTypeError.
-                raise ArgumentError(self, str(exc))
-            if tuple_type is not tuple:
-                value = tuple_type(*value)
-            setattr(namespace, self.dest, value)
+            setattr(namespace, self.dest, parse(self, values))
 
     return _StoreTupleAction
 

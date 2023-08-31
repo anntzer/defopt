@@ -833,21 +833,23 @@ class TestOptional(unittest.TestCase):
     def test_multiple_item_optional_tuple_none_parser(self):
         def main(op):
             """:param typing.Optional[typing.Tuple[int, int]] op: op"""
-            return op
         with self.assertRaises(ValueError):
             defopt.run(main, argv=['1', '2'],
                        parsers={type(None): _parse_none})
 
     def test_one_item_optional_tuple_none_parser(self):
-        # As long as there is not support for trying the NoneType parser
-        # before the tuple parser in the case of a one-item optional tuple,
-        # this case should also raise an error. See comments on GH115 for more
-        # details.
         def main(op):
-            """:param typing.Optional[typing.Tuple[str]] op: op"""
+            """:param typing.Optional[typing.Tuple[int]] op: op"""
             return op
-        with self.assertRaises(ValueError):
-            defopt.run(main, argv=['1'], parsers={type(None): _parse_none})
+        self.assertEqual(defopt.run(main, argv=['1'],
+                                    parsers={type(None): _parse_none}),
+                         (1,))
+        self.assertEqual(defopt.run(main, argv=[':none:'],
+                                    parsers={type(None): _parse_none}),
+                         None)
+        with self.assertRaises(SystemExit):
+            defopt.run(main, argv=['foo'],
+                       parsers={type(None): _parse_none})
 
 
 class TestLiteral(unittest.TestCase):
@@ -855,10 +857,10 @@ class TestLiteral(unittest.TestCase):
         def main(foo):
             """:param defopt.Literal[Choice.one,"bar","baz"] foo: foo"""
             return foo
-        self.assertEqual(defopt.run(main, argv=["bar"]), "bar")
-        self.assertEqual(defopt.run(main, argv=["one"]), Choice.one)
+        self.assertEqual(defopt.run(main, argv=['bar']), 'bar')
+        self.assertEqual(defopt.run(main, argv=['one']), Choice.one)
         with self.assertRaises(SystemExit):
-            defopt.run(main, argv=["quux"])
+            defopt.run(main, argv=['quux'])
 
 
 class TestExceptions(unittest.TestCase):
@@ -868,12 +870,12 @@ class TestExceptions(unittest.TestCase):
             :param str name: name
             :raises RuntimeError:
             """
-            raise getattr(builtins, name)("oops")
+            raise getattr(builtins, name)('oops')
 
         with self.assertRaises(SystemExit):
-            defopt.run(main, argv=["RuntimeError"])
+            defopt.run(main, argv=['RuntimeError'])
         with self.assertRaises(ValueError):
-            defopt.run(main, argv=["ValueError"])
+            defopt.run(main, argv=['ValueError'])
 
 
 class TestDoc(unittest.TestCase):
