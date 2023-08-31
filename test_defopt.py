@@ -950,8 +950,9 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(doc_sig.doc, 'start \033[4mint\033[0m end\n\n')
 
     def test_explicit_role(self):
-        doc_sig = defopt._parse_docstring("""start :py:class:`int` end""")
-        self.assertEqual(doc_sig.doc, 'start int end\n\n')
+        doc_sig = defopt._parse_docstring(
+            """start :py:class:`int` :kbd:`ctrl` end""")
+        self.assertEqual(doc_sig.doc, 'start int ctrl end\n\n')
 
     def test_sphinx(self):
         doc = """

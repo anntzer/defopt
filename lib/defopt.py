@@ -771,20 +771,49 @@ def _passthrough_role(
 
 @contextlib.contextmanager
 def _sphinx_common_roles():
-    # See "Cross-referencing Python objects" section of
-    # http://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html
+    # Standard roles:
+    # https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html
+    # Python-domain roles:
+    # https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html
     roles = [
-        'mod', 'func', 'data', 'const', 'class', 'meth', 'attr', 'exc', 'obj']
+        'abbr',
+        'command',
+        'dfn',
+        'file',
+        'guilabel',
+        'kbd',
+        'mailheader',
+        'makevar',
+        'manpage',
+        'menuselection',
+        'mimetype',
+        'newsgroup',
+        'program',
+        'regexp',
+        'samp',
+        'pep',
+        'rfc',
+        'py:mod',
+        'py:func',
+        'py:data',
+        'py:const',
+        'py:class',
+        'py:meth',
+        'py:attr',
+        'py:exc',
+        'py:obj'
+    ]
     # No public unregistration API :(  Also done by sphinx.
     role_map = docutils.parsers.rst.roles._roles
     for role in roles:
-        role_map[role] = role_map['py:' + role] = _passthrough_role
+        for i in range(role.count(':') + 1):
+            role_map[role.split(':', i)[-1]] = _passthrough_role
     try:
         yield
     finally:
         for role in roles:
-            role_map.pop(role)
-            role_map.pop('py:' + role)
+            for i in range(role.count(':') + 1):
+                role_map.pop(role.split(':', i)[-1])
 
 
 def _parse_docstring(doc):
