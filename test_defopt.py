@@ -724,8 +724,8 @@ class TestUnion(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['a', '2']), (str, float))
 
     def test_or_union(self):
-        if not hasattr(types, "UnionType"):
-            raise unittest.SkipTest("A|B-style unions not supported")
+        if not hasattr(types, 'UnionType'):
+            raise unittest.SkipTest('A|B-style unions not supported')
         def main(foo):
             """:param int|str foo: foo"""
             return type(foo)
@@ -795,36 +795,36 @@ class TestOptional(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['1']), ('1',))
 
     def test_union_operator_hint_list(self):
-        if not hasattr(types, "UnionType"):
-            raise unittest.SkipTest("A|B-style unions not supported")
+        if not hasattr(types, 'UnionType'):
+            raise unittest.SkipTest('A|B-style unions not supported')
         def main(op: typing.List[str] | None): return op
         self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), ['1', '2'])
 
     def test_union_operator_hint_tuple(self):
-        if not hasattr(types, "UnionType"):
-            raise unittest.SkipTest("A|B-style unions not supported")
+        if not hasattr(types, 'UnionType'):
+            raise unittest.SkipTest('A|B-style unions not supported')
         def main(op: typing.Tuple[int] | None): return op
         self.assertEqual(defopt.run(main, argv=['1']), (1,))
 
     def test_union_operator_doc_list(self):
-        if not hasattr(types, "UnionType"):
-            raise unittest.SkipTest("A|B-style unions not supported")
+        if not hasattr(types, 'UnionType'):
+            raise unittest.SkipTest('A|B-style unions not supported')
         def main(op):
             """:param list[int]|None op: op"""
             return op
         self.assertEqual(defopt.run(main, argv=['--op', '1', '2']), [1, 2])
 
     def test_union_operator_doc_one_item_tuple(self):
-        if not hasattr(types, "UnionType"):
-            raise unittest.SkipTest("A|B-style unions not supported")
+        if not hasattr(types, 'UnionType'):
+            raise unittest.SkipTest('A|B-style unions not supported')
         def main(op):
             """:param tuple[int]|None op: op"""
             return op
         self.assertEqual(defopt.run(main, argv=['1']), (1,))
 
     def test_union_operator_doc_multiple_item_tuple(self):
-        if not hasattr(types, "UnionType"):
-            raise unittest.SkipTest("A|B-style unions not supported")
+        if not hasattr(types, 'UnionType'):
+            raise unittest.SkipTest('A|B-style unions not supported')
         def main(op):
             """:param tuple[str,str]|None op: op"""
             return op
@@ -1161,6 +1161,15 @@ class TestAnnotations(unittest.TestCase):
             """:type bar: int"""
             return bar
         self.assertEqual(defopt.run(foo, argv=['1']), 1)
+
+
+class TestAlias(unittest.TestCase):
+    def test_alias(self):
+        if not hasattr(typing, 'TypeAliasType'):
+            raise unittest.SkipTest('TypeAliasType not supported')
+        d = {}
+        exec('type L = list[int]\ndef foo(bar: L): return bar', d)
+        self.assertEqual(defopt.run(d['foo'], argv=['-b1']), [1])
 
 
 class TestHelp(unittest.TestCase):

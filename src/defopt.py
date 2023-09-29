@@ -572,8 +572,14 @@ def _populate_parser(func, parser, opts):
         if ((opts.cli_options == 'kwonly' or
              (param.default is param.empty
               and opts.cli_options == 'has_default'))
-            and not _is_list_like(param.annotation)
-            and not _is_optional_list_like(param.annotation)
+            and not any(
+                _is_list_like(t) or _is_optional_list_like(t) for t in [
+                    param.annotation.__value__
+                    if hasattr(typing, 'TypeAliasType')
+                    and isinstance(param.annotation, typing.TypeAliasType)
+                    else param.annotation
+                ]
+            )
             and param.kind != param.KEYWORD_ONLY)}
     if opts.short is None:
         count_initials = Counter(name[0] for name in sig.parameters
@@ -590,6 +596,9 @@ def _populate_parser(func, parser, opts):
         if param.doc is not None:
             kwargs['help'] = param.doc.replace('%', '%%')
         type_ = param.annotation
+        if (hasattr(typing, 'TypeAliasType')
+                and isinstance(type_, typing.TypeAliasType)):
+            type_ = type_.__value__
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         if type_ is param.empty:
