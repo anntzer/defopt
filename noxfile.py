@@ -3,7 +3,7 @@ from pathlib import Path
 import nox
 from nox import Session, session
 
-python_versions = ['3.5', '3.6', '3.7', '3.8', '3.9', '3.10']
+python_versions = ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
 nox.options.sessions = ['tests', 'docs']
 nox.options.reuse_existing_virtualenvs = True
 
@@ -20,7 +20,7 @@ def tests(session: Session, old: bool) -> None:
     if old:
         # Oldest supported versions
         session.install('docutils==0.12', 'sphinxcontrib-napoleon==0.7.0')
-        if session.python in ['3.5', '3.6', '3.7']:
+        if session.python in ['3.7']:
             session.install(
                 'typing_extensions==3.7.4', 'typing_inspect==0.5.0'
             )

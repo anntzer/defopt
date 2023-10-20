@@ -1043,22 +1043,21 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(doc_sig.parameters['arg3'].annotation, 'float')
 
     def test_sequence(self):
-        globalns = {'Sequence': typing.Sequence}
         self.assertEqual(
-            defopt._get_type_from_doc('Sequence[int]', globalns),
+            defopt._get_type_from_doc(
+                'Sequence[int]', {'Sequence': typing.Sequence}),
             typing.List[int])
 
     def test_collection(self):
-        # This test effectively does nothing on python versions < 3.6
-        globalns = {'Collection': getattr(typing, 'Collection', typing.List)}
         self.assertEqual(
-            defopt._get_type_from_doc('Collection[int]', globalns),
+            defopt._get_type_from_doc(
+                'Collection[int]', {'Collection': typing.Collection}),
             typing.List[int])
 
     def test_iterable(self):
-        globalns = {'typing': typing}
         self.assertEqual(
-            defopt._get_type_from_doc('typing.Iterable[int]', globalns),
+            defopt._get_type_from_doc(
+                'typing.Iterable[int]', {'typing': typing}),
             typing.List[int])
 
     def test_literal_block(self):

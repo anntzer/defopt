@@ -3,6 +3,7 @@ Changelog
 
 next
 ----
+* Dropped support for Python 3.5 and 3.6.
 * Added the :envvar:`DEFOPT_DEBUG` environment variable to help troubleshooting
   union parser failures.
 * Union members that come after `str` or `pathlib.Path` no longer need to have

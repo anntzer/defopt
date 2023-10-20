@@ -1,0 +1,61 @@
+[build-system]
+requires = [
+    "setuptools>=61",
+    "setuptools_scm[toml]>=6.2",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "defopt"
+description = "Effortless argument parser"
+readme = "README.rst"
+authors = [{name = "Antony Lee"}]
+urls = {Repository = "https://github.com/anntzer/defopt"}
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+]
+keywords = ["argument parser", "optparse", "argparse", "getopt", "docopt", "sphinx"]
+requires-python = ">=3.7"
+dependencies = [
+    "docutils>=0.12",  # First with wheels, for better setuptools compat.
+    "sphinxcontrib-napoleon>=0.7.0",  # More consistent Raises blocks.
+    "importlib_metadata>=1.0; python_version<'3.8'",
+    "typing_inspect>=0.8.0; python_version<'3.8'",
+    "pkgutil_resolve_name; python_version<'3.9'",
+    "colorama>=0.3.4; sys_platform=='win32'",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=4.4",
+]
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "node-and-date"
+fallback_version = "0+unknown"
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["defopt", "test_defopt"]
+concurrency = ["multiprocessing"]
+
+[tool.coverage.paths]
+source = ["src/", "/**/python*/site-packages/"]
+
+[tool.coverage.report]
+exclude_lines = ["assert False"]
+fail_under = 95
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "error::DeprecationWarning:defopt",
+]

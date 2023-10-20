@@ -38,6 +38,12 @@ try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+try:
+    from typing import get_args as _ti_get_args, get_origin as _ti_get_origin
+except ImportError:
+    import typing_inspect as _ti
+    _ti_get_args = _ti.get_args
+    _ti_get_origin = _ti.get_origin
 
 import docutils.core
 from docutils.nodes import NodeVisitor, SkipNode, TextElement
@@ -47,8 +53,7 @@ try:
     collections.Callable = collections.abc.Callable
     from sphinxcontrib.napoleon import Config, GoogleDocstring, NumpyDocstring
 finally:
-    if sys.version_info >= (3, 7):
-        del collections.Callable
+    del collections.Callable
 
 try:
     # colorama is a dependency on Windows to support ANSI escapes (from rst
@@ -70,33 +75,9 @@ _TYPE_NAMES = ['type', 'kwtype']
 _LIST_TYPES = [
     list,
     collections.abc.Iterable,
-    getattr(collections.abc, "Collection", object()),
+    collections.abc.Collection,
     collections.abc.Sequence,
 ]
-
-
-if hasattr(typing, 'get_args'):
-    _ti_get_args = typing.get_args
-else:
-    import typing_inspect as _ti
-    # evaluate=True is default on Py>=3.7.
-    _ti_get_args = functools.partial(_ti.get_args, evaluate=True)
-
-
-if hasattr(typing, 'get_origin'):
-    _ti_get_origin = typing.get_origin
-else:
-    def _ti_get_origin(tp):
-        import typing_inspect as ti
-        origin = ti.get_origin(tp)
-        return {  # Py<3.7.
-            typing.List: list,
-            typing.Iterable: collections.abc.Iterable,
-            getattr(typing, 'Collection', object()):
-                getattr(collections.abc, 'Collection', object()),
-            typing.Sequence: collections.abc.Sequence,
-            typing.Tuple: tuple,
-        }.get(origin, origin)
 
 
 class _BooleanOptionalAction(Action):
@@ -176,8 +157,6 @@ def _bind_or_bind_known(funcs, *, opts, _known: bool = False):
             else:
                 args, rest = parser.parse_known_args(opts.argv)
         else:
-            if sys.version_info < (3, 7):
-                raise RuntimeError("'intermixed' requires Python>=3.7")
             if not _known:
                 args, rest = parser.parse_intermixed_args(opts.argv), []
             else:
