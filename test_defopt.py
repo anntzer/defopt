@@ -33,7 +33,7 @@ def _parse_none(i):
     if i.lower() == ':none:':
         return None
     else:
-        raise ValueError('{} is not a valid None string'.format(i))
+        raise ValueError(f'{i} is not a valid None string')
 
 
 # Also check that the Attributes section doesn't trip docutils.
@@ -1381,7 +1381,7 @@ class TestVersion(unittest.TestCase):
 
     def test_auto_version(self):
         with self.assertRaises(SystemExit), _assert_streams(
-                 self, stdout=r'\A{}\n\Z'.format(re.escape(__version__))):
+                 self, stdout=rf'\A{re.escape(__version__)}\n\Z'):
             defopt.run(lambda: None, argv=['--version'])
         with self.assertRaises(SystemExit), _assert_streams(
                  self,
@@ -1482,7 +1482,7 @@ class TestExamples(unittest.TestCase):
 
     def test_parsers(self):
         date = parsers.datetime(2015, 9, 13)
-        with self._assert_stdout('{}\n'.format(date)):
+        with self._assert_stdout(f'{date}\n'):
             parsers.main(date)
         with self._assert_stdout('junk\n'):
             parsers.main('junk')
@@ -1593,14 +1593,14 @@ class TestStyle(unittest.TestCase):
         for path in [defopt.__file__, __file__]:
             with tokenize.open(path) as src:
                 for i, line in enumerate(src, 1):
-                    yield '{}:{}'.format(path, i), line.rstrip('\n')
+                    yield f'{path}:{i}', line.rstrip('\n')
 
     def test_line_length(self):
         for name, line in self._iter_stripped_lines():
             if len(line) > 79:
-                self.fail('{} is too long'.format(name))
+                self.fail(f'{name} is too long')
 
     def test_trailing_whitespace(self):
         for name, line in self._iter_stripped_lines():
             if line and line[-1].isspace():
-                self.fail('{} has trailing whitespace'.format(name))
+                self.fail(f'{name} has trailing whitespace')

@@ -142,8 +142,7 @@ class _DefaultList(list):
 def _check_in_list(_values, **kwargs):
     for k, v in kwargs.items():
         if v not in _values:
-            raise ValueError(
-                '{!r} must be one of {!r}, not {!r}'.format(k, _values, v))
+            raise ValueError(f'{k!r} must be one of {_values!r}, not {v!r}')
 
 
 def _bind_or_bind_known(funcs, *, opts, _known: bool = False):
@@ -372,7 +371,7 @@ def _create_parser(funcs, opts):
         version_string = None
     if version_string is not None:
         parser.add_argument(
-            '{0}{0}version'.format(parser.prefix_chars[0]),
+            2 * parser.prefix_chars[0] + 'version',
             action='version', version=version_string)
     return parser
 
@@ -475,8 +474,8 @@ def _preprocess_inspect_signature(func, sig):
         if param.name.startswith('_'):
             if param.default is param.empty:
                 raise ValueError(
-                    'parameter {} of {}{} is private but has no default'
-                    .format(name, func.__name__, sig))
+                    f'parameter {name} of {func.__name__}{sig} is private but '
+                    f'has no default')
             continue
         try:
             hint = hints[name]
@@ -528,10 +527,9 @@ def _merge_signatures(inspect_sig, doc_sig):
                 anns.add(doc_param.annotation)
             if len(anns) > 1:
                 raise ValueError(
-                    'conflicting types found for parameter {}: {}, {}'.format(
-                        name,
-                        param.annotation.__name__,
-                        doc_param.annotation.__name__))
+                    f'conflicting types found for parameter {name}: '
+                    f'{param.annotation.__name__}, '
+                    f'{doc_param.annotation.__name__}')
             ann = anns.pop() if anns else param.empty
             param = param.replace(annotation=ann, doc=doc_param.doc)
         parameters.append(param)
@@ -546,7 +544,7 @@ def _get_type_from_doc(name, globalns):
                     for part in name.split(' or ')]
         if any(map(_is_list_like, subtypes)) and None not in subtypes:
             raise ValueError(
-                'unsupported union including container type: {}'.format(name))
+                f'unsupported union including container type: {name}')
         return Union[tuple(subtype for subtype in subtypes)]
     if sys.version_info < (3, 9):  # Support "list[type]", "tuple[type]".
         globalns = {**globalns, 'tuple': Tuple, 'list': List}
@@ -590,7 +588,7 @@ def _populate_parser(func, parser, opts):
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         if type_ is param.empty:
-            raise ValueError('no type found for parameter {}'.format(name))
+            raise ValueError(f'no type found for parameter {name}')
         hasdefault = param.default is not param.empty
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
@@ -623,8 +621,8 @@ def _populate_parser(func, parser, opts):
         if any(_is_container(subtype) for subtype in union_args):
             non_none = [arg for arg in union_args if arg is not type(None)]
             if len(non_none) != 1:
-                raise ValueError('unsupported union including container type: '
-                                 '{}'.format(type_))
+                raise ValueError(
+                    f'unsupported union including container type: {type_}')
             type_, = non_none
 
         if _is_list_like(type_):
@@ -880,7 +878,7 @@ def _parse_docstring(doc):
                 raise SkipNode
 
             if node.get('refuri'):
-                self._current_paragraph.append(" ({})".format(node['refuri']))
+                self._current_paragraph.append(f' ({node["refuri"]})')
             else:
                 self._current_paragraph.append(node.astext())
             raise SkipNode
@@ -959,7 +957,7 @@ def _parse_docstring(doc):
                 if doctype not in _PARAM_TYPES:
                     raise SkipNode
                 if 'type' in self.params[name]:
-                    raise ValueError('type defined twice for {}'.format(name))
+                    raise ValueError(f'type defined twice for {name}')
                 self.params[name]['type'] = type_
             else:
                 raise SkipNode
@@ -968,8 +966,7 @@ def _parse_docstring(doc):
             if doctype in _TYPE_NAMES:
                 doctype = 'type'
             if doctype in ['param', 'type'] and doctype in self.params[name]:
-                raise ValueError(
-                    '{} defined twice for {}'.format(doctype, name))
+                raise ValueError(f'{doctype} defined twice for {name}')
             visitor = Visitor(self.document)
             field_body_node.walkabout(visitor)
             if doctype in ['param', 'type']:
@@ -1080,7 +1077,7 @@ def _parse_bool(string):
     elif string.lower() in ['f', 'false', '0']:
         return False
     else:
-        raise ValueError('{!r} is not a valid boolean string'.format(string))
+        raise ValueError(f'{string!r} is not a valid boolean string')
 
 
 def _parse_slice(string):
@@ -1094,10 +1091,10 @@ def _parse_slice(string):
             slices.append(slice(start, stop, step))
 
     try:
-        SliceVisitor().visit(ast.parse('_[{}]'.format(string)))
+        SliceVisitor().visit(ast.parse(f'_[{string}]'))
         sl, = slices
     except (SyntaxError, ValueError):
-        raise ValueError('{!r} is not a valid slice string'.format(string))
+        raise ValueError(f'{string!r} is not a valid slice string')
     return sl
 
 
@@ -1172,8 +1169,7 @@ def _make_union_parser(union, parsers, value=None):
         except (TypeError, ValueError, ArgumentTypeError) as exc:
             suppressed.append((parser, exc))
     _report_suppressed_exceptions(suppressed)
-    raise ValueError(
-        '{} could not be parsed as any of {}'.format(value, union))
+    raise ValueError(f'{value} could not be parsed as any of {union}')
 
 
 def _make_store_tuple_action_class(
