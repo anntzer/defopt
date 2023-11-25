@@ -228,26 +228,31 @@ def bind_known(*args, **kwargs):
         *args, opts=_options(**kwargs), _known=True)
 
 
+Funcs = Union[Callable, List[Callable], Dict[str, 'Funcs']]
+
+
 def run(
-        funcs: Union[Callable, List[Callable], Dict[str, Callable]], *,
-        parsers: Dict[type, Callable[[str], Any]] = {},
-        short: Optional[Dict[str, str]] = None,
-        cli_options: Literal['kwonly', 'all', 'has_default'] = 'kwonly',
-        show_defaults: bool = True,
-        show_types: bool = False,
-        no_negated_flags: bool = False,
-        version: Union[str, None, bool] = None,
-        argparse_kwargs: dict = {},
-        intermixed: bool = False,
-        argv: Optional[List[str]] = None):
+    funcs: Funcs, *,
+    parsers: Dict[type, Callable[[str], Any]] = {},
+    short: Optional[Dict[str, str]] = None,
+    cli_options: Literal['kwonly', 'all', 'has_default'] = 'kwonly',
+    show_defaults: bool = True,
+    show_types: bool = False,
+    no_negated_flags: bool = False,
+    version: Union[str, None, bool] = None,
+    argparse_kwargs: dict = {},
+    intermixed: bool = False,
+    argv: Optional[List[str]] = None,
+):
     """
     Process command-line arguments and run the given functions.
 
-    *funcs* can be a single callable, which is parsed and run; or it can be
-    a list of callables or mappable of strs to callables, in which case each
-    one is given a subparser with its name (if *funcs* is a list) or the
-    corresponding key (if *funcs* is a mappable), and only the chosen callable
-    is run.
+    *funcs* can be a single callable, which is parsed and run; or it can
+    be a list of callables or mappable of strs to callables, in which case
+    each one is given a subparser with its name (if *funcs* is a list) or
+    the corresponding key (if *funcs* is a mappable), and only the chosen
+    callable is run.  Nested mappables are also supported; they define nested
+    subcommands.
 
     See :doc:`/features` for the detailed mapping from function signature to
     command-line parsing.  Note that all docstrings must be valid RST
@@ -749,7 +754,8 @@ def _is_optional_list_like(type_):
 
 
 def _passthrough_role(
-        name, rawtext, text, lineno, inliner, options={}, content=[]):
+    name, rawtext, text, lineno, inliner, options={}, content=[],
+):
     return [TextElement(rawtext, text)], []
 
 
@@ -1173,8 +1179,9 @@ def _make_union_parser(union, parsers, value=None):
 
 
 def _make_store_tuple_action_class(
-        tuple_type, member_types, parsers, *,
-        is_variable_length=False, with_none_parser=None):
+    tuple_type, member_types, parsers, *,
+    is_variable_length=False, with_none_parser=None,
+):
     if is_variable_length:
         parsers = itertools.repeat(_get_parser(member_types[0], parsers))
     else:
