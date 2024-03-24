@@ -976,7 +976,7 @@ def _parse_docstring(doc):
             visitor = Visitor(self.document)
             field_body_node.walkabout(visitor)
             if doctype in ['param', 'type']:
-                self.params[name][doctype] = ''.join(visitor.paragraphs)
+                self.params[name][doctype] = '\n\n'.join(visitor.paragraphs)
             elif doctype in ['raises']:
                 self.raises.append(name)
             raise SkipNode

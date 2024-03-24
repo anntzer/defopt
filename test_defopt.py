@@ -964,6 +964,8 @@ class TestDoc(unittest.TestCase):
 
         :param int arg1: Description of arg1
         :param str arg2: Description of arg2
+
+            And more about arg2
         :keyword float arg3: Description of arg3
         :returns: Description of return value.
         :rtype: str
@@ -976,7 +978,7 @@ class TestDoc(unittest.TestCase):
         self._check_doc(doc_sig)
 
     def test_google(self):
-        # Docstring taken from Napoleon's example (plus a keyword argument).
+        # Docstring modified from Napoleon's example.
         doc = """
         One line summary.
 
@@ -985,6 +987,8 @@ class TestDoc(unittest.TestCase):
         Args:
           arg1(int): Description of arg1
           arg2(str): Description of arg2
+
+            And more about arg2
 
         Keyword Arguments:
           arg3(float): Description of arg3
@@ -999,7 +1003,7 @@ class TestDoc(unittest.TestCase):
         self._check_doc(doc_sig)
 
     def test_numpy(self):
-        # Docstring taken from Napoleon's example (plus a keyword argument).
+        # Docstring modified from Napoleon's example.
         doc = """
         One line summary.
 
@@ -1011,6 +1015,8 @@ class TestDoc(unittest.TestCase):
             Description of arg1
         arg2 : str
             Description of arg2
+
+            And more about arg2
 
         Keyword Arguments
         -----------------
@@ -1037,7 +1043,8 @@ class TestDoc(unittest.TestCase):
         self.assertEqual(len(doc_sig.parameters), 3)
         self.assertEqual(doc_sig.parameters['arg1'].doc, 'Description of arg1')
         self.assertEqual(doc_sig.parameters['arg1'].annotation, 'int')
-        self.assertEqual(doc_sig.parameters['arg2'].doc, 'Description of arg2')
+        self.assertEqual(doc_sig.parameters['arg2'].doc,
+                         'Description of arg2\n\nAnd more about arg2')
         self.assertEqual(doc_sig.parameters['arg2'].annotation, 'str')
         self.assertEqual(doc_sig.parameters['arg3'].doc, 'Description of arg3')
         self.assertEqual(doc_sig.parameters['arg3'].annotation, 'float')
