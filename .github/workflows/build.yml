@@ -10,8 +10,8 @@ jobs:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install
@@ -21,43 +21,35 @@ jobs:
         python -mpip list
     - name: Test
       run: |
-        pyver="$(python -c 'import sys; print("{0.major}.{0.minor}".format(sys.version_info))')" &&
-        COVERAGE_FILE=".coverage.$pyver" python -mcoverage run --append --module unittest --buffer &&
+        python -mcoverage run --append --module unittest --buffer &&
         # Oldest supported versions.
         python -mpip install docutils==0.12 sphinxcontrib-napoleon==0.7.0 &&
-        if [[ "$pyver" = 3.7 ]]; then
+        if [[ ${{ matrix.python-version }} = 3.7 ]]; then
           python -mpip install typing_extensions==3.7.4 typing_inspect==0.8.0
         fi &&
-        COVERAGE_FILE=".coverage.$pyver" python -mcoverage run --append --module unittest --buffer
+        python -mcoverage run --append --module unittest --buffer
     - name: Upload coverage
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: coverage
+        name: coverage-${{ matrix.python-version }}
+        include-hidden-files: true
         path: .coverage.*
 
   coverage:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
-    - name: Download coverage
-      uses: actions/download-artifact@v3
-      with:
-        name: coverage
+        python-version: "3.12"
     - name: Run
       run: |
         shopt -s globstar &&
+        GH_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+          gh run download ${{ github.run-id }} -p 'coverage-*' &&
         python -mpip install --upgrade coverage &&
-        python -mcoverage combine .coverage.* &&  # Unifies paths across envs.
+        python -mcoverage combine coverage-* &&  # Unifies paths across envs.
         python -mcoverage annotate &&
-        for f in **/*,cover; do
-          if ! grep -q '^!' "$f"; then
-            continue
-          fi
-          echo "$f" &&
-          grep -nTC2 '^!' "$f"
-        done &&
+        grep -HnTC2 '^!' **/*,cover | sed s/,cover// &&
         python -mcoverage report --show-missing
