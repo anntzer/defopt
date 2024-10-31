@@ -598,6 +598,8 @@ def _populate_parser(func, parser, opts):
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
         positional = name in positionals
+
+        # Special-case boolean flags.
         if type_ in [bool, typing.Optional[bool]] and not positional:
             action = ('store_true'
                       if opts.no_negated_flags and default in [False, None]
@@ -607,6 +609,7 @@ def _populate_parser(func, parser, opts):
                 required=required,  # Always False if `default is False`.
                 **kwargs))  # Add help if available.
             continue
+
         # Always set a default, even for required parameters, so that we can
         # later (ab)use default == SUPPRESS (!= None) to detect required
         # parameters.
@@ -636,18 +639,18 @@ def _populate_parser(func, parser, opts):
             if param.kind == param.VAR_POSITIONAL:
                 kwargs['action'] = 'append'
                 kwargs['default'] = _DefaultList()
-        member_types = None
 
         if isinstance(type_, type) and issubclass(type_, Enum):
             # Enums must be checked first to handle enums-of-namedtuples.
             kwargs['type'] = _get_parser(type_, opts.parsers)
             kwargs['choices'] = _PseudoChoices(type_.__members__.values())
+
         elif _ti_get_origin(type_) is tuple:
             member_types = _ti_get_args(type_)
             num_members = len(member_types)
-            # Variable-length tuples of homogenous type are specified like
-            # Tuple[int, ...]
             if num_members == 2 and member_types[1] is Ellipsis:
+                # Variable-length tuples of homogenous type are specified like
+                # tuple[int, ...]
                 kwargs['nargs'] = '*'
                 kwargs['action'] = _make_store_tuple_action_class(
                     tuple, member_types, opts.parsers, is_variable_length=True)
@@ -665,6 +668,7 @@ def _populate_parser(func, parser, opts):
                 kwargs['nargs'] = num_members
                 kwargs['action'] = _make_store_tuple_action_class(
                     tuple, member_types, opts.parsers)
+
         elif (isinstance(type_, type) and issubclass(type_, tuple)
               and hasattr(type_, '_fields')):
             # Before Py3.6, `_field_types` does not preserve order, so retrieve
@@ -676,11 +680,14 @@ def _populate_parser(func, parser, opts):
                 type_, member_types, opts.parsers)
             if not positional:  # http://bugs.python.org/issue14074
                 kwargs['metavar'] = type_._fields
+
         else:
             kwargs['type'] = _get_parser(type_, opts.parsers)
             if _ti_get_origin(type_) is Literal:
                 kwargs['choices'] = _PseudoChoices(_ti_get_args(type_))
+
         actions.append(_add_argument(parser, name, opts.short, **kwargs))
+
     for action in actions:
         _update_help_string(action, opts)
 
