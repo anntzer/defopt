@@ -354,17 +354,14 @@ with status code 1, but the traceback is suppressed.
 
 A runnable example is available at `examples/exceptions.py`_.
 
-
 Partial Functions
 -----------------
-
 
 Partial functions can be provided using `functools.partial`.  For example,
 to wrap a concrete function to make a required option have a default (and
 thus optional).
 
 A runnable example is available at `examples/partials.py`_.
-
 
 Additional parser features
 --------------------------
