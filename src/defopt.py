@@ -330,7 +330,8 @@ def _recurse_functions(funcs, subparsers):
         # If this iterable is not a mapping, then convert it to one using the
         # function name itself as the key, but replacing _ with -.
         try:
-            funcs = {func.__name__.replace('_', '-'): func for func in funcs}
+            funcs = {_unwrap_partial(func).__name__.replace('_', '-'): func
+                     for func in funcs}
         except AttributeError as exc:
             # Do not allow a mapping inside of a list
             raise ValueError(
@@ -342,7 +343,8 @@ def _recurse_functions(funcs, subparsers):
         if callable(func):
             # If this item is callable, then add it to the current
             # subparser using this name.
-            sp_help = signature(inspect.getdoc(func)).doc.split('\n\n', 1)[0]
+            doc = inspect.getdoc(_unwrap_partial(func))
+            sp_help = signature(doc).doc.split('\n\n', 1)[0]
             subparser = subparsers.add_parser(
                 name, formatter_class=RawTextHelpFormatter, help=sp_help)
             yield func, subparser
@@ -360,12 +362,12 @@ def _create_parser(funcs, opts):
     version_sources = []
     if callable(funcs):
         _populate_parser(funcs, parser, opts)
-        version_sources.append(funcs)
+        version_sources.append(_unwrap_partial(funcs))
     else:
         subparsers = parser.add_subparsers()
         for func, subparser in _recurse_functions(funcs, subparsers):
             _populate_parser(func, subparser, opts)
-            version_sources.append(func)
+            version_sources.append(_unwrap_partial(func))
     if isinstance(opts.version, str):
         version_string = opts.version
     elif opts.version is None or opts.version:
@@ -468,12 +470,16 @@ def signature(func: Union[Callable, str]):
         inspect_sig = _preprocess_inspect_signature(
             func, inspect.signature(func))
         doc_sig = _preprocess_doc_signature(
-            func, signature(inspect.getdoc(func)))
+            func, signature(inspect.getdoc(_unwrap_partial(func))))
         return _merge_signatures(inspect_sig, doc_sig)
 
 
+def _unwrap_partial(func):
+    return func.func if isinstance(func, functools.partial) else func
+
+
 def _preprocess_inspect_signature(func, sig):
-    hints = typing.get_type_hints(func)
+    hints = typing.get_type_hints(_unwrap_partial(func))
     parameters = []
     for name, param in sig.parameters.items():
         if param.name.startswith('_'):
