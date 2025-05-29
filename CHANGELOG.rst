@@ -21,6 +21,7 @@ next
 * `defopt.signature` also accepts docstrings as input.
 * Document `defopt.signature` as provisional APIs.
 * Removed the deprecated ``strict_kwonly`` in favor of ``cli_options``.
+* Support `functools.partial` to set or overwrite function default values.
 
 6.4.0 (2022-07-19)
 ------------------

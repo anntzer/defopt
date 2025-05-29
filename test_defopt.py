@@ -1,5 +1,6 @@
 import builtins
 import contextlib
+import functools
 import inspect
 import multiprocessing as mp
 import re
@@ -1336,6 +1337,47 @@ class TestHelp(unittest.TestCase):
         self.assert_in_help('summary-of-foo', [foo, bar], '')
         self.assert_not_in_help('FOO', [foo, bar], '')
 
+    def test_functools_partial_make_param_default(self):
+        def foo(*, bar: int) -> None:
+            """The foo tool
+
+            Args:
+                bar: the bar option
+            """
+            pass
+        func = functools.partial(foo, bar=4)
+        self.assert_in_help('The foo tool', func, 't')
+        self.assert_in_help('(type: int)', func, 't')
+        self.assert_in_help('(default: 4)', func, 'd')
+        self.assert_in_help('(type: int, default: 4)', func, 'dt')
+
+    def test_functools_partial_override_param_default(self):
+        def foo(*, bar: int=5) -> None:
+            """The foo tool
+
+            Args:
+                bar: the bar option
+            """
+            pass
+        func = functools.partial(foo, bar=4)
+        self.assert_in_help('The foo tool', func, 't')
+        self.assert_in_help('(type: int)', func, 't')
+        self.assert_in_help('(default: 4)', func, 'd')
+        self.assert_in_help('(type: int, default: 4)', func, 'dt')
+
+    def test_functools_partial_command_list(self):
+        def foo() -> None:
+            """Foo"""
+            pass
+        def bar() -> None:
+            """Bar"""
+            pass
+        func_foo = functools.partial(foo)
+        func_bar = functools.partial(bar)
+        funcs = [func_foo, func_bar]
+        self.assert_in_help('Foo', funcs, 't')
+        self.assert_in_help('Bar', funcs, 't')
+
     def assert_in_help(self, s, funcs, flags):
         self.assertIn(s, self._get_help(funcs, flags))
 
@@ -1620,3 +1662,29 @@ class TestStyle(unittest.TestCase):
         for name, line in self._iter_stripped_lines():
             if line and line[-1].isspace():
                 self.fail(f'{name} has trailing whitespace')
+
+class TestFunctoolsPartial(unittest.TestCase):
+    # does not have a default for `bar`
+    @staticmethod
+    def foo(*, bar: int) -> None:
+        '''The foo tool
+
+        Args:
+            bar: the bar option
+        '''
+        return bar
+
+
+    def test_partial_top_level(self):
+        actual = defopt.run(functools.partial(self.foo, bar=4), argv=[])
+        self.assertEqual(actual, 4)
+
+    def test_partial_sub_command(self):
+        funcs = {'foo': functools.partial(self.foo, bar=4)}
+        actual = defopt.run(funcs, argv=['foo'])
+        self.assertEqual(actual, 4)
+
+    def test_partial_sub_commands(self):
+        funcs = {'bar': [functools.partial(self.foo, bar=4)]}
+        actual = defopt.run(funcs, argv=['bar', 'foo'])
+        self.assertEqual(actual, 4)
