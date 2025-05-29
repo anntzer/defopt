@@ -354,6 +354,15 @@ with status code 1, but the traceback is suppressed.
 
 A runnable example is available at `examples/exceptions.py`_.
 
+Partially applied functions
+---------------------------
+
+Partially applied functions can be provided using `functools.partial`, for
+example to wrap a concrete function to make a required option have a default
+(and thus optional).
+
+A runnable example is available at `examples/partials.py`_.
+
 Additional parser features
 --------------------------
 
@@ -409,6 +418,7 @@ relies on `pkgutil.resolve_name`).
 .. _examples/exceptions.py: https://github.com/anntzer/defopt/blob/main/examples/exceptions.py
 .. _examples/lists.py: https://github.com/anntzer/defopt/blob/main/examples/lists.py
 .. _examples/parsers.py: https://github.com/anntzer/defopt/blob/main/examples/parsers.py
+.. _examples/partials.py: https://github.com/anntzer/defopt/blob/main/examples/partials.py
 .. _examples/short.py: https://github.com/anntzer/defopt/blob/main/examples/short.py
 .. _examples/starargs.py: https://github.com/anntzer/defopt/blob/main/examples/starargs.py
 .. _examples/styles.py: https://github.com/anntzer/defopt/blob/main/examples/styles.py
