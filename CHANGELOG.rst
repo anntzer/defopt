@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+7.0.0 (2025-06-15)
+------------------
 * Dropped support for Python 3.5 and 3.6.
 * Added the :envvar:`DEFOPT_DEBUG` environment variable to help troubleshooting
   union parser failures.
