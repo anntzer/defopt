@@ -11,10 +11,8 @@ description = "Effortless argument parser"
 readme = "README.rst"
 authors = [{name = "Antony Lee"}]
 urls = {Repository = "https://github.com/anntzer/defopt"}
-license = {text = "MIT"}
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
