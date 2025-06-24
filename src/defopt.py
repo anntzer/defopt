@@ -7,6 +7,7 @@ Run Python functions from the command line with ``run(func)``.
 import ast
 import collections.abc
 import contextlib
+import dataclasses
 import functools
 import importlib
 import inspect
@@ -161,6 +162,11 @@ def _bind_or_bind_known(funcs, *, opts, _known: bool = False):
             else:
                 args, rest = parser.parse_known_intermixed_args(opts.argv)
     parsed_args = vars(args)
+    # Relies on internal_dataclass_type_map being sorted with subfields first.
+    for prefix, tp in opts.internal_dataclass_type_map.items():
+        parsed_args[prefix] = tp(**{
+            k[len(prefix) + 1:]: parsed_args.pop(k)
+            for k in [*parsed_args] if k.startswith(prefix)})
     try:
         func = parsed_args.pop('_func')
     except KeyError:
@@ -313,15 +319,19 @@ def run(
 
 
 _DefoptOptions = namedtuple(
-    '_DefoptOptions',
-    ['parsers', 'short', 'cli_options', 'show_defaults', 'show_types',
-     'no_negated_flags', 'version', 'argparse_kwargs', 'intermixed', 'argv'])
+    '_DefoptOptions', [
+        'parsers', 'short', 'cli_options', 'show_defaults', 'show_types',
+        'no_negated_flags', 'version', 'argparse_kwargs', 'intermixed', 'argv',
+        'internal_dataclass_type_map',
+    ])
 
 
 def _options(**kwargs):
     params = inspect.signature(run).parameters
     return (
-        _DefoptOptions(*[params[k].default for k in _DefoptOptions._fields])
+        _DefoptOptions(
+            *[params[k].default for k in _DefoptOptions._fields[:-1]],
+            internal_dataclass_type_map={})
         ._replace(**kwargs))
 
 
@@ -597,8 +607,34 @@ def _populate_parser(func, parser, opts):
             name.replace('_', '-'): name[0] for name in sig.parameters
             if name not in positionals and count_initials[name[0]] == 1})
 
+    def _expand_dataclasses(params, *, prefix=''):
+        for param in params:
+            name = f'{prefix}.{param.name}' if prefix else param.name
+            # Same criterion as dataclasses.is_dataclass, but only for types.
+            if hasattr(param.annotation, '__dataclass_fields__'):
+                yield from _expand_dataclasses(
+                    [Parameter(field.name, Parameter.KEYWORD_ONLY,
+                               default=(Parameter.empty
+                                        if field.default is dataclasses.MISSING
+                                        else field.default),
+                               annotation=field.type,
+                               doc=param.doc)
+                     # FIXME: Also include InitVar.
+                     for field in dataclasses.fields(param.annotation)],
+                    prefix=name)
+                # Add subfields first.
+                opts.internal_dataclass_type_map[name] = param.annotation
+            elif prefix:
+                p = param.replace(
+                    doc=f'[dataclass subfield]  {param.doc or ""}')
+                # FIXME: Cleaner bypass of param name isidentifier check.
+                p._name = name
+                yield p
+            else:  # At toplevel.
+                yield param
+
     actions = []
-    for name, param in sig.parameters.items():
+    for param in _expand_dataclasses(sig.parameters.values()):
         kwargs = {}
         if param.doc is not None:
             kwargs['help'] = param.doc.replace('%', '%%')
@@ -609,11 +645,11 @@ def _populate_parser(func, parser, opts):
         if param.kind == param.VAR_KEYWORD:
             raise ValueError('**kwargs not supported')
         if type_ is param.empty:
-            raise ValueError(f'no type found for parameter {name}')
+            raise ValueError(f'no type found for parameter {param.name}')
         hasdefault = param.default is not param.empty
         default = param.default if hasdefault else SUPPRESS
         required = not hasdefault and param.kind != param.VAR_POSITIONAL
-        positional = name in positionals
+        positional = param.name in positionals
 
         # Special-case boolean flags.
         if type_ in [bool, typing.Optional[bool]] and not positional:
@@ -621,7 +657,7 @@ def _populate_parser(func, parser, opts):
                       if opts.no_negated_flags and default in [False, None]
                       else _BooleanOptionalAction)  # --name/--no-name
             actions.append(_add_argument(
-                parser, name, opts.short, action=action, default=default,
+                parser, param.name, opts.short, action=action, default=default,
                 required=required,  # Always False if `default is False`.
                 **kwargs))  # Add help if available.
             continue
@@ -702,7 +738,7 @@ def _populate_parser(func, parser, opts):
             if _ti_get_origin(type_) is Literal:
                 kwargs['choices'] = _PseudoChoices(_ti_get_args(type_))
 
-        actions.append(_add_argument(parser, name, opts.short, **kwargs))
+        actions.append(_add_argument(parser, param.name, opts.short, **kwargs))
 
     for action in actions:
         _update_help_string(action, opts)

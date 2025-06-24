@@ -67,7 +67,7 @@ Underscores in function names are replaced by hyphens.
 Friendlier subcommand names can be provided by calling `defopt.run` with a dict
 mapping subcommand names to functions.  In that case, no underscore replacement
 occurs (as one can directly set names with hyphens).
- 
+
 .. code-block:: python
 
     defopt.run({"friendly_func": awkward_name, "func2": other_name})
@@ -272,6 +272,17 @@ If the :envvar:`DEFOPT_DEBUG` environment variable is set and a union parser
 fails, then the errors associated with each member parser are printed out.
 This knob should be considered a debugging help and is not a stable API.
 
+Dataclasses
+-----------
+
+Dataclasses are supported as top-level parameters, and nested in other
+dataclasses, but not as container or union members.  Each field (or sub-field,
+in the nested case) is always converted to a flag (regardless of whether the
+parameter is keyword-only), using dotted name syntax
+(``--paramname.fieldname.subfieldname``).
+
+A runnable example is available at `examples/dataclass.py`_.
+
 Parsers
 -------
 
@@ -415,6 +426,7 @@ relies on `pkgutil.resolve_name`).
 .. _examples/annotations.py: https://github.com/anntzer/defopt/blob/main/examples/annotations.py
 .. _examples/booleans.py: https://github.com/anntzer/defopt/blob/main/examples/booleans.py
 .. _examples/choices.py: https://github.com/anntzer/defopt/blob/main/examples/choices.py
+.. _examples/dataclass.py: https://github.com/anntzer/defopt/blob/main/examples/dataclass.py
 .. _examples/exceptions.py: https://github.com/anntzer/defopt/blob/main/examples/exceptions.py
 .. _examples/lists.py: https://github.com/anntzer/defopt/blob/main/examples/lists.py
 .. _examples/parsers.py: https://github.com/anntzer/defopt/blob/main/examples/parsers.py

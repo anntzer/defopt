@@ -1,5 +1,6 @@
 import builtins
 import contextlib
+import dataclasses
 import functools
 import inspect
 import multiprocessing as mp
@@ -22,8 +23,8 @@ from docutils.utils import SystemMessage
 import defopt
 from defopt import __version__, _options
 from examples import (
-    annotations, booleans, choices, exceptions, lists, parsers, partials,
-    short, starargs, styles)
+    annotations, booleans, choices, dataclass, exceptions, lists, parsers,
+    partials, short, starargs, styles)
 
 
 Choice = Enum('Choice', [('one', 1), ('two', 2), ('%', 0.01)])
@@ -864,6 +865,26 @@ class TestLiteral(unittest.TestCase):
             defopt.run(main, argv=['quux'])
 
 
+class TestDataclass(unittest.TestCase):
+    def test_dataclass(self):
+        @dataclasses.dataclass
+        class Sub:
+            c: int
+            d: typing.Optional[float] = None
+
+        @dataclasses.dataclass
+        class Data:
+            a: str
+            b: Sub
+
+        def main(arg: Data):
+            return arg
+
+        self.assertEqual(
+            defopt.run(main, argv=['--arg.a', '1', '--arg.b.c', '2']),
+            Data('1', Sub(2, None)))
+
+
 class TestExceptions(unittest.TestCase):
     def test_exceptions(self):
         def main(name):
@@ -1532,6 +1553,11 @@ class TestExamples(unittest.TestCase):
             self._run_example(choices, ['choose-literal', 'baz'])
         self.assertIn(b'baz', error.exception.output)
         self.assertIn(b'{foo,bar}', error.exception.output)
+
+    def test_dataclass(self):
+        output = self._run_example(
+            dataclass, ['--arg.a', '1', '--arg.b.c', '2'])
+        self.assertEqual(output, b"Data(a='1', b=Sub(c=2, d=None))\n")
 
     def test_exceptions(self):
         self._run_example(exceptions, ['1'])

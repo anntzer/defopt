@@ -21,8 +21,9 @@ Command line usage::
       6
 """
 
-import defopt
 from functools import partial
+
+import defopt
 
 
 def foo(*, arg: int) -> None:
