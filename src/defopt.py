@@ -80,6 +80,26 @@ _LIST_TYPES = [
 ]
 
 
+## Generic utilities.
+
+
+def _check_in_list(_values, **kwargs):
+    for k, v in kwargs.items():
+        if v not in _values:
+            raise ValueError(f'{k!r} must be one of {_values!r}, not {v!r}')
+
+
+def _issubclass(obj, parent):
+    return isinstance(obj, type) and issubclass(obj, parent)
+
+
+def _unwrap_partial(func):
+    return func.func if isinstance(func, functools.partial) else func
+
+
+## Argparse helpers.
+
+
 class _BooleanOptionalAction(Action):
     # Modified from Py3.9's version, plus:
     # - a fix to bpo#38956 (by omitting the extraneous help string),
@@ -131,18 +151,15 @@ class _PseudoChoices(list):
         return True
 
 
+## defopt API.
+
+
 class _DefaultList(list):
     """
     Marker type used to determine that a parameter corresponds to a varargs,
     and thus should have its default value hidden.  Varargs are unpacked during
     function call, so the caller won't see this type.
     """
-
-
-def _check_in_list(_values, **kwargs):
-    for k, v in kwargs.items():
-        if v not in _values:
-            raise ValueError(f'{k!r} must be one of {_values!r}, not {v!r}')
 
 
 def _bind_or_bind_known(funcs, *, opts, _known: bool = False):
@@ -384,27 +401,27 @@ def _create_parser(funcs, opts):
 
 
 def _get_version(funcs):
+
+    def _get_version1(func):
+        module_name = getattr(func, '__module__', None)
+        if not module_name:
+            return
+        if module_name == '__main__':
+            f_globals = getattr(func, '__globals__', {})
+            if f_globals.get('__spec__'):
+                module_name = f_globals['__spec__'].name
+            else:
+                return f_globals.get('__version__')
+        while True:
+            try:
+                return importlib.import_module(module_name).__version__
+            except AttributeError:
+                if '.' not in module_name:
+                    return
+                module_name, _ = module_name.rsplit('.', 1)
+
     versions = {v for v in map(_get_version1, funcs) if v is not None}
     return versions.pop() if len(versions) == 1 else None
-
-
-def _get_version1(func):
-    module_name = getattr(func, '__module__', None)
-    if not module_name:
-        return
-    if module_name == '__main__':
-        f_globals = getattr(func, '__globals__', {})
-        if f_globals.get('__spec__'):
-            module_name = f_globals['__spec__'].name
-        else:
-            return f_globals.get('__version__')
-    while True:
-        try:
-            return importlib.import_module(module_name).__version__
-        except AttributeError:
-            if '.' not in module_name:
-                return
-            module_name, _ = module_name.rsplit('.', 1)
 
 
 class Signature(inspect.Signature):
@@ -472,10 +489,6 @@ def signature(func: Union[Callable, str]):
         doc_sig = _preprocess_doc_signature(
             func, signature(inspect.getdoc(_unwrap_partial(func))))
         return _merge_signatures(inspect_sig, doc_sig)
-
-
-def _unwrap_partial(func):
-    return func.func if isinstance(func, functools.partial) else func
 
 
 def _preprocess_inspect_signature(func, sig):
@@ -656,7 +669,7 @@ def _populate_parser(func, parser, opts):
                 kwargs['action'] = 'append'
                 kwargs['default'] = _DefaultList()
 
-        if isinstance(type_, type) and issubclass(type_, Enum):
+        if _issubclass(type_, Enum):
             # Enums must be checked first to handle enums-of-namedtuples.
             kwargs['type'] = _get_parser(type_, opts.parsers)
             kwargs['choices'] = _PseudoChoices(type_.__members__.values())
@@ -685,8 +698,7 @@ def _populate_parser(func, parser, opts):
                 kwargs['action'] = _make_store_tuple_action_class(
                     tuple, member_types, opts.parsers)
 
-        elif (isinstance(type_, type) and issubclass(type_, tuple)
-              and hasattr(type_, '_fields')):
+        elif _issubclass(type_, tuple) and hasattr(type_, '_fields'):
             hints = typing.get_type_hints(type_)
             member_types = tuple(hints[field] for field in type_._fields)
             kwargs['nargs'] = len(member_types)
@@ -778,10 +790,7 @@ def _is_optional_list_like(type_):
             and any(_is_list_like(subtype) for subtype in _ti_get_args(type_)))
 
 
-def _passthrough_role(
-    name, rawtext, text, lineno, inliner, options={}, content=[],
-):
-    return [TextElement(rawtext, text)], []
+## Docstring parsing.
 
 
 @contextlib.contextmanager
@@ -822,7 +831,10 @@ def _sphinx_common_roles():
     role_map = docutils.parsers.rst.roles._roles
     for role in roles:
         for i in range(role.count(':') + 1):
-            role_map[role.split(':', i)[-1]] = _passthrough_role
+            role_map[role.split(':', i)[-1]] = (  # passthrough role.
+                lambda name, rawtext, text, *args, **kwargs:
+                ([TextElement(rawtext, text)], [])
+            )
     try:
         yield
     finally:
@@ -1046,11 +1058,13 @@ def _parse_docstring(doc):
     return Signature(params, doc=''.join(text), raises=visitor.raises)
 
 
+## Argument parsers.
+
+
 def _get_parser(type_, parsers):
     if type_ in parsers:  # Not catching KeyError, to avoid exception chaining.
         parser = functools.partial(parsers[type_])
-    elif (type_ in [str, int, float]
-          or isinstance(type_, type) and issubclass(type_, PurePath)):
+    elif type_ in [str, int, float] or _issubclass(type_, PurePath):
         parser = functools.partial(type_)
     elif type_ == bool:
         parser = functools.partial(_parse_bool)
@@ -1060,7 +1074,7 @@ def _get_parser(type_, parsers):
         parser = functools.partial(_parse_none)
     elif type_ == list:
         raise ValueError('unable to parse list (try list[type])')
-    elif isinstance(type_, type) and issubclass(type_, Enum):
+    elif _issubclass(type_, Enum):
         parser = _make_enum_parser(type_)
     elif _is_constructible_from_str(type_):
         parser = functools.partial(type_)
@@ -1080,8 +1094,7 @@ def _get_parser(type_, parsers):
             elem_parsers.append(elem_parser)
             if (isinstance(elem_parser, functools.partial)
                     and (elem_parser.func is str
-                         or isinstance(elem_parser.func, type)
-                         and issubclass(elem_parser.func, PurePath))
+                         or _issubclass(elem_parser.func, PurePath))
                     and not (elem_parser.args or elem_parser.keywords)):
                 # Infaillible parser; skip all following types (which may not
                 # even have a parser defined).
