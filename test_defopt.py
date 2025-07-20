@@ -1289,6 +1289,11 @@ class TestHelp(unittest.TestCase):
             """:param Pair foo: help"""
         self.assert_in_help('--foo first second', main, '')
 
+        if sys.version_info >= (3, 13, 1):
+            def main(foo):
+                """:param Pair foo: help"""
+            self.assert_in_help('foo.first foo.second', main, '')
+
     def test_var_positional(self):
         for doc in [
                 ":type bar: int", r":type \*bar: int", ":param int bar: baz"]:

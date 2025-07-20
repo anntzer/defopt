@@ -687,14 +687,16 @@ def _populate_parser(func, parser, opts):
 
         elif (isinstance(type_, type) and issubclass(type_, tuple)
               and hasattr(type_, '_fields')):
-            # Before Py3.6, `_field_types` does not preserve order, so retrieve
-            # the order from `_fields`.
             hints = typing.get_type_hints(type_)
             member_types = tuple(hints[field] for field in type_._fields)
             kwargs['nargs'] = len(member_types)
             kwargs['action'] = _make_store_tuple_action_class(
                 type_, member_types, opts.parsers)
-            if not positional:  # http://bugs.python.org/issue14074
+            if positional and sys.version_info >= (3, 13, 1):
+                # http://bugs.python.org/issue14074
+                kwargs['metavar'] = *(
+                    f"{name}.{field}" for field in type_._fields),
+            if not positional:
                 kwargs['metavar'] = type_._fields
 
         else:
