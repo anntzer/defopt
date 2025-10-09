@@ -28,7 +28,9 @@ from examples import (
 
 Choice = Enum('Choice', [('one', 1), ('two', 2), ('%', 0.01)])
 Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
-StrChoice = Enum('StrChoice', [('A', auto()), ('B', auto())])
+class StrChoice(str, Enum):
+    A = auto()
+    B = auto()
 
 
 def _parse_none(i):
