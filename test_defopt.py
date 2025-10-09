@@ -650,7 +650,7 @@ class TestEnums(unittest.TestCase):
             """:type a: StrChoice"""
             return a
         self.assertEqual(defopt.run(main, argv=['--a', 'A']), StrChoice.A)
-    
+
     def test_str_enum_optional(self):
         def main(*, a: StrChoice = StrChoice.A) -> None:
             """:type a: StrChoice"""
