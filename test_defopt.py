@@ -13,7 +13,7 @@ import typing
 import unittest
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import ExitStack
-from enum import Enum, StrEnum, auto
+from enum import Enum, auto
 from io import StringIO
 from pathlib import Path
 
@@ -28,7 +28,7 @@ from examples import (
 
 Choice = Enum('Choice', [('one', 1), ('two', 2), ('%', 0.01)])
 Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
-StrChoice = StrEnum('StrChoice', [('A', auto()), ('B', auto())])
+StrChoice = Enum('StrChoice', [('A', auto()), ('B', auto())])
 
 
 def _parse_none(i):
