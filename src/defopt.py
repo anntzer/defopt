@@ -1178,6 +1178,10 @@ def _is_constructible_from_str(type_):
 def _make_enum_parser(enum, value=None):
     if value is None:
         return functools.partial(_make_enum_parser, enum)
+    if isinstance(value, enum):
+        # If the default is a StrEnum it will be passed to the converter, which
+        # must pass it through.
+        return value
     try:
         return enum[value]
     except KeyError:

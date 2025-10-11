@@ -13,7 +13,7 @@ import typing
 import unittest
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import ExitStack
-from enum import Enum
+from enum import Enum, auto
 from io import StringIO
 from pathlib import Path
 
@@ -28,6 +28,9 @@ from examples import (
 
 Choice = Enum('Choice', [('one', 1), ('two', 2), ('%', 0.01)])
 Pair = typing.NamedTuple('Pair', [('first', int), ('second', str)])
+class StrChoice(str, Enum):
+    A = auto()
+    B = auto()
 
 
 def _parse_none(i):
@@ -643,6 +646,18 @@ class TestEnums(unittest.TestCase):
         self.assertEqual(defopt.run(main, argv=['two']), Choice.two)
         with self.assertRaises(SystemExit):
             defopt.run(main, argv=['three'])
+
+    def test_str_enum(self):
+        def main(*, a: StrChoice) -> None:
+            """:type a: StrChoice"""
+            return a
+        self.assertEqual(defopt.run(main, argv=['--a', 'A']), StrChoice.A)
+
+    def test_str_enum_optional(self):
+        def main(*, a: StrChoice = StrChoice.A) -> None:
+            """:type a: StrChoice"""
+            return a
+        self.assertEqual(defopt.run(main, argv=[]), StrChoice.A)
 
     def test_optional(self):
         def main(*, foo=None):
