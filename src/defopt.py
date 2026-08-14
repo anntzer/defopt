@@ -842,6 +842,31 @@ def _sphinx_common_roles():
                 role_map.pop(role.split(':', i)[-1])
 
 
+@contextlib.contextmanager
+def _passthrough_unknown_directives():
+    """Treat unknown RST directives as skippable, not fatal.
+
+    Sphinx-only directives (``versionchanged``, ``seealso``, …) appear in
+    real docstrings, including those of third-party types that defopt
+    introspects.  ``halt_level=3`` would otherwise abort ``defopt.run``.
+    Completely invalid RST still raises via the existing halt_level.
+    """
+    original = Body.unknown_directive
+
+    def _skip_unknown_directive(self, type_name):
+        # Consume the directive block the same way docutils does, then
+        # continue parsing instead of reporting an ERROR.
+        _indented, _indent, _offset, blank_finish = (
+            self.state_machine.get_first_known_indented(0, strip_indent=False))
+        return [], blank_finish
+
+    Body.unknown_directive = _skip_unknown_directive
+    try:
+        yield
+    finally:
+        Body.unknown_directive = original
+
+
 def _parse_docstring(doc):
     """
     Extract documentation from a function's docstring into a `.Signature`
@@ -860,7 +885,7 @@ def _parse_docstring(doc):
     doc = str(GoogleDocstring(doc, cfg))
     doc = str(NumpyDocstring(doc, cfg))
 
-    with _sphinx_common_roles():
+    with _sphinx_common_roles(), _passthrough_unknown_directives():
         tree = docutils.core.publish_doctree(
             # - Propagate errors out.
             # - Disable syntax highlighting, as 1) pygments is not a dependency
