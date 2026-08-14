@@ -1151,6 +1151,47 @@ class TestDoc(unittest.TestCase):
         with self.assertRaises(SystemMessage):
             defopt._parse_docstring(inspect.cleandoc(doc))
 
+    def test_sphinx_directive_in_docstring(self):
+        doc = """
+        Build a thing.
+
+        .. versionchanged:: 1.2
+            Now does the thing differently.
+
+        :param name: what to build
+        """
+        doc_sig = defopt._parse_docstring(inspect.cleandoc(doc))
+        self.assertIn('Build a thing', doc_sig.doc)
+        self.assertEqual(doc_sig.parameters['name'].doc, 'what to build')
+
+    def test_sphinx_directive_does_not_abort_run(self):
+        def build(name: str):
+            """Build a thing.
+
+            .. versionchanged:: 1.2
+                Now does the thing differently.
+
+            :param name: what to build
+            """
+            return name
+        self.assertEqual(defopt.run(build, argv=['widget']), 'widget')
+
+    def test_sphinx_directive_in_type_docstring(self):
+        class Widget:
+            """A widget.
+
+            .. versionchanged:: 1.2
+                Constructor now takes a name.
+            """
+            def __init__(self, name: str):
+                self.name = name
+
+        def build(widget: Widget):
+            """Build from a widget."""
+            return widget.name
+
+        self.assertEqual(defopt.run(build, argv=['foo']), 'foo')
+
 
 class TestAnnotations(unittest.TestCase):
     def test_simple(self):
