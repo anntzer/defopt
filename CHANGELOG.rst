@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Unreleased
+----------
+* Unknown reStructuredText directives and their contents are ignored when
+  parsing docstrings.
+
 7.0.0 (2025-06-15)
 ------------------
 * Dropped support for Python 3.5 and 3.6.
