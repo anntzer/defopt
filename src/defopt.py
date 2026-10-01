@@ -47,6 +47,7 @@ except ImportError:
 
 import docutils.core
 from docutils.nodes import NodeVisitor, SkipNode, TextElement
+from docutils.parsers.rst import Parser
 from docutils.parsers.rst.states import Body
 
 try:
@@ -355,7 +356,7 @@ def _recurse_functions(funcs, subparsers):
             # If this item is callable, then add it to the current
             # subparser using this name.
             doc = inspect.getdoc(_unwrap_partial(func))
-            sp_help = signature(doc).doc.split('\n\n', 1)[0]
+            sp_help = _parse_docstring(doc).doc.split('\n\n', 1)[0]
             subparser = subparsers.add_parser(
                 name, formatter_class=RawTextHelpFormatter, help=sp_help)
             yield func, subparser
@@ -476,12 +477,13 @@ def signature(func: Union[Callable, str]):
     This API is provisional and may be adjusted depending on feedback.
     """
     if isinstance(func, str) or func is None:
-        return _parse_docstring(func)
+        return _parse_docstring(
+            inspect.cleandoc(func) if func is not None else None)
     else:
         inspect_sig = _preprocess_inspect_signature(
             func, inspect.signature(func))
         doc_sig = _preprocess_doc_signature(
-            func, signature(inspect.getdoc(_unwrap_partial(func))))
+            func, _parse_docstring(inspect.getdoc(_unwrap_partial(func))))
         return _merge_signatures(inspect_sig, doc_sig)
 
 
@@ -792,6 +794,31 @@ def _is_optional_list_like(type_):
 ## Docstring parsing.
 
 
+class _DocstringParser(Parser):
+    def __init__(self):
+        super().__init__()
+
+        class State:
+            def __init__(self, state_machine, debug=False):
+                super().__init__(state_machine, debug)
+                # Keep nested parsing and its cache local to this parser.
+                self.nested_sm_kwargs['state_classes'] = state_classes
+                self.nested_sm_cache = []
+
+            def unknown_directive(self, type_name):
+                # Consume the same block as Docutils' unknown-directive error.
+                _, _, _, blank_finish = \
+                    self.state_machine.get_first_known_indented(
+                        0, strip_indent=False)
+                return [], blank_finish
+
+        # Docutils selects states by class name.
+        state_classes = tuple(
+            type(state.__name__, (State, state), {})
+            for state in self.state_classes)
+        self.state_classes = state_classes
+
+
 @contextlib.contextmanager
 def _sphinx_common_roles():
     # Standard roles:
@@ -844,7 +871,7 @@ def _sphinx_common_roles():
 
 def _parse_docstring(doc):
     """
-    Extract documentation from a function's docstring into a `.Signature`
+    Extract documentation from a cleaned docstring into a `.Signature`
     object *with unevaluated annotations*.
     """
 
@@ -855,7 +882,6 @@ def _parse_docstring(doc):
     # (Should do nothing if not in either style.)
     # use_ivar avoids generating an unhandled .. attribute:: directive for
     # Attribute blocks, preferring a benign :ivar: field.
-    doc = inspect.cleandoc(doc)
     cfg = Config(napoleon_use_ivar=True)
     doc = str(GoogleDocstring(doc, cfg))
     doc = str(NumpyDocstring(doc, cfg))
@@ -866,7 +892,7 @@ def _parse_docstring(doc):
             # - Disable syntax highlighting, as 1) pygments is not a dependency
             #   2) we don't render with colors and 3) SH breaks the assumption
             #   that literal blocks contain a single text element.
-            doc, settings_overrides={
+            doc, parser=_DocstringParser(), settings_overrides={
                 'halt_level': 3, 'syntax_highlight': 'none'})
 
     class Visitor(NodeVisitor):

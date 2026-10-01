@@ -584,6 +584,30 @@ class TestParsers(unittest.TestCase):
 
         self.assertEqual(defopt.run(ok, argv=["foo"]).s, "foo")
 
+    def test_implicit_parser_unknown_directive(self):
+        class WithDirective(ConstructibleFromStr):
+            """
+            .. versionchanged:: 1.0
+
+                Ignored constructor documentation.
+            """
+
+        def main(value: WithDirective):
+            return value
+
+        main.__doc__ = WithDirective.__doc__
+        self.assertEqual(defopt.run(main, argv=['value']).s, 'value')
+        self.assertEqual(defopt.signature(WithDirective.__doc__).doc, '')
+        for funcs, argv in [(main, ['--help']), ([main], ['--help']),
+                            ([main], ['main', '--help'])]:
+            with self.subTest(funcs=funcs, argv=argv):
+                with contextlib.redirect_stdout(StringIO()) as stdout:
+                    with self.assertRaises(SystemExit) as cm:
+                        defopt.run(funcs, argv=argv)
+                self.assertEqual(cm.exception.code, 0)
+                self.assertNotIn('Ignored constructor documentation.',
+                                 stdout.getvalue())
+
     def test_implicit_noparser(self):
         def notok(foo):
             """:type foo: NotConstructibleFromStr"""
@@ -1148,8 +1172,11 @@ class TestDoc(unittest.TestCase):
         - bad
           - indent
         """
-        with self.assertRaises(SystemMessage):
-            defopt._parse_docstring(inspect.cleandoc(doc))
+        for prefix in ['', '.. versionchanged:: 1.0\n\n']:
+            with self.subTest(prefix=prefix):
+                with self.assertRaisesRegex(
+                        SystemMessage, 'Unexpected indentation'):
+                    defopt._parse_docstring(prefix + inspect.cleandoc(doc))
 
 
 class TestAnnotations(unittest.TestCase):
@@ -1213,6 +1240,43 @@ class TestFunctoolsPartial(unittest.TestCase):
 
 
 class TestHelp(unittest.TestCase):
+    def test_unknown_directive(self):
+        def main(value: int = 1):
+            """
+            Before the directive.
+
+            .. versionchanged:: 133.0
+                :ignored: Ignored option
+
+                Ignored body.
+                - invalid
+                  - indent
+
+            After the directive.
+
+            .. rubric:: Visible heading
+
+            :param value: Visible parameter.
+
+                .. versionadded:: 132.0
+
+                    Ignored nested body.
+
+                Visible parameter continuation.
+            """
+        with contextlib.redirect_stdout(StringIO()) as stdout:
+            with self.assertRaises(SystemExit) as cm:
+                defopt.run(main, argv=['--help'])
+        self.assertEqual(cm.exception.code, 0)
+        help_text = stdout.getvalue()
+        for text in ['Before the directive.', 'After the directive.',
+                     'Visible heading:', 'Visible parameter.',
+                     'Visible parameter continuation.']:
+            self.assertIn(text, help_text)
+        self.assertNotRegex(
+            help_text,
+            'versionchanged|versionadded|133[.]0|132[.]0|[Ii]gnored')
+
     def test_type(self):
         def foo(bar):
             """:param int bar: baz"""
